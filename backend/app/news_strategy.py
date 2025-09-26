@@ -1,6 +1,50 @@
+
 """
-智能新闻收集策略系统
-基于关注股票、行业、政策关键词自动生成搜索策略
+模块说明: news_strategy.py
+
+概述:
+    本模块提供基于关注股票和行业的智能新闻收集与调度能力。
+    主要功能包括自动生成搜索策略、按策略调用新闻搜索与正文抽取、去重入库及记录执行日志，
+    并支持将收集任务注册为后台任务。
+
+主要类:
+    - NewsStrategy:
+        描述单个搜索策略的元信息（名称、关键词集合、频率、优先级、分类及搜索参数）。
+    - IntelligentNewsCollector:
+        智能收集器。负责从关注列表生成多种类型的策略（个股/行业/政策/市场），
+        执行策略（搜索 -> 处理 -> 去重 -> 入库），以及记录执行日志和节流控制。
+    - NewsStrategyScheduler:
+        调度器。用于批量运行智能收集流程并将任务写入任务表（Task），可作为外部调度入口。
+
+关键异步接口:
+    - IntelligentNewsCollector.generate_strategies() -> List[NewsStrategy]
+        根据 Watchlist 动态生成策略集合。
+    - IntelligentNewsCollector.execute_strategy(strategy) -> Dict
+        执行单条策略并返回执行结果统计。
+    - NewsStrategyScheduler.run_intelligent_collection() -> Dict
+        运行全部智能策略并返回汇总结果。
+    - NewsStrategyScheduler.create_news_collection_task(priority=int) -> int
+        在数据库中创建一个新闻收集任务记录并返回 task.id（同步 DB 写入）。
+
+依赖项:
+    - 外部服务: NewsSearchService（负责搜索）、NewsProcessor（负责正文抽取与结果标准化）。
+    - 数据模型: Watchlist, NewsArticle, SearchLog, Task, TaskType, TaskStatus 等（通过本项目的 models 提供）。
+    - 数据库会话: SessionLocal（用于短生命周期会话）。
+
+可扩展点:
+    - industry_keywords / policy_keywords 可按需扩充以覆盖更多行业与主题。
+    - _build_search_query 可接入更复杂的查询构造器（例如多关键字组合、布尔搜索）。
+    - 搜索与处理逻辑可替换为外部队列/分布式任务以提升吞吐。
+
+示例:
+    作为异步任务入口可调用:
+        scheduler = NewsStrategyScheduler()
+        await scheduler.run_intelligent_collection()
+
+注意事项:
+    - 所有与 DB 的交互使用短生命周期 SessionLocal，异步函数内部仍使用同步 DB 驱动；
+      在高并发场景下建议改造为异步 DB 驱动或外部队列化处理。
+    - 搜索频率与关键词截取限制用于控制第三方检索接口的调用配额，应根据实际 API 限制调整。
 """
 
 import asyncio
@@ -19,7 +63,7 @@ from .news_service import NewsSearchService, NewsProcessor
 
 
 class NewsStrategy:
-    """新闻搜索策略定义"""
+    """新闻搜索策略定义（仅描述策略元信息，如频率/优先级/关键词集合）"""
     
     def __init__(
         self,
@@ -39,7 +83,7 @@ class NewsStrategy:
 
 
 class IntelligentNewsCollector:
-    """智能新闻收集器"""
+    """智能新闻收集器：根据策略批量搜索→正文抽取→去重→入库。"""
     
     def __init__(self):
         self.search_service = NewsSearchService()
@@ -216,7 +260,7 @@ class IntelligentNewsCollector:
         try:
             # 为每个关键词组合执行搜索
             for i, keyword in enumerate(strategy.keywords):
-                if i >= 5:  # 限制每个策略最多搜索5个关键词
+                if i >= 5:  # 为控制外部调用频率，单策略最多取前5个关键词
                     break
                 
                 try:

@@ -1,5 +1,101 @@
 """
-任务管理器 - 负责创建、执行和监控任务
+任务管理模块（task_manager）
+模块概述
+-------
+本模块提供 TaskManager 类，用于统一管理异步任务的创建、调度与执行。
+任务主要与股票相关的数据处理与报告生成相关（如生成报告、收集新闻等），
+并通过数据库（SQLAlchemy 会话）持久化任务状态与结果。模块设计兼顾可扩展性、
+并发控制与数据库一致性。
+设计要点
+-------
+- 以 Task 表为中心，维护任务的创建、状态迁移（PENDING -> RUNNING -> COMPLETED/FAILED）与元信息。
+- 使用轻量级并发控制（running_tasks 集合与 max_concurrent_tasks 限制）防止过度并发与重复执行。
+- 所有 DB 操作通过 SessionLocal 上下文管理器进行，尽量在短事务内提交以减少锁等待。
+- 将具体任务执行逻辑封装到独立方法（如 execute_report_task、execute_news_task、_generate_report、_collect_news_for_task）
+    便于扩展与单元测试。
+- 生成报告时保证“最新”标记（is_latest）的一致性：先将已有报告置为非最新并提交，再插入新报告并提交。
+主要类与方法
+-------
+TaskManager
+        属性：
+                running_tasks: set - 正在执行的任务 ID 集合（用于防重入与并发限制）。
+                max_concurrent_tasks: int - 最大并发任务数（默认 3）。
+                _stopped: bool - 软停止标志，设为 True 后不再分发新任务。
+        方法（摘要）：
+                stop() / is_stopped()
+                        控制任务管理器是否暂停分发新任务（软停止）。
+                create_task(task_type, symbol, priority=5, metadata=None) -> Optional[int]
+                        通用任务创建接口。会检查相同（symbol, task_type）是否已有 PENDING/RUNNING 任务以避免重复入队。
+                        返回新任务 ID 或已存在任务 ID；异常时返回 None。
+                create_report_task(symbol, priority=5) -> Optional[int]
+                        为指定股票创建报告生成任务，内置避免重复排队的检查。
+                check_and_create_missing_report_tasks() -> List[int]
+                        扫描启用的自选股（Watchlist），为没有最新报告且未排队的股票创建报告任务（优先级较高）。
+                execute_report_task(task_id) -> bool
+                        报告生成任务执行器。负责任务状态迁移、调用 _generate_report 生成报告并更新任务状态与错误信息。
+                _generate_report(symbol, session) -> bool
+                        报告生成的核心逻辑（与数据库交互）。职责包括：
+                            - 从 PriceDaily/Signal/Forecast 拉取最新数据；
+                            - 计算 data_quality_score、prediction_confidence、analysis_summary；
+                            - 将原有 is_latest=True 的报告标记为 False 并提交；
+                            - 按 version 自增插入新报告并提交。
+                        返回是否成功写入新报告。
+                _calculate_data_quality(price_data, signal_data, forecasts) -> float
+                        针对价格、技术信号与预测数据的启发式数据质量评分（0-10）。
+                _calculate_prediction_confidence(forecasts) -> float
+                        基于预测区间宽度计算置信度（0-1）。
+                _generate_analysis_summary(symbol, price_data, signal_data, forecasts) -> str
+                        生成面向普通投资者的简短文本摘要（注意避免提供法律/投资建议）。
+                get_pending_tasks(limit=10) -> List[Dict]
+                        列取当前 PENDING 任务，按优先级与创建时间排序，返回用于展示的字典列表。
+                process_tasks()
+                        用于将 PENDING 任务分派到异步执行（asyncio.create_task）。会检查并发上限并将任务 ID 放入 running_tasks。
+                _execute_task_wrapper(task_id)
+                        统一的任务执行包装器，根据 task_type 分派到相应执行器；确保 finally 中移除 running_tasks，避免泄漏。
+                execute_news_task(task_id) -> bool
+                        新闻收集任务执行器，状态迁移及异常处理模式与 execute_report_task 类似。
+                _collect_news_for_task(task, session) -> bool
+                        实际的新闻收集实现点（可调用策略调度器或手动收集），应捕获异常并返回成功/失败布尔值。
+并发与运行时控制
+-------
+- 并发以 asyncio 为基础，process_tasks 将基于 max_concurrent_tasks 创建后台协程。
+- running_tasks 用于记录已经被调度执行但尚未结束的任务 ID，避免重复调度相同任务。
+- 提供 stop/is_stopped 用于软停止场景：外部可在停止标志设定后停止调用 process_tasks，从而实现优雅停机。
+数据库事务与一致性
+-------
+- 每次对数据库的修改都在短事务内完成（通过 SessionLocal 上下文）。
+- 生成报告时先把历史最新报告设置为非最新并提交，随后插入新报告并提交，降低并发插入导致的不一致性风险。
+- 所有读取和写入均使用 SQLAlchemy Core/ORM 的 select/update/commit 模式，调用方需要保证 SessionLocal 正确配置。
+错误处理策略
+-------
+- 任务执行器在捕获到异常时会：
+        - 将任务状态设置为 FAILED；
+        - 将异常消息写入 task.error_message；
+        - 设置 completed_at 并提交事务。
+- _generate_report 与 _collect_news_for_task 等下层方法应尽量返回布尔结果，异常由上层统一捕获并记录。
+扩展点与注意事项
+-------
+- 新增任务类型：在 TaskType 中注册新类型，并在 _execute_task_wrapper 中加入分派分支，以及实现对应 execute_* 方法。
+- 重试策略：当前实现没有内建重试；如需重试可在 execute_* 中加入重试计数与指数回退逻辑，或在数据库层记录重试次数。
+- 测试：各 execute_* 方法与 _generate_report 等函数应尽量以可注入 session 的方式进行单元测试（使用事务回滚或独立测试 DB）。
+- 并发安全：running_tasks 仅在单进程 asyncio 环境下有效；若部署为多进程或分布式，需要引入分布式锁（例如 Redis 锁）以避免重复执行。
+- 性能与批量操作：当自选股数量较大时，check_and_create_missing_report_tasks 的扫描可考虑分页或批量查询优化。
+示例用法（伪代码）
+-------
+        # 创建任务
+        task_manager.create_task(TaskType.GENERATE_REPORT, "AAPL", priority=3)
+        # 在 asyncio 循环中周期性调度
+        async def scheduler_loop():
+                while not task_manager.is_stopped():
+                        await task_manager.process_tasks()
+                        await asyncio.sleep(5)
+        # 软停止
+        task_manager.stop()
+作者/维护
+-------
+该模块负责任务生命周期管理与任务执行的协调，建议与项目的模型定义（Task, Report, PriceDaily, Signal, Forecast, Watchlist, TaskStatus, TaskType）
+以及 SessionLocal 配置保持一致。
+
 """
 import asyncio
 import json
@@ -16,8 +112,11 @@ logger = logging.getLogger(__name__)
 
 class TaskManager:
     def __init__(self):
+        # 正在运行中的任务ID集合：用于防重入与并发上限控制
         self.running_tasks = set()
+        # 并发上限（见模块顶部“魔术数值说明”）：默认3
         self.max_concurrent_tasks = 3
+        # 软停止标志：用于优雅停机或暂停分发新任务
         self._stopped = False
         
     def stop(self):
@@ -42,7 +141,7 @@ class TaskManager:
         """
         try:
             with SessionLocal() as session:
-                # 检查是否已有相同任务在队列中
+                # 去重：检查是否已有相同任务在队列中（PENDING/RUNNING）
                 existing_task = session.execute(
                     select(Task).where(
                         and_(
@@ -57,7 +156,7 @@ class TaskManager:
                     logger.info(f"Task already exists for {symbol} with type {task_type}")
                     return existing_task.id
                 
-                # 创建新任务
+                # 创建新任务（默认 PENDING；priority 数值越小越优先）
                 task = Task(
                     task_type=task_type,
                     symbol=symbol,
@@ -95,7 +194,7 @@ class TaskManager:
                 logger.info(f"Task already exists for {symbol}, task_id: {existing_task.id}")
                 return existing_task.id
             
-            # 创建新任务
+            # 创建新任务（自动补齐通常赋予更高优先级，如 3）
             new_task = Task(
                 task_type=TaskType.GENERATE_REPORT,
                 symbol=symbol,
@@ -110,7 +209,13 @@ class TaskManager:
             return new_task.id
     
     async def check_and_create_missing_report_tasks(self) -> List[int]:
-        """检查所有自选股票，为没有报告且没有任务的股票创建报告任务"""
+        """
+        检查所有自选股票，为“没有最新报告且没有排队任务”的股票创建报告任务。
+
+        策略：
+        - 先查 is_latest=True 的报告是否存在；如不存在再查是否已有 PENDING/RUNNING 的报告任务；
+        - 若均无，则创建优先级较高（3）的补齐任务。
+        """
         created_tasks = []
         
         with SessionLocal() as session:
@@ -120,7 +225,7 @@ class TaskManager:
             ).scalars().all()
             
             for symbol in watchlist_stocks:
-                # 检查是否有最新报告
+                # 检查是否有最新报告（is_latest=True）
                 has_report = session.execute(
                     select(Report).where(
                         and_(Report.symbol == symbol, Report.is_latest == True)
@@ -128,7 +233,7 @@ class TaskManager:
                 ).scalar_one_or_none()
                 
                 if not has_report:
-                    # 检查是否有待处理的任务
+                    # 若无最新报告，再检查是否有待处理任务（避免重复排队）
                     has_pending_task = session.execute(
                         select(Task).where(
                             and_(
@@ -159,13 +264,13 @@ class TaskManager:
                 logger.warning(f"Task {task_id} not found or not pending")
                 return False
             
-            # 更新任务状态为运行中
+            # 状态迁移：PENDING → RUNNING，并记录开始时间
             task.status = TaskStatus.RUNNING
             task.started_at = datetime.utcnow()
             session.commit()
             
             try:
-                # 生成报告
+                # 生成报告（核心逻辑在 _generate_report）
                 success = await self._generate_report(task.symbol, session)
                 
                 if success:
@@ -189,8 +294,17 @@ class TaskManager:
                 logger.error(f"Report task {task_id} failed with exception: {e}")
                 return False
     
-    async def _generate_report(self, symbol: str, session) -> bool:
-        """生成股票报告"""
+        async def _generate_report(self, symbol: str, session) -> bool:
+                """生成股票报告
+
+                合同（Contract）：
+                - 输入：symbol 必填；session 为当前数据库会话。
+                - 输出：bool，表示是否成功入库一条新的“最新”（is_latest=True）报告。
+                - 副作用：
+                    1) 将该 symbol 之前 is_latest=True 的报告全部置为 False（一次性更新并提交）。
+                    2) 以 version 自增方式创建新报告（保持可追溯）。
+                - 失败模式：任意步骤异常返回 False；异常由上层捕获并写入 task.error_message。
+                """
         try:
             # 获取最新价格数据
             latest_price = session.execute(
@@ -247,13 +361,13 @@ class TaskManager:
                     "model": f.model
                 })
             
-            # 计算数据质量评分
+            # 计算数据质量评分（0-10，见 _calculate_data_quality）
             data_quality_score = self._calculate_data_quality(latest_price, latest_signal, forecasts)
             
-            # 计算预测置信度
+            # 计算预测置信度（0-1，见 _calculate_prediction_confidence）
             prediction_confidence = self._calculate_prediction_confidence(forecasts)
             
-            # 生成分析摘要
+            # 生成分析摘要（面向用户的简短文本）
             analysis_summary = self._generate_analysis_summary(symbol, latest_price, latest_signal, forecasts)
             
             # 获取当前最大版本号
@@ -275,7 +389,7 @@ class TaskManager:
             # 立即提交更新，确保数据一致性
             session.commit()
             
-            # 创建新报告
+            # 创建新报告（注意：将部分对象转为 JSON 文本存储）
             new_report = Report(
                 symbol=symbol,
                 version=next_version,
@@ -299,7 +413,14 @@ class TaskManager:
             return False
     
     def _calculate_data_quality(self, price_data, signal_data, forecasts) -> float:
-        """计算数据质量评分 (0-10)"""
+        """计算数据质量评分 (0-10)
+
+        经验规则：
+        - 有最近价格且带有效成交量 → 加权加分。
+        - 技术指标信号越完整（MA/RSI/MACD）→ 分数越高。
+        - 预测数据条数越多 → 最高再加 2 分（设上限）。
+        注：此为启发式打分，仅用于 UI 提示，不代表统计意义。
+        """
         score = 0.0
         
         # 价格数据质量 (40%)
@@ -323,7 +444,11 @@ class TaskManager:
         return round(score, 2)
     
     def _calculate_prediction_confidence(self, forecasts) -> float:
-        """计算预测置信度 (0-1)"""
+        """计算预测置信度 (0-1)
+
+        方法：使用预测区间宽度相对 yhat 的比率作为不确定性度量；
+        区间越窄 → 置信度越高；限制在 [0,1]。
+        """
         if not forecasts:
             return 0.0
         
@@ -348,7 +473,12 @@ class TaskManager:
         return round(confidence, 3)
     
     def _generate_analysis_summary(self, symbol: str, price_data, signal_data, forecasts) -> str:
-        """生成分析摘要"""
+        """生成分析摘要
+
+        目标：
+        - 面向普通投资者的简洁描述，包含收盘价、涨跌幅、信号建议与最近预测。
+        - 控制长度，避免夸大或产生投资建议责任。
+        """
         summary_parts = []
         
         if price_data and price_data.close:
@@ -393,11 +523,12 @@ class TaskManager:
     
     async def process_tasks(self):
         """处理待处理的任务"""
+        # 并发控制：若已达上限则本轮不再分发
         if len(self.running_tasks) >= self.max_concurrent_tasks:
             return
         
         with SessionLocal() as session:
-            # 获取待处理任务
+            # 获取待处理任务（按优先级升序、创建时间升序排队）
             tasks = session.execute(
                 select(Task).where(Task.status == TaskStatus.PENDING)
                 .order_by(Task.priority.asc(), Task.created_at.asc())
@@ -407,11 +538,14 @@ class TaskManager:
             for task in tasks:
                 if task.id not in self.running_tasks:
                     self.running_tasks.add(task.id)
-                    # 异步执行任务
+                    # 异步执行任务：封装到 _execute_task_wrapper 中统一处理
                     asyncio.create_task(self._execute_task_wrapper(task.id))
     
     async def _execute_task_wrapper(self, task_id: int):
-        """任务执行包装器"""
+        """任务执行包装器
+
+        作用：根据任务类型分派到对应处理器；确保 finally 中移除 running 状态，避免泄漏。
+        """
         try:
             if task_id in self.running_tasks:
                 # 获取任务类型并执行相应的处理器
@@ -442,13 +576,13 @@ class TaskManager:
                 logger.warning(f"News task {task_id} not found or not pending")
                 return False
             
-            # 更新任务状态为运行中
+            # 状态迁移：PENDING → RUNNING，并记录开始时间
             task.status = TaskStatus.RUNNING
             task.started_at = datetime.utcnow()
             session.commit()
             
             try:
-                # 执行新闻收集
+                # 执行新闻收集（智能策略或手动指定 symbol）
                 success = await self._collect_news_for_task(task, session)
                 
                 if success:

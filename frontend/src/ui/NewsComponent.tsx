@@ -305,31 +305,34 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
   };
 
   return (
-    <div className="w-full h-full">
-      {/* Compact Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
-              <path d="M14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-xl font-bold text-gray-900 truncate">
-              {selectedStock ? `${selectedStock} 财经新闻` : '财经新闻'}
-            </h2>
-            {selectedStock && watchlist.find(w => w.symbol === selectedStock) && (
-              <p className="text-xs text-gray-500 mt-0.5 truncate">
-                {watchlist.find(w => w.symbol === selectedStock)?.name}
-              </p>
-            )}
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-[1200px] mx-auto space-y-4">
+        {/* Header Card */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                  <path d="M14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-[20px] font-bold text-gray-900 truncate">
+                  {selectedStock ? `${selectedStock} 财经新闻` : '财经新闻'}
+                </h2>
+                {selectedStock && watchlist.find(w => w.symbol === selectedStock) && (
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                    {watchlist.find(w => w.symbol === selectedStock)?.name}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Stock Selector and Search Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-8">
+  {/* Stock Selector and Search Layout */}
+  <div className="flex flex-col lg:flex-row gap-6">
         {/* Left: Stock Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:w-auto">
           <div className="relative">
@@ -431,7 +434,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchNews()}
-                className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:shadow-md transition-shadow duration-200"
               />
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -457,7 +460,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
               <select
                 value={sentimentFilter}
                 onChange={(e) => setSentimentFilter(e.target.value as any)}
-                className="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200"
               >
                 <option value="all">全部情感</option>
                 <option value="positive">😊 积极</option>
@@ -498,7 +501,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
         </div>
       )}
 
-      {/* News List */}
+  {/* News List */}
       {loading ? (
         <div className="flex items-center justify-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="flex flex-col items-center gap-6">
@@ -562,7 +565,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:text-blue-600 transition-colors"
+                          className="no-underline text-gray-900 hover:underline hover:text-blue-600 transition-colors"
                         >
                           {article.title}
                         </a>
@@ -649,6 +652,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -16,7 +16,9 @@ tests/
     ├── test_pipeline.py         # 数据管道测试
     ├── test_searxng.py          # SearXNG服务集成测试
     ├── test_services.py         # 后端服务连接测试
-    └── test_news_api.py         # 新闻API集成测试
+    ├── test_news_api.py         # 新闻API集成测试
+    ├── test_news_smoke.py       # 新闻API冒烟测试
+    └── test_news_cleanup.py     # 新闻清理API冒烟测试
 ```
 
 ## 使用方法
@@ -46,6 +48,12 @@ python tests/integration/test_services.py
 
 # 新闻API测试
 python tests/integration/test_news_api.py
+
+# 新闻API冒烟测试
+python tests/integration/test_news_smoke.py
+
+# 新闻清理API冒烟测试（需API服务）
+python tests/integration/test_news_cleanup.py
 ```
 
 ### 4. 运行数据测试（不需要API服务器）
@@ -83,5 +91,6 @@ python tests/run_tests.py --api-url http://localhost:8080
 
 ## 注意事项
 - 运行API测试前确保后端服务器正在运行
+- 清理API支持dry_run预览，默认不修改数据库；生产环境请谨慎使用delete_blacklisted=true
 - 数据管道测试会实际执行数据处理，可能需要较长时间
 - 测试过程中会在数据库中创建/修改数据，建议在测试环境运行

@@ -58,12 +58,17 @@ class TestRunner:
         # 定义测试列表
         unit_tests = [
             ("tests/unit/test_stock_info.py", "股票信息单元测试"),
+            ("tests/unit/test_url_filtering.py", "URL过滤单元测试"),
+            ("tests/unit/test_dedup.py", "去重机制单元测试"),
+            ("tests/unit/test_content_quality.py", "内容质量单元测试"),
         ]
         
         integration_tests = [
             ("tests/integration/test_services.py", "后端服务连接测试"),
             ("tests/integration/test_searxng.py", "SearXNG集成测试"),
             ("tests/integration/test_news_api.py", "新闻API集成测试"),
+            ("tests/integration/test_news_smoke.py", "新闻API冒烟测试"),
+            ("tests/integration/test_news_cleanup.py", "新闻清理API冒烟测试"),
             ("tests/integration/test_pipeline.py", "数据管道测试"),
         ]
         

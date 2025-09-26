@@ -41,8 +41,11 @@
 
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import 'antd/dist/reset.css'
 import './index.css'
 import App from './ui/App'
+import { ConfigProvider, theme } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
 
 // 开发环境提示和额外保护
 const isDevelopment = window.location.hostname === 'localhost';
@@ -51,4 +54,16 @@ if (isDevelopment) {
   console.info('%c📢 Extension errors are filtered - your app is working normally', 'color: #ffa500; font-size: 12px;');
 }
 
-createRoot(document.getElementById('root')!).render(<App />)
+createRoot(document.getElementById('root')!).render(
+  <ConfigProvider
+    locale={zhCN}
+    theme={{
+      algorithm: [theme.compactAlgorithm, theme.defaultAlgorithm],
+      token: {
+        borderRadius: 8,
+      }
+    }}
+  >
+    <App />
+  </ConfigProvider>
+)

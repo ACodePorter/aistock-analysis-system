@@ -2,7 +2,11 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Area, ComposedChart, Legend } from 'recharts'
 import Dashboard from './Dashboard'
+import FundFlowPanel from './FundFlowPanel'
+import WatchlistSnapshot from './WatchlistSnapshot'
+import WatchlistAnalysis from './WatchlistAnalysis'
 import ModernNewsComponent from './ModernNewsComponent'
+import NewsManagement from './NewsManagement'
 import { API_BASE, buildApiUrl } from '../config/api'
 
 async function jfetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -272,7 +276,7 @@ function Metric({ label, value }: { label: string; value: React.ReactNode }){
 }
 
 export default function App(){
-  const [currentPage, setCurrentPage] = useState<'main' | 'dashboard' | 'news'>('main')
+  const [currentPage, setCurrentPage] = useState<'main' | 'dashboard' | 'news' | 'news-management'>('main')
   const [watch, setWatch] = useState<WatchItem[]>([])
   const [current, setCurrent] = useState<string | undefined>(undefined)
   const [report, setReport] = useState<ReportResp | undefined>(undefined)
@@ -592,6 +596,20 @@ export default function App(){
           >
             财经新闻
           </button>
+          <button 
+            onClick={() => setCurrentPage('news-management')}
+            style={{
+              padding:'8px 16px', 
+              border:'none', 
+              borderRadius:6, 
+              background: currentPage === 'news-management' ? '#3b82f6' : 'transparent',
+              color: currentPage === 'news-management' ? '#fff' : '#6b7280',
+              cursor:'pointer',
+              fontWeight: currentPage === 'news-management' ? '500' : 'normal'
+            }}
+          >
+            新闻管理
+          </button>
         </nav>
       </div>
       <button 
@@ -616,6 +634,11 @@ export default function App(){
     <div>
     <div style={{display:'grid', gridTemplateColumns:'2fr 1fr', gap:12}}>
       <div style={{padding:12, border:'1px solid #e5e7eb', borderRadius:12}}>
+
+        {/* 自选实时看板 */}
+        <WatchlistSnapshot />
+
+        <div style={{height:12}} />
 
         <div style={{display:'flex', gap:8, marginBottom:20, alignItems:'center'}}>
           <div style={{position: 'relative', display: 'flex', alignItems: 'center', flex: 1}}>
@@ -792,6 +815,9 @@ export default function App(){
           <div>• 🤖 SARIMAX + Ridge 预测建模</div>
           <div>• 📈 生成5天价格预测</div>
           <div>• 📝 更新分析报告</div>
+        </div>
+        <div style={{marginTop:12}}>
+          <FundFlowPanel />
         </div>
       </div>
     </div>
@@ -977,6 +1003,11 @@ export default function App(){
       <div style={{fontSize:12, color:'#6b7280'}}>当目标日期已过去，系统将用实际收盘与当日预测均值比对，计算误差（如 MAPE）。</div>
     </div>
 
+    {/* 近1-2周数据分析与建议 */}
+    <div style={{marginTop:12}}>
+      <WatchlistAnalysis />
+    </div>
+
     <div style={{fontSize:12, color:'#6b7280', marginTop:12}}>
       仅供学习研究，不构成投资建议。
     </div>
@@ -1002,6 +1033,10 @@ export default function App(){
     ) : currentPage === 'dashboard' ? (
       <div style={{padding: '12px', border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff'}}>
         <Dashboard />
+      </div>
+    ) : currentPage === 'news-management' ? (
+      <div style={{background: 'transparent', padding: 0, border: 'none'}}>
+        <NewsManagement />
       </div>
     ) : (
       <div style={{background: 'transparent', padding: 0, border: 'none'}}>

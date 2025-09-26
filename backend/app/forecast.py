@@ -56,6 +56,17 @@ def feature_regression_forecast(df: pd.DataFrame, ahead_days: int = 5):
     ])
     pipe.fit(X[:-ahead_days], y[:-ahead_days])
     sigma = np.std(y - pipe.predict(X))
+    """
+    针对 DataFrame 进行预测并返回结构化结果
+
+    Args:
+        df: 包含 trade_date, close 列的历史数据（升序）
+        ema_span: EMA 平滑窗口（默认10）
+        horizon: 预测步数（默认5）
+
+    Returns:
+        DataFrame: 列包含 [step, predict, confidence]
+    """
     
     # 改进预测逻辑，使每天的预测都有所不同
     preds, lo, hi = [], [], []

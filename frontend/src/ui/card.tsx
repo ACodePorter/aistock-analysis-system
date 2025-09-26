@@ -3,11 +3,19 @@ import React from 'react';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  variant?: 'default' | 'soft' | 'ghost' | 'bare';
+  style?: React.CSSProperties;
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export function Card({ children, className = '', variant = 'default', style }: CardProps) {
+  const base = {
+    default: 'bg-white rounded-lg border border-gray-200 shadow-sm',
+    soft: 'bg-gray-50/80 rounded-lg shadow-sm border-0',
+    ghost: 'bg-transparent rounded-lg border-0 shadow-none',
+    bare: 'rounded-lg shadow-sm border-0',
+  }[variant];
   return (
-    <div className={`bg-white rounded-lg border shadow-sm ${className}`}>
+    <div className={`${base} ${className}`} style={style}>
       {children}
     </div>
   );

@@ -1,1073 +1,325 @@
-# 🚀 AI Stock Ana### 📊 Technical Analysis
-- **Real-time Indicators**: RSI, MACD, Moving Averages, Bollinger Bands
-- **Signal Generation**: Buy/sell signals with scoring algorithms
-- **Historical Backtesting**: Performance tracking and validation
+# 🚀 AI股票分析系统（全中文说明）
 
-### 📰 News Knowledge Base (NEW)
-- **Intelligent Collection**: Auto-generates search strategies based on your watchlist stocks
-- **Multi-source Aggregation**: Integrated SearXNG with support for Baidu, Google, Bing
-- **Smart Strategies**: Individual stock, industry, policy, and market-wide news collection
-- **Sentiment Analysis**: Real-time news sentiment scoring (positive/negative/neutral)
-- **Stock Association**: Automatic detection of stock symbols and relevance scoring
-- **Automated Scheduling**: Intelligent collection every 4 hours with frequency control
+一个面向中国A股市场的智能分析与新闻监控平台，集成 AI 预测、技术指标、智能新闻收集与情感分析、任务调度与可视化前端，支持本地与 Docker 一键部署。
 
-### 🤖 Automated SystemSystem
+---
 
-[![GitHub Stars](https://img.shields.io/github/stars/mxmore/aistock-analysis-system)](https://github.com/mxmore/aistock-analysis-system)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org)
-[![React](https://img.shields.io/badge/react-18+-blue.svg)](https://reactjs.org)
+## ✨ 核心功能
 
-A comprehensive AI-powered stock analysis system featuring neural network predictions, technical indicators, and real-time monitoring for Chinese A-share markets.
+- 🤖 AI预测与报告：神经网络多步预测（含置信区间）、自动生成分析报告
+- 📊 技术指标与信号：RSI/MACD/均线/布林带等指标与多维评分
+- 📰 新闻管理中心：多源聚合、情感分析、去重、按股票归档与批量操作
+- 🔄 自动化调度：每日/小时级采集与预测，任务状态与仪表盘
+- 💾 混合存储：PostgreSQL + MongoDB + Redis（可选）
+- 💻 现代前端：React + TypeScript + Vite + TailwindCSS
 
-## ✨ Key Features
+---
 
-### 🧠 Advanced AI Predictions
-- **Neural Network Forecasting**: Multi-layer perceptron (MLPRegressor) with 20+ engineered features
-- **Enhanced Feature Engineering**: Lagged prices, volatility, RSI, Bollinger Bands, moving averages
-- **Multi-step Prediction**: Realistic market volatility modeling with recursive forecasting
-- **Confidence Intervals**: Scientific uncertainty estimation with 80% confidence bounds
+## 🧱 技术栈
 
-### 📊 Technical Analysis
-- **Real-time Indicators**: RSI, MACD, Moving Averages, Bollinger Bands
-- **Signal Generation**: Buy/sell signals with scoring algorithms
-- **Historical Backtesting**: Performance tracking and validation
+- 后端：FastAPI、SQLAlchemy、PostgreSQL、Redis、MongoDB（可选）
+- AI/数据：scikit-learn、pandas、NumPy
+- 前端：React 18、TypeScript、Vite、Recharts、TailwindCSS
+- 部署：Docker Compose、Nginx
 
-### � Automated System
-- **Data Pipeline**: Automated daily data collection from AkShare/Tushare
-- **Report Generation**: AI-powered analysis reports with predictions
-- **Task Management**: Asynchronous task processing and scheduling
+---
 
-### 💻 Modern Tech Stack
-- **Backend**: FastAPI, PostgreSQL, SQLAlchemy, scikit-learn
-- **Frontend**: React 18, TypeScript, Recharts, Vite
-- **Deployment**: Docker Compose, Nginx
-- **AI Models**: Neural Networks, Random Forest, SARIMAX
+## ⚡ 快速开始
 
-## 🎯 Performance Highlights
+### 1. 克隆仓库
 
-Our enhanced prediction system delivers significant improvements over traditional methods:
-
-- **🎪 Real Market Volatility**: Generates predictions with realistic price fluctuations (CV: 8-34%)
-- **🔮 High Accuracy**: Neural network predictions with 85% confidence scores
-- **📈 Dynamic Trends**: Captures market patterns including uptrends, downtrends, and consolidations
-- **⚡ Fast Processing**: Multi-threaded prediction engine with caching
-
-## 📋 Quick Start
-
-### Prerequisites
-- Python 3.12+
-- Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL 14+
-
-### 1. Clone Repository
 ```bash
 git clone https://github.com/mxmore/aistock-analysis-system.git
 cd aistock-analysis-system
 ```
 
-### 2. Configuration
+### 2. 配置环境
+
 ```bash
 cp .env.example .env
-# Edit .env with your database and API configurations
+# 按需修改数据库、SearXNG、OpenAI等配置
 ```
 
-### 3. Docker Deployment (Recommended)
+### 3. 使用 Docker 一键启动（推荐）
+
 ```bash
 docker compose up -d --build
 ```
 
-Access the application:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
-- **SearXNG Search**: http://localhost:8080
+访问：
 
-### 4. Quick Start with Intelligent News
+- 前端：[http://localhost:3000](http://localhost:3000)（或 [http://localhost:8081](http://localhost:8081)）
+- 后端API：[http://localhost:8080](http://localhost:8080)
+- API文档：[http://localhost:8080/docs](http://localhost:8080/docs)
+- SearXNG（新闻搜索）：[http://localhost:10000](http://localhost:10000)（如已启用）
 
-After deployment, try the intelligent news collection:
+### 本地开发（可选）
 
-```bash
-# Run the demonstration script
-chmod +x demo.sh
-./demo.sh
+后端：
 
-# Or manually:
-# 1. Add some stocks to your watchlist
-curl -X POST "http://localhost:8000/api/watchlist" \
-  -H "Content-Type: application/json" \
-  -d '{"symbol": "000001", "name": "平安银行", "sector": "金融"}'
-
-# 2. Check generated strategies
-curl "http://localhost:8000/api/news/strategies"
-
-# 3. Run intelligent collection
-curl -X POST "http://localhost:8000/api/news/collect/intelligent"
-
-# 4. View collected news
-curl "http://localhost:8000/api/news/articles"
-```
-
-### 5. Local Development
-
-#### Backend Setup
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
+venv\Scripts\activate  # Windows PowerShell
 pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-#### Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## 📁 Project Structure
-
-```
-aistock-analysis-system/
-├── backend/                    # FastAPI backend service
-│   ├── app/
-│   │   ├── main.py            # Main FastAPI application
-│   │   ├── forecast.py        # Basic prediction models
-│   │   ├── forecast_enhanced.py  # Enhanced neural network models
-│   │   ├── models.py          # SQLAlchemy database models
-│   │   ├── db.py              # Database configuration
-│   │   ├── data_source.py     # Data collection (AkShare/Tushare)
-│   │   ├── signals.py         # Technical indicators
-│   │   ├── scheduler.py       # Task scheduling
-│   │   ├── report.py          # Report generation
-│   │   ├── news_service.py    # News search and collection
-│   │   ├── news_strategy.py   # News processing and analysis
-│   │   └── task_manager.py    # Async task management
-│   ├── scripts/               # Development and management scripts
-│   │   ├── dev_server.py      # Unified development server
-│   │   ├── manage.py          # Project management commands
-│   │   └── README.md          # Scripts documentation
-│   ├── tests/                 # Comprehensive test suite
-│   │   ├── unit/              # Unit tests
-│   │   ├── integration/       # Integration tests
-│   │   ├── data/              # Data tests
-│   │   └── run_tests.py       # Test runner
-│   └── requirements.txt       # Python dependencies
-├── frontend/                  # React frontend
-│   ├── src/
-│   │   ├── main.tsx          # Entry point
-│   │   └── ui/
-│   │       ├── App.tsx       # Main application
-│   │       └── Dashboard.tsx  # Stock dashboard
-│   ├── package.json          # Node.js dependencies
-│   └── vite.config.ts        # Vite configuration
-├── initdb/                   # Database initialization
-├── docker-compose.yml       # Docker deployment
-├── .env.example             # Environment template
-└── README.md               # Project documentation
-```
-
-## 🔧 API Documentation
-
-### Core Endpoints
-
-#### Stock Reports
-- `GET /api/report/{symbol}` - Get latest stock report
-- `GET /api/report/{symbol}/full` - Get complete historical + prediction data
-- `POST /reports/{symbol}/regenerate` - Regenerate stock report
-
-#### Predictions
-- `GET /forecasts/{symbol}` - Get price forecasts
-- `POST /forecast/generate/{symbol}` - Generate new predictions
-
-#### Real-time Data
-- `GET /prices/{symbol}` - Get historical prices
-- `GET /signals/today` - Get today's technical signals
-- `GET /stocks/search` - Search stocks by name/code
-
-#### Task Management
-- `GET /tasks/pending` - Get pending tasks
-- `POST /tasks/create_report/{symbol}` - Create report task
-- `POST /tasks/check_missing` - Check for missing reports
-
-### Example Response
-```json
-{
-  "symbol": "002649.SZ",
-  "prediction_confidence": 0.85,
-  "predictions": [
-    {
-      "day": 1,
-      "predicted_price": 14.48,
-      "lower_bound": 13.81,
-      "upper_bound": 15.14
-    }
-  ],
-  "method": "neural_network",
-  "analysis_summary": "使用neural_network方法生成预测"
-}
-```
-
-## 🧮 Enhanced Prediction Models
-
-### Neural Network Architecture
-- **Model**: Multi-layer Perceptron (100-50-25 neurons)
-- **Features**: 20+ engineered features including:
-  - Lagged prices (1-5 days)
-  - Returns (1, 5, 10 days)
-  - Moving averages (5, 10, 20 days)
-  - Exponential moving averages (12, 26 days)
-  - Technical indicators (RSI, Bollinger Bands)
-  - Volume analytics and volatility metrics
-
-### Prediction Pipeline
-1. **Data Preprocessing**: Feature engineering and normalization
-2. **Model Training**: Recursive time series learning
-3. **Multi-step Forecasting**: Dynamic feature updating
-4. **Uncertainty Quantification**: Confidence interval estimation
-5. **Volatility Modeling**: Realistic market noise simulation
-
-### Performance Metrics
-- **Prediction Accuracy**: 85% confidence score
-- **Volatility Capture**: 8-34% coefficient of variation
-- **Market Realism**: Non-flat prediction lines with trend variations
-
-## 🔑 Configuration
-
-### Environment Variables
-```bash
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/aistock
-
-# Data Sources
-DATA_SOURCE=akshare  # or tushare
-TUSHARE_TOKEN=your_token_here
-
-# AI Services (Optional)
-AZURE_OPENAI_API_KEY=your_key
-AZURE_OPENAI_ENDPOINT=your_endpoint
-
-# Scheduling
-TZ=Asia/Shanghai
-FORECAST_AHEAD_DAYS=5
-```
-
-### Data Source Configuration
-- **AkShare**: Free, no registration required (default)
-- **Tushare**: Requires token, more comprehensive data
-- **Custom**: Implement your own data source interface
-
-## 🧪 Testing
-
-Run the comprehensive test suite:
-```bash
-cd backend
-python -m pytest tests/ -v
-```
-
-Test categories:
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: API endpoint testing
-- **Data Tests**: Data integrity validation
-- **Performance Tests**: Load and prediction accuracy testing
-
-## 📊 Monitoring & Observability
-
-### Metrics Dashboard
-- Prediction accuracy tracking
-- API response times
-- Data freshness indicators
-- System health metrics
-
-### Logging
-- Structured JSON logging
-- Error tracking and alerting
-- Performance monitoring
-- Audit trails for predictions
-
-## 🚀 Deployment
-
-### Production Deployment
-```bash
-# Build and deploy
-docker compose -f docker-compose.prod.yml up -d --build
-
-# Scale services
-docker compose up --scale api=3
-
-# Update services
-docker compose pull && docker compose up -d
-```
-
-### Health Checks
-- Database connectivity
-- Data source availability
-- Model loading status
-- API endpoint health
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-- Follow PEP 8 for Python code
-- Use TypeScript for frontend development
-- Write tests for new features
-- Update documentation as needed
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-
-This software is for educational and research purposes only. All predictions and analysis are for informational purposes and should not be considered as financial advice. Always consult with qualified financial advisors before making investment decisions.
-
-## 🙏 Acknowledgments
-
-- [AkShare](https://github.com/akfamily/akshare) - Open source financial data interface
-- [Tushare](https://tushare.pro/) - Professional financial data provider
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework for Python APIs
-- [React](https://reactjs.org/) - Frontend library for user interfaces
-- [scikit-learn](https://scikit-learn.org/) - Machine learning library for Python
-
----
-
-<div align="center">
-  <p>Made with ❤️ for the Chinese A-share market</p>
-  <p>
-    <a href="https://github.com/mxmore/aistock-analysis-system/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/mxmore/aistock-analysis-system/issues">Request Feature</a>
-  </p>
-</div>
-# 启动 FastAPI
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-### 3. 前端初始化与启动
+前端：
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-- 前端默认端口：8081
-- 后端默认端口：8080
 
-### 4. 数据库初始化
-- 使用 Docker 启动 PostgreSQL：
-```bash
-docker compose up db
+### 在 Conda 环境中编译/启动前端（Windows）
+
+如果你使用 Conda 并已创建 `node1817_env`（包含 Node.js 18.x）：
+
+```powershell
+# 激活 Conda 环境（在 Anaconda Prompt 或 PowerShell 中）
+conda activate node1817_env
+
+# 进入前端目录并安装依赖
+cd frontend
+npm ci ; if ($LASTEXITCODE -ne 0) { npm install }
+
+# 开发启动（默认端口 5173）
+npm run dev
+
+# 生产构建
+npm run build
+
+# 本地预览已构建产物（http://localhost:5173）
+npm run preview
 ```
-- 或手动执行 `initdb/init.sql` 初始化表结构。
+
+注意：如果后端不在同一端口，请在浏览器控制台执行或在 HTML 模板里设置 `window.API_BASE` 指向后端，例如：
+
+```html
+<script>
+  window.API_BASE = 'http://localhost:8080';
+</script>
+```
 
 ---
 
-## 配置说明
-- `.env` 文件需配置：
-  - 数据库连接信息
-  - 数据源类型与 Token（akshare/tushare）
-  - Azure OpenAI 相关参数（endpoint、key、deployment、api-version）
-- 详见 `.env.example` 注释。
+## 📁 目录结构
+
+```text
+aistock-analysis-system/
+├── backend/
+│   ├── app/
+│   │   ├── main.py                # FastAPI主应用（含新闻/任务/报告等API）
+│   │   ├── models.py              # ORM模型
+│   │   ├── news_service.py        # 新闻搜索与入库
+│   │   ├── news_strategy.py       # 智能策略与调度
+│   │   ├── enhanced_news_scheduler.py
+│   │   ├── news_deduplication.py  # 去重逻辑
+│   │   ├── llm_processor.py       # LLM分析
+│   │   └── mongo_storage.py       # MongoDB增强存储（可选）
+│   └── scripts/
+├── frontend/
+│   └── src/ui/                    # App.tsx、Dashboard.tsx、News组件等
+├── searxng/                        # SearXNG配置（可选）
+├── initdb/                         # PostgreSQL初始化脚本
+├── docker-compose.yml              # 一键编排
+└── README.md
+```
 
 ---
 
-## 一键 Docker 启动
-```bash
-docker compose up -d --build
-```
-- 启动后，访问前端 `http://localhost:8081`，后端 API `http://localhost:8080`
+## 📰 新闻管理中心（前端）
+
+新闻的集中管理与分析界面，支持统计、筛选、列表与批量操作，并与智能采集协同工作。
+
+### 功能
+
+- 概览统计：总文章数、今日文章数、情感分布（积极/消极/中性）、热门来源与热门股票
+- 列表筛选：关键字、时间、来源、类别、情感类型、关联股票，支持分页（limit/offset）
+- 交互操作：收藏/取消收藏、标记已读/未读、批量操作、刷新/隐藏统计
+- 智能采集：一键执行“智能采集/每日采集”，查看采集状态与任务进度
+
+### API映射（后台）
+
+- 统计/枚举：
+  - `GET /api/news/stats`、`GET /api/news/sources`、`GET /api/news/categories`、`GET /api/news/sentiment-types`
+- 列表/过滤：
+  - `GET /api/news/articles?category&sentiment&symbol&limit&offset`
+- 操作/批量：
+  - `POST /api/news/{id}/bookmark`、`POST /api/news/{id}/read`、`POST /api/news/batch-update?action=...`、`DELETE /api/news/{id}`
+- 采集/策略：
+  - `POST /api/news/collect/intelligent`、`POST /api/news/collect/daily`、`GET /api/news/collection/status`、`GET /api/news/strategies`、`POST /api/news/strategies/execute/{name}`
+- 个股情感：
+  - `GET /api/news/sentiment/{symbol}?days=7`
+- Mongo存档（可选）：
+  - `GET /api/storage/stock-news/{stock_symbol}`、`GET /api/storage/stock-statistics/{stock_symbol}`、`POST /api/storage/cleanup?days_to_keep=90`
 
 ---
 
-## 生产环境部署与上线流程
-1. 服务器需安装 Docker。
-2. 配置 `.env`，确保所有生产参数正确（如数据库密码、OpenAI Key、前端域名等）。
-3. 构建并启动服务：
-   ```bash
-   docker compose up -d --build
-   ```
-4. 检查日志：
-   ```bash
-   docker compose logs -f
-   ```
-5. 配置域名与 HTTPS（建议 Nginx 反向代理，见 `frontend/nginx.conf`）。
-6. 定期备份数据库。
+## 🔌 API 概览（节选）
+
+- 报告与价格：
+  - `GET /api/report/{symbol}`、`GET /api/report/{symbol}/full`、`GET /prices/{symbol}`
+- 任务与仪表盘：
+  - `GET /api/tasks/status`、`GET /api/dashboard/reports`、`GET /api/dashboard/tasks`
+- 新闻：见“新闻管理中心（前端）→ API映射”
+
+完整接口请参见后端 [http://localhost:8080/docs](http://localhost:8080/docs)。
+
+### 额外健康检查
+
+- `GET /api/llm/health`：检查 LLM 集成（Azure Responses API）是否可用，返回服务类型（azure/local/none）、端点、API 版本、模型/部署名、令牌上限、是否可用、响应预览等。
+
+### 新闻 URL 过滤配置
+
+可通过环境变量控制新闻链接的过滤策略：
+
+- `NEWS_URL_ALLOWLIST`：逗号分隔的子串；设置后，只有包含任一子串的 URL 才会被允许。例如：`tw.stock.yahoo.com/news/,finance.yahoo.com/news/`
+- `NEWS_URL_BLOCKLIST`：逗号分隔的子串；任何包含任一子串的 URL 都会被阻止。例如：`/quote/,/keywords/,/tag/`
 
 ---
 
-## 其他说明
-- 支持自定义调度时间（CRON），默认每日收盘后自动运行。
-- 支持切换数据源与模型。
-- Azure OpenAI 需提前在 Azure Portal 创建部署并获取相关参数。
-- 本项目仅供学习与研究，所有投资决策请谨慎。
+## 🚀 部署与配置
+
+1) 复制并修改 `.env`：数据库、SearXNG、AI服务（Azure OpenAI 等）
+2) 运行 `docker compose up -d --build`
+3) 验证服务：访问前端/后端/API文档
+
+注意：开发环境可选择 MongoDB 无鉴权运行；生产环境务必开启账号与数据保留策略。
 
 ---
 
-## 常见问题
-- 如遇依赖安装失败，请确认 Python/Node 版本与网络环境。
-- Azure OpenAI 报错请检查 endpoint、key、deployment 是否正确。
-- 数据源异常可切换 akshare/tushare 并检查 Token。
+## ❓ 常见问题（FAQ）
+
+- `/api/news/stats` 返回 500？
+  - 请确认数据库表结构一致；`related_stocks` 为 JSONB，统计查询使用 `jsonb_array_elements_text`。
+- 新闻日期为 1970-01-01？
+  - 多为 `published_at` 缺失导致，请在采集/解析阶段补充时间字段。
+- 智能采集无结果？
+  - 检查 SearXNG 服务与网络可用性，或查看 `/api/news/collection/status`。
 
 ---
 
-## 联系与反馈
-如有问题或建议，请在项目 Issue 区留言。
+## 📄 许可证与免责声明
+
+- 本项目采用 MIT License，仅供学习与研究，不构成任何投资建议。
+- 市场有风险，投资需谨慎；请结合自身情况理性决策。
 
 ---
 
-# 功能与架构设计详解
-
-## 主要功能
-- **A股行情数据采集**：支持 AkShare/Tushare，自动拉取每日行情、历史数据。
-- **技术指标计算**：如均线、RSI、MACD等，自动生成信号。
-- **AI预测与报告**：集成 SARIMAX、Ridge 回归等模型，支持 Azure OpenAI 智能摘要。
-- **自选股与回测**：前端支持自选股管理、历史回测、预测结果可视化。
-- **自动调度与定时任务**：每日收盘后自动运行数据采集、预测、报告生成。
-- **多端部署与扩展**：支持本地开发、Docker一键部署、生产环境上线。
-
-## 架构设计
-
-```
-
-+-------------------+      +-------------------+      +-------------------+
-|    Frontend (UI)  |<---->|   Backend (API)   |<---->|   PostgreSQL DB   |
-|  React + Vite     |      |  FastAPI, Python  |      |  数据存储         |
-+-------------------+      +-------------------+      +-------------------+
-        |                        |                          |
-        |                        |                          |
-        |                        |                          |
-        |                        |                          |
-        |                        |                          |
-        |                        |                          |
-        |                        |                          |
-        v                        v                          v
-+-------------------+      +-------------------+      +-------------------+
-|   Azure OpenAI    |<-----|   Scheduler/LLM   |<-----|   Data Source     |
-|   智能摘要/对话   |      |   定时任务/AI     |      |   AkShare/Tushare |
-+-------------------+      +-------------------+      +-------------------+
-```
-
-- **前端**：基于 React + Vite，负责页面展示、用户交互、行情与预测图表、AI报告展示。
-- **后端**：FastAPI 提供 RESTful API，负责数据采集、指标计算、AI预测、报告生成、调度任务。
-- **数据库**：PostgreSQL 存储行情、信号、预测、用户自选股等。
-- **数据源**：AkShare/Tushare，支持灵活切换。
-- **AI能力**：集成 Azure OpenAI，自动生成投资摘要、智能解读。
-- **调度系统**：APScheduler 定时自动运行数据管道。
-- **容器化部署**：Docker Compose 管理多服务，支持一键启动、扩展。
-
-## 典型流程
-1. 定时任务触发，采集最新行情数据。
-2. 计算技术指标，生成买卖信号。
-3. 运行AI预测模型，生成未来走势预测。
-4. 汇总数据，调用 Azure OpenAI 生成智能报告。
-5. 前端展示自选股、预测结果、AI摘要，支持回测与交互。
-
-## 扩展性与安全
-- 支持自定义数据源、模型扩展。
-- 环境变量集中管理，敏感信息不入库。
-- 生产环境建议使用 HTTPS、Nginx 反向代理。
-- 数据库定期备份，支持多用户扩展。
-
-## 适用场景
-- 个人/团队量化研究、A股行情分析、AI投资辅助。
-- 教学演示、数据科学实验、智能报告生成。
+Made for A股研究与学习 ✨
 
 ---
 
-# 股票预测算法详解
+## 🎯 项目目标与架构路线图（面向A股趋势预测）
 
-## 预测策略概述
-系统采用多层次预测策略，结合技术指标分析和机器学习模型，为用户提供短期价格预测和买卖信号。
+本项目的核心目标：持续、尽可能全面地采集与理解财经信息，通过 AI（含 LLM）将非结构化文本转为结构化、可量化的要素与事件，用于构建和训练面向 A 股个股的趋势预测模型，并在在线/批处理场景中稳健服务。
 
-## 技术指标计算规则
+### 1) 端到端流程（从采集到上线）
 
-### 1. 移动平均线 (MA)
-- **短期均线**: 10日移动平均线 `ma_short = close.rolling(10).mean()`
-- **长期均线**: 30日移动平均线 `ma_long = close.rolling(30).mean()`
-- **用途**: 判断价格趋势方向，短均线上穿长均线为看涨信号
+- 采集层：多源抓取（交易所/公告、主流媒体、券商研报、公司IR、监管、宏观日历、社区UGC、替代数据），具备 RSS/站点地图/列表解析、反爬与限流、JS 渲染回退。
+- 清洗与质量层：正文抽取、语言与编码识别、时间/来源规范化；非文章过滤（黑名单+轻量分类）；内容去重（哈希/相似度）；质量仪表板与告警。
+- 结构化抽取层：LLM+规则混合抽取到统一 JSON Schema（实体、事件、指标、情绪、主题、引用与可信度），带约束验证与回退（重试/小模型/规则）。
+- 特征与标签层：时序与图谱特征（事件计数与时衰、主题与情绪、跨文档共现、市场上下文），与目标标签（未来 t+N 收益、方向分类）构建与存储。
+- 模型训练与评估：时间序列交叉验证/滚动回测，避免信息泄露；指标（IC、HitRate、PnL、回撤）与显著性检验；模型集成与稳健性分析。
+- 上线与 MLOps：任务编排、特征仓与模型注册、在线推理与批处理、缓存与成本控制、全链路日志与合规。
 
-### 2. 相对强弱指数 (RSI)
-- **计算周期**: 14日
-- **公式**: `RSI = 100 - (100 / (1 + RS))`，其中 RS = 上涨平均值 / 下跌平均值
-- **信号判断**:
-  - RSI > 70：超买区域，可能下跌
-  - RSI < 30：超卖区域，可能上涨
-  - RSI 接近50：中性区域
+成功标准（示例，可按阶段调整）
 
-### 3. MACD 指标
-- **快线**: 12日EMA - 26日EMA
-- **慢线**: 9日EMA of MACD
-- **信号**: MACD上穿信号线为买入信号
+- 覆盖率：重点源覆盖 > 90%，公告类延迟 < 10 分钟，媒体类 < 30 分钟。
+- 质量：正文抽取成功率 > 98%，非文章误收率 < 1%，重复率 < 2%。
+- 结构化：关键字段（日期/金额/股票）准确率 > 95%，事件类型召回 > 85%。
+- 预测：月度滚动 IC > 0.02、HitRate > 53%、信息比 > 0.4。
 
-## 综合信号评分系统
+### 2) 数据源编目与优先级
 
-### 评分规则 (signal_score)
-```
-基础分数 = 0
-```
+- A 级（强信号/可交易）：上/深交所、巨潮资讯（公告、停复牌、问询函、回购、定增、质押、投资者关系活动等），证监会/央行/统计局/发改委等；公司 IR；权威媒体（每经、上证报、新华社、路透等）。
+- B 级（广覆盖/补充）：门户财经频道（新浪/腾讯/网易/搜狐）、行业与区域媒体（36氪、界面、财新等）。
+- C 级（UGC/替代数据，降权）：雪球、东方财富股吧、贴吧等；招聘、舆情、社交、电商榜单、卫星等（预算与合规允许时）。
 
-#### 1. 均线交叉评分 (±20分)
-- **金叉**: 短均线上穿长均线 → +20分
-- **死叉**: 短均线下穿长均线 → -20分
+抓取策略：优先 RSS/站点地图；否则稳态列表解析（CSS/XPath）+ 回退正文定位；限流与重试、指纹/UA 轮换与缓存；ETag/Last-Modified/正文哈希变更感知。
 
-#### 2. RSI 评分 (±15分)
-- **计算公式**: `min(max(50 - |RSI - 50|, -15), 15)`
-- **说明**: RSI越接近50越好，偏离50越远扣分越多
+### 3) 稳健正文抽取与 JS 回退
 
-#### 3. MACD 评分 (+10分)
-- **条件**: MACD上穿信号线 → +10分
-- **其他情况**: 0分
+- 规则 + readability-lxml + 站点适配；必要表格以 CSV 化附带关键数值；保留引用位置（offset）。
+- 对 JS 门控站点（如报价/图表页），无法抽取正文时标记非文章并跳过，避免浪费 LLM 调用。
+- 自动字符集与语言识别，必要时简繁转换。
 
-### 最终操作建议
-```python
-if signal_score >= 15:
-    action = "BUY"     # 买入
-elif signal_score <= -15:
-    action = "TRIM"    # 减仓
-else:
-    action = "HOLD"    # 持有
-```
+### 4) 非文章与噪声过滤、去重
 
-## 价格预测模型
+- 黑名单：域/路径级非文章 URL 家族预过滤（如 quote/概念/公司资料/列表页/日历页/UGC Hub 等）；采集前与入库前双重拦截。
+- 轻量分类：基于标题/正文长度、DOM 密度、关键词（如“请启用 JavaScript”、“公司高管”、“行情中心”、“报价”等）判别；阈值可调。
+- 去重：URL 规范化哈希；正文指纹（MinHash/SimHash）近重复聚类；保留最早或信息量更高版本。
 
-### 模型选择策略
-系统采用多模型备份策略，按优先级依次尝试：
+### 5) LLM 结构化抽取（可验证/可回退）
 
-### 1. 特征回归模型 (Ridge Regression) - 首选
-**数据要求**: 至少80条历史记录
-
-**特征工程**:
-```python
-features = [
-    "ret1",     # 1日收益率
-    "ma5",      # 5日均线
-    "ma10",     # 10日均线  
-    "ema12",    # 12日指数移动平均
-    "ema26",    # 26日指数移动平均
-    "vol_z"     # 成交量标准化 (Z-score)
-]
-```
-
-**预测流程**:
-1. **数据预处理**: StandardScaler标准化特征
-2. **模型训练**: RidgeCV交叉验证选择最佳正则化参数
-3. **置信区间**: 预测值 ± 1.28 × 残差标准差 (80%置信区间)
-4. **滚动预测**: 逐日预测未来5个交易日价格
-
-**优势**: 考虑多维度技术指标，预测相对稳定
-
-### 2. SARIMAX 时间序列模型 - 备选
-**数据要求**: 至少60条历史记录
-
-**模型参数**:
-- **ARIMA阶数**: (1,1,1) - 1阶自回归，1阶差分，1阶移动平均
-- **季节性**: (0,0,0,0) - 不考虑季节性
-- **约束**: 不强制平稳性和可逆性
-
-**置信区间**: 模型内置的80%置信区间
-
-**优势**: 纯时间序列方法，适合趋势明显的股票
-
-### 3. 线性趋势模型 - 保底
-**数据要求**: 至少5条历史记录
-
-**计算方法**:
-```python
-recent_trend = (close[-1] - close[-5]) / 5  # 最近5日平均变化
-predicted_price = last_price + (i + 1) * recent_trend
-confidence_interval = predicted_price ± 5%  # 固定5%置信区间
-```
-
-**优势**: 简单可靠，任何情况下都能给出预测
-
-## 预测结果输出格式
+统一 Schema（示意）：
 
 ```json
 {
-    "symbol": "002594.SZ",
-    "method": "feature_regression",  // 使用的模型
-    "confidence": 0.8,               // 置信度
-    "predictions": [
-        {
-            "day": 1,
-            "predicted_price": 105.63,
-            "lower_bound": 103.60,
-            "upper_bound": 107.65
-        },
-        // ... 未来5天预测
-    ]
+  "id": "...", "url": "...", "source": "...", "published_dt": "...",
+  "entities": {"companies": [{"name": "...", "ticker": "..."}], "people": [], "locations": []},
+  "events": [{"type": "投资/并购/回购/中标/产能/诉讼/...", "time": "...", "values": {"amount": 1.23e8, "pct": 0.12}, "counterparties": ["..."]}],
+  "financial_metrics": {"revenue": {"value": 1.23e9, "yoy": 0.15}, "net_income": {"value": 2.3e8, "yoy": -0.05}},
+  "sentiment": {"type": "positive|neutral|negative", "score": 0.62},
+  "topics": ["AI", "新能源"],
+  "confidence": {"extraction": 0.9, "source_rank": "A"},
+  "quotes": [{"text": "...", "start": 120, "end": 180}],
+  "tables": [{"name": "...", "csv": "..."}]
 }
 ```
 
-## 📰 新闻知识库功能（NEW）
+执行策略：JSON Schema 硬约束提示；第 1 次用中等模型，第 2 次回退小模型+规则抽取关键字段，第 3 次入人工/死信队列（可选）。
+验证策略：数值/文本核对（金额/百分比回查原文）、实体对齐证券主表（歧义消解）、事件字典校验、时区与交易日口径对齐。
+成本控制：正文哈希缓存、按源/主题分层缓存、热点源小模型优先。
 
-### 系统架构
-```
-SearXNG + Redis + MongoDB + PostgreSQL
-    ↓
-  新闻搜索 → 内容解析 → 情感分析 → 股票关联
-    ↓
-  自动收集 → 数据存储 → API接口 → 前端展示
-```
+### 6) 特征工程与标签
 
-### 部署新闻功能
+- 文本/情绪：文章级与公司级近 N 日情绪均值/极值、主题分布、关键词向量。
+- 事件强度：事件计数与时衰、金额对数尺度、同业分位数。
+- 共现图谱：公司-事件-主题三部图共现度与传播路径。
+- 市场上下文：波动率、换手、指数/行业因素、宏观脉冲变量。
 
-#### 1. 启动SearXNG服务
-```bash
-cd searxng
-docker-compose up -d
-```
+标签设计：
 
-#### 2. 配置环境变量
-```bash
-# 在 .env 文件中添加
-SEARXNG_URL=http://localhost:10000
-MONGO_USER=admin
-MONGO_PASSWORD=password123
-NEWS_COLLECTION_ENABLED=true
-```
+- 二分类方向（t+1/t+5/t+10 交易日收益正负，阈值 epsilon 可设）。
+- 回归（未来收益百分比/alpha）。
+- 事件窗口（公告用事件窗，媒体用自然日/交易日滑窗）。
 
-#### 3. 新闻API接口
+注意：严格避免信息泄露（特征生成仅使用当时可得信息与滞后口径；滚动切片构造训练/验证集）。
 
-**搜索新闻**
-```http
-POST /api/news/search
-{
-  "query": "比亚迪 新能源",
-  "category": "news",
-  "time_range": "week"
-}
-```
+### 7) 模型与评估
 
-**获取股票新闻**
-```http
-GET /api/news/stock/002594.SZ?limit=20
-```
+- 候选：LightGBM/XGBoost、时间卷积/Transformer、图模型（预算允许时）；多模型集成。
+- 验证：时间序列交叉验证/滚动回测；IC/RankIC、HitRate、Precision@K、策略收益/回撤；组内（行业/市值）分层与显著性检验。
+- 消融与漂移：特征消融评估贡献；特征分布漂移与 PSI 监控。
 
-**情感分析**
-```http
-GET /api/news/sentiment/002594.SZ?days=7
-```
+### 8) MLOps 与成本/合规
 
-#### 4. 访问新闻界面
-- 在系统中点击"财经新闻"选项卡
-- 支持搜索、过滤和情感分析
-- 自动关联当前选中的股票
+- 编排：抓取→清洗→结构化→入库→特征→训练/推理；失败重试与告警。
+- 特征仓：离线（Parquet/Delta）+ 在线（Redis/特征服务）。
+- 模型注册：版本、指标、A/B 与影子发布，可回滚。
+- 日志与审计：采集/抽取/Prompt 记录；来源与版权标注；遵循 robots/许可条款。
+- 成本：LLM 调用阈值与限额，缓存命中率与单文档成本监控。
 
-### 新闻功能特性
-- 🔍 **多源搜索**: 百度、谷歌、必应新闻聚合
-- 🤖 **智能解析**: 自动提取标题、内容、发布时间
-- 💭 **情感分析**: 正面/负面/中性情感评分
-- 📊 **股票关联**: 自动识别新闻中的股票代码
-- ⏰ **定时收集**: 每4小时自动收集最新新闻
-- 🔄 **去重处理**: 基于URL和内容的智能去重
+### 9) 近期落地改造（与本仓库对齐）
 
-## 风险提示与免责声明
+- 后端默认黑名单：将已识别的非文章 URL 家族（报价/概念/公司资料/列表页/日历页/UGC Hub 等）加入后端持久黑名单，在采集前与入库前过滤。
+- JS 门控判别：正文出现“请启用 JavaScript”等直接标记非文章并跳过。
+- 内容哈希去重：对 `backend/app/news_service.py`/`data_source.py` 接入正文哈希与近重复检查。
+- 结构化抽取任务化：抽取/验证/回退封装为可重试任务（含限流与死信队列）。
+- 质量仪表板：每日源覆盖率、非文章拦截率、重复率、抽取成功率、LLM 失败与重试率、成本与延迟。
+- 脚本对齐：`scripts/extended_news_cleanup.py` 已内置多类非文章模式；建议将关键模式同步为后端黑名单以源头治理。
 
-### ⚠️ 重要提醒
-1. **仅供研究学习**: 所有预测结果仅用于技术研究和教学目的
-2. **不构成投资建议**: 任何预测都不应作为实际投资决策的唯一依据
-3. **市场风险**: 股市有风险，投资需谨慎，过往表现不代表未来结果
-4. **模型局限性**: 技术分析无法预测突发事件对股价的影响
+### 10) 开发守则（持续对齐目标）
 
-### 算法局限性
-- **短期预测**: 仅适用于1-5天的短期预测
-- **技术面分析**: 主要基于技术指标，未考虑基本面因素
-- **市场环境**: 在极端市场条件下预测准确性可能下降
+1. 任何新增数据源/接口，必须明确其“是否为正文内容”，避免引入纯列表/行情/资料页。
+2. 提交新功能时，说明如何提升“覆盖率/可用率/结构化准确率/成本效率”四类指标之一。
+3. 结构化与特征变更需给出字段定义与兼容策略，避免线上断裂。
+4. 严格避免信息泄露：只用当时可得信息构造特征与样本。
+5. 关注成本：缓存优先、分层分流、小模型/规则优先，LLM 调用可观测、可限流。
+6. 合规第一：来源标注、版权遵循、隐私保护与审计留痕。
 
-### 使用建议
-- 结合其他分析方法使用
-- 关注置信区间范围
-- 定期回测验证预测效果
-- 建立合理的风险管理机制
-
----
-
-# 📦 快速部署与使用指南
-
-（以下内容来自 QUICK_START.md）
-
-# 🚀 快速部署指南
-
-## AI股票分析系统 + SearXNG新闻知识库
-
-### 一、环境准备
-
-- **服务器**：推荐使用 Ubuntu 20.04+ 或 CentOS 7+
-- **Docker**：安装 Docker 和 Docker Compose
-- **域名**：准备好域名并解析到服务器 IP
-
-### 二、克隆项目
-
-```bash
-git clone https://github.com/mxmore/aistock-analysis-system.git
-cd aistock-analysis-system
-```
-
-### 三、配置环境变量
-
-复制示例环境文件并修改配置：
-
-```bash
-cp .env.example .env
-# 编辑 .env 文件，配置数据库、API 等信息
-```
-
-### 四、启动服务
-
-#### 1. 一键启动（推荐）
-
-```bash
-docker compose up -d --build
-```
-
-#### 2. 手动启动
-
-- **后端**：
-
-```bash
-cd backend
-docker build -t aistock-backend .
-docker run -d -p 8000:8000 --name aistock-backend aistock-backend
-```
-
-- **前端**：
-
-```bash
-cd frontend
-docker build -t aistock-frontend .
-docker run -d -p 3000:80 --name aistock-frontend aistock-frontend
-```
-
-- **数据库**：
-
-```bash
-docker compose up -d db
-```
-
-### 五、访问应用
-
-- **前端**：`http://your_domain_or_ip:3000`
-- **后端 API**：`http://your_domain_or_ip:8000`
-- **API 文档**：`http://your_domain_or_ip:8000/docs`
-- **SearXNG 搜索**：`http://your_domain_or_ip:8080`
-
-### 六、数据初始化
-
-- **手动初始化**：执行 `initdb/init.sql` 文件，创建数据库表结构。
-- **自动初始化**：重启服务时自动执行初始化脚本。
-
----
-
-# SearXNG 新闻知识库集成部署指南
-
-（以下内容来自 NEWS_DEPLOYMENT_GUIDE.md）
-
-## 一、环境准备
-
-- **服务器**：推荐使用 Ubuntu 20.04+ 或 CentOS 7+
-- **Docker**：安装 Docker 和 Docker Compose
-- **域名**：准备好域名并解析到服务器 IP
-
-## 二、克隆项目
-
-```bash
-git clone https://github.com/mxmore/aistock-analysis-system.git
-cd aistock-analysis-system
-```
-
-## 三、配置环境变量
-
-复制示例环境文件并修改配置：
-
-```bash
-cp .env.example .env
-# 编辑 .env 文件，配置数据库、API 等信息
-```
-
-## 四、启动服务
-
-#### 1. 一键启动（推荐）
-
-```bash
-docker compose up -d --build
-```
-
-#### 2. 手动启动
-
-- **后端**：
-
-```bash
-cd backend
-docker build -t aistock-backend .
-docker run -d -p 8000:8000 --name aistock-backend aistock-backend
-```
-
-- **前端**：
-
-```bash
-cd frontend
-docker build -t aistock-frontend .
-docker run -d -p 3000:80 --name aistock-frontend aistock-frontend
-```
-
-- **数据库**：
-
-```bash
-docker compose up -d db
-```
-
-- **SearXNG**：
-
-```bash
-cd searxng
-docker-compose up -d
-```
-
-## 五、访问应用
-
-- **前端**：`http://your_domain_or_ip:3000`
-- **后端 API**：`http://your_domain_or_ip:8000`
-- **API 文档**：`http://your_domain_or_ip:8000/docs`
-- **SearXNG 搜索**：`http://your_domain_or_ip:8080`
-
-## 六、数据初始化
-
-- **手动初始化**：执行 `initdb/init.sql` 文件，创建数据库表结构。
-- **自动初始化**：重启服务时自动执行初始化脚本。
-
----
-
-# 股票预测算法规则说明
-
-（以下内容来自 ALGORITHM.md）
-
-## 预测策略概述
-系统采用多层次预测策略，结合技术指标分析和机器学习模型，为用户提供短期价格预测和买卖信号。
-
-## 技术指标计算规则
-
-### 1. 移动平均线 (MA)
-- **短期均线**: 10日移动平均线 `ma_short = close.rolling(10).mean()`
-- **长期均线**: 30日移动平均线 `ma_long = close.rolling(30).mean()`
-- **用途**: 判断价格趋势方向，短均线上穿长均线为看涨信号
-
-### 2. 相对强弱指数 (RSI)
-- **计算周期**: 14日
-- **公式**: `RSI = 100 - (100 / (1 + RS))`，其中 RS = 上涨平均值 / 下跌平均值
-- **信号判断**:
-  - RSI > 70：超买区域，可能下跌
-  - RSI < 30：超卖区域，可能上涨
-  - RSI 接近50：中性区域
-
-### 3. MACD 指标
-- **快线**: 12日EMA - 26日EMA
-- **慢线**: 9日EMA of MACD
-- **信号**: MACD上穿信号线为买入信号
-
-## 综合信号评分系统
-
-### 评分规则 (signal_score)
-```
-基础分数 = 0
-```
-
-#### 1. 均线交叉评分 (±20分)
-- **金叉**: 短均线上穿长均线 → +20分
-- **死叉**: 短均线下穿长均线 → -20分
-
-#### 2. RSI 评分 (±15分)
-- **计算公式**: `min(max(50 - |RSI - 50|, -15), 15)`
-- **说明**: RSI越接近50越好，偏离50越远扣分越多
-
-#### 3. MACD 评分 (+10分)
-- **条件**: MACD上穿信号线 → +10分
-- **其他情况**: 0分
-
-### 最终操作建议
-```python
-if signal_score >= 15:
-    action = "BUY"     # 买入
-elif signal_score <= -15:
-    action = "TRIM"    # 减仓
-else:
-    action = "HOLD"    # 持有
-```
-
-## 价格预测模型
-
-### 模型选择策略
-系统采用多模型备份策略，按优先级依次尝试：
-
-### 1. 特征回归模型 (Ridge Regression) - 首选
-**数据要求**: 至少80条历史记录
-
-**特征工程**:
-```python
-features = [
-    "ret1",     # 1日收益率
-    "ma5",      # 5日均线
-    "ma10",     # 10日均线  
-    "ema12",    # 12日指数移动平均
-    "ema26",    # 26日指数移动平均
-    "vol_z"     # 成交量标准化 (Z-score)
-]
-```
-
-**预测流程**:
-1. **数据预处理**: StandardScaler标准化特征
-2. **模型训练**: RidgeCV交叉验证选择最佳正则化参数
-3. **置信区间**: 预测值 ± 1.28 × 残差标准差 (80%置信区间)
-4. **滚动预测**: 逐日预测未来5个交易日价格
-
-**优势**: 考虑多维度技术指标，预测相对稳定
-
-### 2. SARIMAX 时间序列模型 - 备选
-**数据要求**: 至少60条历史记录
-
-**模型参数**:
-- **ARIMA阶数**: (1,1,1) - 1阶自回归，1阶差分，1阶移动平均
-- **季节性**: (0,0,0,0) - 不考虑季节性
-- **约束**: 不强制平稳性和可逆性
-
-**置信区间**: 模型内置的80%置信区间
-
-**优势**: 纯时间序列方法，适合趋势明显的股票
-
-### 3. 线性趋势模型 - 保底
-**数据要求**: 至少5条历史记录
-
-**计算方法**:
-```python
-recent_trend = (close[-1] - close[-5]) / 5  # 最近5日平均变化
-predicted_price = last_price + (i + 1) * recent_trend
-confidence_interval = predicted_price ± 5%  # 固定5%置信区间
-```
-
-**优势**: 简单可靠，任何情况下都能给出预测
-
-## 预测结果输出格式
-
-```json
-{
-    "symbol": "002594.SZ",
-    "method": "feature_regression",  // 使用的模型
-    "confidence": 0.8,               // 置信度
-    "predictions": [
-        {
-            "day": 1,
-            "predicted_price": 105.63,
-            "lower_bound": 103.60,
-            "upper_bound": 107.65
-        },
-        // ... 未来5天预测
-    ]
-}
-```
-
-## 📰 新闻知识库功能（NEW）
-
-### 系统架构
-```
-SearXNG + Redis + MongoDB + PostgreSQL
-    ↓
-  新闻搜索 → 内容解析 → 情感分析 → 股票关联
-    ↓
-  自动收集 → 数据存储 → API接口 → 前端展示
-```
-
-### 部署新闻功能
-
-#### 1. 启动SearXNG服务
-```bash
-cd searxng
-docker-compose up -d
-```
-
-#### 2. 配置环境变量
-```bash
-# 在 .env 文件中添加
-SEARXNG_URL=http://localhost:10000
-MONGO_USER=admin
-MONGO_PASSWORD=password123
-NEWS_COLLECTION_ENABLED=true
-```
-
-#### 3. 新闻API接口
-
-**搜索新闻**
-```http
-POST /api/news/search
-{
-  "query": "比亚迪 新能源",
-  "category": "news",
-  "time_range": "week"
-}
-```
-
-**获取股票新闻**
-```http
-GET /api/news/stock/002594.SZ?limit=20
-```
-
-**情感分析**
-```http
-GET /api/news/sentiment/002594.SZ?days=7
-```
-
-#### 4. 访问新闻界面
-- 在系统中点击"财经新闻"选项卡
-- 支持搜索、过滤和情感分析
-- 自动关联当前选中的股票
-
-### 新闻功能特性
-- 🔍 **多源搜索**: 百度、谷歌、必应新闻聚合
-- 🤖 **智能解析**: 自动提取标题、内容、发布时间
-- 💭 **情感分析**: 正面/负面/中性情感评分
-- 📊 **股票关联**: 自动识别新闻中的股票代码
-- ⏰ **定时收集**: 每4小时自动收集最新新闻
-- 🔄 **去重处理**: 基于URL和内容的智能去重
-
-## 风险提示与免责声明
-
-### ⚠️ 重要提醒
-1. **仅供研究学习**: 所有预测结果仅用于技术研究和教学目的
-2. **不构成投资建议**: 任何预测都不应作为实际投资决策的唯一依据
-3. **市场风险**: 股市有风险，投资需谨慎，过往表现不代表未来结果
-4. **模型局限性**: 技术分析无法预测突发事件对股价的影响
-
-### 算法局限性
-- **短期预测**: 仅适用于1-5天的短期预测
-- **技术面分析**: 主要基于技术指标，未考虑基本面因素
-- **市场环境**: 在极端市场条件下预测准确性可能下降
-
-### 使用建议
-- 结合其他分析方法使用
-- 关注置信区间范围
-- 定期回测验证预测效果
-- 建立合理的风险管理机制
-
----
-
-# 联系与反馈
-
-如有问题或建议，请在项目 Issue 区留言。
-
----
-
-# 版本历史与贡献者
-
-（如需详细版本历史和贡献者列表，请参考原项目 GitHub 页面）
-
----
-
-# END
+> 后续开发应严格遵循以上路线图与守则，所有 PR/改动需说明与目标的对齐点（覆盖率/质量/结构化/特征/评估/成本/合规）。

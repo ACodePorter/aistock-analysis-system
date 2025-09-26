@@ -1,4 +1,76 @@
 
+"""
+模块说明
+---------
+本模块用于基于价格、信号和预测数据生成简明的股票技术分析报告，并可选调用 Azure OpenAI Responses API 对文本摘要进行口语化精简。
+设计目标是：
+- 提取并规范化不同来源的行情/信号/预测输入；
+- 计算简单的数据质量和置信度指标；
+- 生成结构化的报告数据（字典格式）和可读的文本摘要；
+- 在配置了 Azure OpenAI Key 时，异步调用云端 LLM 对摘要进行简化（非必须）。
+环境变量（可选）
+- AZURE_OPENAI_KEY: 若设置则启用 llm_summarize，值为 Azure OpenAI 的 API Key。
+- AZURE_OPENAI_ENDPOINT: Azure Responses API 的 endpoint（例如 https://xxxxx.openai.azure.com）。
+- AZURE_OPENAI_API_VERSION: Requests API 版本，默认 "2025-04-01-preview"。
+- AZURE_OPENAI_DEPLOYMENT / AZURE_OPENAI_MODEL: 优先使用部署名，否则可指定模型名（默认 "gpt-5-mini"）。
+- AZURE_OPENAI_MAX_COMPLETION_TOKENS: 响应最大 token 数，默认 1024。
+- AZURE_OPENAI_TIMEOUT: HTTP 请求超时（秒），默认 30。
+依赖
+- pandas: 用于接收和处理 DataFrame 输入。
+- requests: 仅当启用 LLM 时用于 HTTP 请求（在 llm_summarize 内部按需导入）。
+主要函数（摘要）
+- plain_summary(symbol, name, today_row, signal_row, preds) -> str
+    生成一个面向普通用户的中文纯文本技术分析要点（无 LLM 调用）。
+    参数：
+        - symbol (str)：股票代码。
+        - name (str|None)：股票简称，可为空。
+        - today_row (pd.Series)：包含当日行情至少包含 "close" 字段，建议也包含 "pct_chg"。
+        - signal_row (pd.Series)：包含信号相关字段，可为空；常见字段："action","signal_score","ma_s","ma_l","rsi"。
+        - preds (list[tuple[date,float,float,float]])：可选的预测列表，元素通常为 (date, pred, lower, upper)。
+    返回：
+        - str：多行要点字符串（中文），保留关键数字与建议。
+- async llm_summarize(text) -> str
+    异步将传入文本发送到 Azure Responses API 请求更口语化、面向普通投资者的简明解读（控制长度、避免夸大）。
+    行为：
+        - 若未设置 AZURE_OPENAI_KEY，则直接返回原文本。
+        - 在请求失败或解析响应结构不符合预期时，返回原文本并在控制台打印少量错误信息以便诊断。
+        - 在解析响应时兼容多种返回结构（output_text / outputs[].content[].text / choices[...]）。
+    注意：
+        - 需要网络访问且可能产生费用；为安全起见不要在生产日志中写入敏感 API Key。
+- generate_report_data(symbol, price_data=None, signal_data=None, forecast_data=None) -> dict
+    构造结构化报告字典，适合序列化（JSON）或作为 API 响应内容。
+    参数：
+        - symbol (str)：股票代码。
+        - price_data (pd.DataFrame|None)：行情表（建议包含 trade_date, close, open, high, low, vol, pct_chg）。
+        - signal_data (pd.DataFrame|None)：信号表（建议包含 trade_date, action, signal_score, ma_short, ma_long, rsi, macd）。
+        - forecast_data (dict|iterable|None)：若为字典且含 "predictions" 键，则按原样嵌入；若为可迭代序列（tuple/list），则按索引解析为逐日预测。
+    返回值字典（主要字段）：
+        - symbol (str)
+        - generated_at (ISO datetime str)
+        - data_quality_score (float)：简单评分，基于 price_data 长度（>=250 -> 1.0, >=100 -> 0.8, >=50 -> 0.6, 否则 0.4）。
+        - prediction_confidence (float)：若 forecast_data 提供 confidence 则使用，否则默认 0.5。
+        - analysis_summary (str)：基于最新价格、信号和预测拼接的简短中文摘要，供快速展示。
+        - latest_price_data (dict，可选)：包含 close/open/high/low/volume/pct_change/trade_date（ISO 字符串）。
+        - signal_data (dict，可选)：包含 action/signal_score/ma_short/ma_long/rsi/macd/trade_date。
+        - forecast_data (dict，可选)：规范化后的 predictions 列表及 method/confidence 等。
+    行为与容错：
+        - 对传入 DataFrame 做非空检查，并尝试按 trade_date 排序取最后一行作为“最新”记录。
+        - 对缺失字段做安全降级（如 vol 或 pct_chg 为空则返回 None）。
+        - 对 forecast_data 支持两种形态：已结构化字典或序列化的预测点列表（tuple/list）。
+        - 若函数内部出现异常，会捕获并返回包含 error 字段和错误描述的字典，确保调用方得到可解析的输出。
+示例（伪代码）
+- 生成简要文本：
+        txt = plain_summary(symbol, name, today_row, signal_row, preds)
+- 使用 LLM 优化文本（异步）：
+        safe_txt = await llm_summarize(txt)
+- 生成结构化报告：
+        report = generate_report_data(symbol, price_df, signal_df, forecast_list)
+注意事项
+- 本模块并非投资建议工具。分析/预测仅供参考，使用者应自行承担投资决策风险。
+- 当启用 LLM 功能时，请确保遵守相应服务条款并妥善管理凭据与费用。
+
+"""
+
 import os
 from datetime import date
 import pandas as pd
@@ -39,32 +111,54 @@ async def llm_summarize(text: str) -> str:
         import json
         import requests
         endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
         api_key = os.getenv("AZURE_OPENAI_KEY")
-        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
+        # Prefer Azure deployment name for model
+        model = os.getenv("AZURE_OPENAI_DEPLOYMENT") or os.getenv("AZURE_OPENAI_MODEL", "gpt-5-mini")
         headers = {
-            "api-key": api_key,
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
         payload = {
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "把下面的股市技术分析摘要转成口语化、给普通投资者看的简明解读，保留关键数字，控制在150字以内，避免夸大。",
-                },
-                {"role": "user", "content": text},
-            ],
-            "temperature": 0.3,
+            # Responses API: prefer OpenAI-compatible "input" shape
+            "input": "把下面的股市技术分析摘要转成口语化、给普通投资者看的简明解读，保留关键数字，控制在150字以内，避免夸大。\n\n" + text,
+            "max_output_tokens": int(os.getenv("AZURE_OPENAI_MAX_COMPLETION_TOKENS", "1024")),
+            "model": model,
         }
-        url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
+        url = f"{endpoint}/openai/responses?api-version={api_version}"
         r = requests.post(
             url,
             headers=headers,
             data=json.dumps(payload),
             timeout=int(os.getenv("AZURE_OPENAI_TIMEOUT", "30")),
         )
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"].strip()
+        try:
+            r.raise_for_status()
+        except Exception:
+            # Log response body for 4xx diagnostics; return original text on failure
+            try:
+                body = r.text
+            except Exception:
+                body = "(no body)"
+            print(f"Azure Responses API error: HTTP {r.status_code}; body: {body}")
+            return text
+        data = r.json()
+        # 优先使用 output_text
+        txt = data.get("output_text")
+        if isinstance(txt, str) and txt.strip():
+            return txt.strip()
+        # 兼容解析 outputs[].content[].text
+        outputs = data.get("output") or data.get("outputs")
+        if isinstance(outputs, list) and outputs:
+            first = outputs[0]
+            if isinstance(first, dict):
+                content = first.get("content")
+                if isinstance(content, list):
+                    for c in content:
+                        if isinstance(c, dict) and c.get("text"):
+                            return str(c.get("text")).strip()
+        # 最后兼容 choices
+        return data.get("choices", [{}])[0].get("message", {}).get("content", text).strip()
     except Exception:
         return text
 

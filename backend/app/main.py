@@ -1,7 +1,33 @@
+"""
+主应用入口与路由定义（中文说明）
 
-from fastapi import FastAPI, Depends, HTTPException, Query
+此模块负责构建并暴露完整的 FastAPI 应用：
+- 初始化数据库 schema（init_database）并在启动时根据环境变量选择性挂载调度器（attach_scheduler）。
+- 提供股票数据、观察列表、行情快照、资金流向、技术信号、预测与报告相关的 HTTP API。
+- 包含新闻抓取/处理/去重/质量审计/LLM 分析 等新闻子系统的路由和管理接口。
+- 集成任务管理（TaskManager）用于异步/批量任务的创建与监控，支持报告生成、新闻采集等任务类型。
+- 对外暴露用于调试与运维的端点：/health、/admin/db/init、/admin/scheduler/status、/api/llm/health 等。
+- 内部使用缓存（如股票基础信息缓存 _stock_basic_cache）与重试/退避机制（retry_with_backoff）以增强稳定性。
+- 支持多数据源（akshare / tushare / eastmoney / sina 等）并对网络/解析错误做友好处理与回退策略。
+- 对接可选组件：LLM（Azure/本地）、MongoDB 存储、外部新闻检索服务与指标收集模块。
+- 环境变量常用项：
+    - DATA_SOURCE：'akshare' 或 'tushare'（默认 akshare）
+    - TUSHARE_TOKEN：使用 tushare 时必需
+    - ENABLE_SCHEDULER：是否启用定时调度（默认 1）
+    - AZURE_OPENAI_*：LLM 相关配置（若使用 Azure）
+- 错误和异常处理：常见场景返回 HTTPException，关键外部调用采用重试与降级策略，避免单点失败影响整体服务。
+
+注意：本文件以路由定义为主，复杂业务逻辑（如爬虫、LLM 分析、去重、调度、任务执行）委托给项目内的子模块实现（如 news_service、llm_processor、task_manager、enhanced_news_scheduler 等）。
+"""
+
+from .news_service import NewsProcessor
+
+import logging
+
+from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request
+from fastapi.responses import ORJSONResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select, text, and_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -12,23 +38,128 @@ import random
 import signal
 import sys
 import time
+import asyncio
 import tushare as ts
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from .db import SessionLocal, init_database
-from .data_source import get_stock_info, search_stocks, get_realtime_stock, fetch_daily
+from .db import SessionLocal, init_database, engine
+from .data_source import get_stock_info, search_stocks, get_realtime_stock, fetch_daily, get_spot_snapshot
 from .models import Watchlist, PriceDaily, Forecast, Signal, Task, Report, TaskStatus, TaskType, Stock
 from .forecast import predict_stock_price
 from .report import generate_report_data
 from .task_manager import TaskManager
-from .scheduler import run_daily_pipeline
+from .scheduler import run_daily_pipeline, attach_scheduler
+import pandas as pd
+import httpx
+from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 # 创建任务管理器实例
 task_manager = TaskManager()
 
-app = FastAPI(title="AI Stock API", version="1.1")
+# Prefer ORJSONResponse for performance, but gracefully fall back if orjson isn't installed
+import importlib.util as _importlib_util
+if _importlib_util.find_spec("orjson") is not None:
+    DefaultResponse = ORJSONResponse
+else:
+    DefaultResponse = JSONResponse
+
+app = FastAPI(title="AI Stock API", version="1.1", default_response_class=DefaultResponse)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log every incoming HTTP request with duration and status code."""
+    start = time.perf_counter()
+    response = None
+    try:
+        response = await call_next(request)
+        return response
+    except Exception:
+        logger.exception("Unhandled exception while processing %s %s", request.method, request.url.path)
+        raise
+    finally:
+        duration_ms = (time.perf_counter() - start) * 1000
+        status = getattr(response, "status_code", "error")
+        logger.info(
+            "%s %s -> %s (%.2f ms)",
+            request.method,
+            request.url.path,
+            status,
+            duration_ms,
+        )
+
+# Startup: attach scheduler if enabled
+@app.on_event("startup")
+async def _startup_attach_scheduler():
+    """应用启动钩子：
+    - 保证数据库 schema 存在（create_all）
+    - 根据环境变量 ENABLE_SCHEDULER 决定是否挂载调度器
+    - 在后台线程预热 watchlist 的实时快照，避免首个请求出现空/null
+
+    兼容性说明：
+    - Windows 下使用守护线程执行预热，规避事件循环生命周期偶发问题
+    """
+    try:
+        # Ensure DB schema is up to date (idempotent)
+        init_database()
+        if os.getenv("ENABLE_SCHEDULER", "1").lower() in ("1", "true", "yes", "y"):
+            attach_scheduler(app)
+        else:
+            logger.warning("Scheduler disabled by ENABLE_SCHEDULER env var")
+        # Pre-warm snapshot cache in background so first request is not empty/null
+        async def _prewarm_snapshot():
+            try:
+                # tiny delay to ensure app ready
+                await asyncio.sleep(0.5)
+                with SessionLocal() as session:
+                    watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+                    symbols = [w.symbol for w in watches]
+                if symbols:
+                    # call once to fill caches; ignore result
+                    try:
+                        _ = get_spot_snapshot(symbols)
+                    except Exception as e:
+                        logger.warning("Pre-warm snapshot failed once: %s", e, exc_info=True)
+                        # one retry after short wait
+                        await asyncio.sleep(1.0)
+                        try:
+                            _ = get_spot_snapshot(symbols)
+                        except Exception as e2:
+                            logger.warning("Pre-warm snapshot second attempt failed: %s", e2, exc_info=True)
+            except Exception as e:
+                logger.warning("Pre-warm task error: %s", e, exc_info=True)
+        # On Windows with reload/multiprocessing, creating asyncio tasks during startup can
+        # occasionally trigger event loop lifecycle issues. Run prewarm in a daemon thread instead.
+        try:
+            import threading
+            def _bg_prewarm():
+                try:
+                    time.sleep(0.5)
+                    with SessionLocal() as session:
+                        watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+                        symbols = [w.symbol for w in watches]
+                    if symbols:
+                        try:
+                            _ = get_spot_snapshot(symbols)
+                        except Exception:
+                            time.sleep(1.0)
+                            try:
+                                _ = get_spot_snapshot(symbols)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+            threading.Thread(target=_bg_prewarm, daemon=True).start()
+        except Exception:
+            pass
+    except Exception as e:
+        logger.exception("Scheduler initialization failed on startup: %s", e)
+
 
 # CORS middleware
 app.add_middleware(
@@ -41,6 +172,7 @@ app.add_middleware(
 
 # Dependency
 def get_db():
+    """FastAPI 依赖注入：提供 SQLAlchemy Session，使用完毕自动关闭。"""
     db = SessionLocal()
     try:
         yield db
@@ -57,7 +189,14 @@ class WatchItem(BaseModel):
 _stock_basic_cache = None
 
 def retry_with_backoff(max_retries=3, base_delay=1.0):
-    """重试装饰器，支持指数退避"""
+    """重试装饰器，支持指数退避。
+
+    参数：
+    - max_retries: 最大重试次数（默认 3 次）
+    - base_delay: 初始等待秒数（默认 1.0 秒），实际为 base_delay * 2^attempt + 抖动
+
+    典型使用：短期波动的第三方数据源调用；注意不要用于幂等性差的写操作。
+    """
     def decorator(func):
         def wrapper(*args, **kwargs):
             last_exception = None
@@ -79,7 +218,11 @@ def retry_with_backoff(max_retries=3, base_delay=1.0):
 
 @retry_with_backoff(max_retries=3, base_delay=1.0)
 def fetch_stock_basic_with_retry(data_source):
-    """带重试机制的股票基础数据获取"""
+    """带重试机制的股票基础数据获取。
+
+    - data_source=tushare 时：需要配置 TUSHARE_TOKEN；返回字段包含 ts_code/symbol/name/market
+    - 否则默认使用 akshare：补齐 ts_code/market 以保持结构一致
+    """
     if data_source == "tushare":
         token = os.getenv("TUSHARE_TOKEN")
         if not token or token == "your_tushare_token_here":
@@ -101,6 +244,11 @@ def fetch_stock_basic_with_retry(data_source):
         return df
 
 def get_stock_basic():
+    """获取股票基础信息（带缓存）。
+
+    - 首次加载后缓存于进程内存，后续直接返回
+    - 可通过 POST /cache/refresh 进行刷新
+    """
     global _stock_basic_cache
     if _stock_basic_cache is not None:
         return _stock_basic_cache
@@ -109,7 +257,7 @@ def get_stock_basic():
     
     try:
         _stock_basic_cache = fetch_stock_basic_with_retry(data_source)
-        print(f"✓ Stock basic data loaded successfully using {data_source}")
+        logger.info("Stock basic data loaded successfully using %s", data_source)
         return _stock_basic_cache
     except Exception as e:
         error_msg = f"{data_source.title()} API error: {str(e)}"
@@ -120,7 +268,13 @@ def get_stock_basic():
 # 在线股票搜索接口
 @app.get("/search_stock")
 def search_stock(q: str = Query(..., description="股票代码或名称")):
-    print(f"🔍 Search query: {q}")
+    """模糊检索股票。
+
+    - 支持在 ts_code/symbol/name 字段中匹配
+    - 返回最多 20 条记录以避免过多结果
+    - 对正则/特殊字符使用安全匹配
+    """
+    logger.info("Received stock search query: %s", q)
     
     # 输入验证
     if not q or len(q.strip()) < 1:
@@ -153,7 +307,7 @@ def search_stock(q: str = Query(..., description="股票代码或名称")):
         # 限制返回结果数量，避免过多结果
         result = result.head(20)
 
-        print(f"✓ Found {len(result)} results for query: {q}")
+        logger.info("Search stock query %s returned %d results", q, len(result))
 
         # 转换为列表字典格式，使用字典索引避免 iterrows 的问题
         new_result = []
@@ -167,13 +321,13 @@ def search_stock(q: str = Query(..., description="股票代码或名称")):
 
         return new_result
         
-    except HTTPException:
+    except HTTPException as exc:
         # 重新抛出 HTTPException，保持原有错误信息
-        print("✗ Stock search failed with HTTPException")
+        logger.warning("Stock search failed with HTTPException for query %s: %s", q, getattr(exc, "detail", exc))
         raise
     except Exception as e:
         error_msg = f"Stock search failed: {str(e)}"
-        print(f"✗ {error_msg}")
+        logger.exception("Stock search failed for query %s", q)
         
         # 对于网络相关错误，提供更友好的错误信息
         if any(keyword in str(e).lower() for keyword in ['timeout', 'connection', 'network', 'dns']):
@@ -185,11 +339,75 @@ def search_stock(q: str = Query(..., description="股票代码或名称")):
 
 @app.get("/health")
 def health():
+    """健康检查：返回服务存活状态。"""
     return {"status":"ok"}
+
+@app.post("/admin/db/init")
+def admin_db_init():
+    """初始化或更新数据库 schema（幂等）。
+
+    - 调用 db.init_database()，内部执行 create_all/轻量迁移
+    - 可用于 Kubernetes/Lambda 等启动前的准备步骤
+    """
+    try:
+        init_database()
+        return {"ok": True, "message": "Database schema ensured (create_all)"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB init failed: {e}")
+
+@app.get("/api/llm/health")
+async def llm_health_check():
+    """LLM 轻量健康检查。
+
+    - 若配置了 Azure OpenAI（Responses API），以超小提示词执行一次探测
+    - 返回服务可达状态、关键配置与响应片段（避免消耗过多 token）
+    """
+    from .llm_processor import LLMNewsProcessor
+    info = {
+        "service": None,
+        "ok": False,
+        "endpoint": os.getenv("AZURE_OPENAI_ENDPOINT"),
+        "api_version": os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-01-preview"),
+        "model": os.getenv("AZURE_OPENAI_DEPLOYMENT") or os.getenv("AZURE_OPENAI_MODEL"),
+        "max_tokens": int(os.getenv("AZURE_OPENAI_MAX_COMPLETION_TOKENS", "16384")),
+        "message": None,
+        "output_preview": None,
+    }
+    try:
+        async with LLMNewsProcessor() as llm:
+            info["service"] = llm.llm_service
+            if llm.llm_service == "none":
+                info["message"] = "No LLM configured"
+                return info
+            # Minimal prompt to validate pipeline; avoid heavy token usage
+            prompt = "Return the single word OK."
+            try:
+                # Call the same internal path used by analysis, but minimal workload
+                if llm.llm_service == "azure":
+                    text = await llm._call_azure_openai_responses(prompt)  # noqa: SLF001 (intentional internal call)
+                elif llm.llm_service == "local":
+                    text = await llm._call_local_llm(prompt)  # noqa: SLF001
+                else:
+                    text = None
+            except Exception as e:
+                info["message"] = f"Call failed: {e}"
+                return info
+
+            if isinstance(text, str) and text.strip():
+                info["ok"] = True
+                info["output_preview"] = text.strip()[:80]
+                info["message"] = "LLM reachable"
+            else:
+                info["ok"] = False
+                info["message"] = "Empty or invalid response"
+            return info
+    except Exception as e:
+        return {**info, "ok": False, "message": f"Health check error: {e}"}
 
 # 清除股票基础数据缓存并重新加载
 @app.post("/cache/refresh")
 def refresh_stock_cache():
+    """清空并重新加载股票基础信息缓存。"""
     global _stock_basic_cache
     _stock_basic_cache = None
     try:
@@ -206,6 +424,7 @@ def refresh_stock_cache():
 # 获取缓存状态
 @app.get("/cache/status")
 def cache_status():
+    """返回基础数据缓存状态（是否已加载、条数、数据源）。"""
     global _stock_basic_cache
     return {
         "cache_loaded": _stock_basic_cache is not None,
@@ -215,6 +434,7 @@ def cache_status():
 
 @app.get("/watchlist")
 def get_watchlist():
+    """获取已启用的自选股列表。"""
     with SessionLocal() as session:
         res = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
         return [
@@ -230,6 +450,10 @@ def get_watchlist():
 
 @app.post("/watchlist")
 def add_watch(item: WatchItem):
+    """新增或更新自选股。
+
+    - 冲突键：symbol；存在则更新 name/sector/enabled
+    """
     with SessionLocal() as session:
         stmt = pg_insert(Watchlist).values(
             symbol=item.symbol.upper(),
@@ -247,6 +471,7 @@ def add_watch(item: WatchItem):
 # 删除自选股接口
 @app.delete("/watchlist/{symbol}")
 def delete_watch(symbol: str):
+    """从自选列表中删除指定股票。"""
     with SessionLocal() as session:
         affected = session.execute(
             text("DELETE FROM watchlist WHERE symbol=:sym"),
@@ -257,8 +482,628 @@ def delete_watch(symbol: str):
 
 @app.post("/run/daily")
 async def run_daily_now():
+    """手动触发日常管道（抓取日线/信号/预测/资金流入等）。"""
     ok = await run_daily_pipeline()
     return {"ok": ok}
+
+@app.get("/admin/scheduler/status")
+def scheduler_status():
+    """查询任务调度器状态与已注册作业。"""
+    sched = getattr(app.state, "scheduler", None)
+    if not sched:
+        return {"enabled": False, "message": "Scheduler not attached"}
+    jobs = []
+    for j in sched.get_jobs():
+        jobs.append({
+            "id": j.id,
+            "next_run": j.next_run_time.isoformat() if j.next_run_time else None,
+            "trigger": str(j.trigger)
+        })
+    return {
+        "enabled": True,
+        "timezone": os.getenv("TZ", "Asia/Taipei"),
+        "jobs": jobs
+    }
+
+@app.get("/api/fundflow/latest")
+def latest_fundflow(limit: int = 50):
+    """获取最新交易日的个股资金流向 Top 列表。
+
+    - limit: 限制行数（默认 50）
+    - 输出字段单位为元/百分比；前端按需换算万/亿
+    """
+    from .models import FundFlowDaily
+    with SessionLocal() as session:
+        # 最新交易日
+        latest_date = session.execute(text("SELECT max(trade_date) FROM fundflow_daily")).scalar()
+        if not latest_date:
+            return {"date": None, "rows": []}
+        rows = session.execute(
+            text(
+                """
+                SELECT symbol, trade_date, main_net, main_ratio, super_net, super_ratio,
+                       large_net, large_ratio, medium_net, medium_ratio, small_net, small_ratio
+                FROM fundflow_daily
+                WHERE trade_date = :d
+                ORDER BY COALESCE(main_net,0) DESC
+                LIMIT :lim
+                """
+            ),
+            {"d": latest_date, "lim": limit},
+        ).fetchall()
+        out = []
+        for r in rows:
+            out.append({
+                "symbol": r.symbol,
+                "trade_date": r.trade_date.isoformat(),
+                "main_net": float(r.main_net) if r.main_net is not None else None,
+                "main_ratio": float(r.main_ratio) if r.main_ratio is not None else None,
+                "super_net": float(r.super_net) if r.super_net is not None else None,
+                "super_ratio": float(r.super_ratio) if r.super_ratio is not None else None,
+                "large_net": float(r.large_net) if r.large_net is not None else None,
+                "large_ratio": float(r.large_ratio) if r.large_ratio is not None else None,
+                "medium_net": float(r.medium_net) if r.medium_net is not None else None,
+                "medium_ratio": float(r.medium_ratio) if r.medium_ratio is not None else None,
+                "small_net": float(r.small_net) if r.small_net is not None else None,
+                "small_ratio": float(r.small_ratio) if r.small_ratio is not None else None,
+            })
+        return {"date": latest_date.isoformat(), "rows": out}
+
+# --- Watchlist Snapshot & Analysis ---
+@app.get("/api/watchlist/snapshot")
+def watchlist_snapshot(
+    limit: int = Query(0, description="limit rows; 0 for all"),
+    fundflow_prefer: str = Query("auto", description="Preferred fundflow source: auto|db|ak_today|eastmoney"),
+):
+    """自选股快照（组合实时/历史/资金流向）。
+
+    包含：
+    - 实时行情（优先 akshare，内部含多源回退与兜底）
+    - 历史指标（如 3D/20D/YTD 变化）
+    - 当日/最近的主力净流向
+
+    参数说明：
+    - limit: 返回前 n 条（0 表示全部）
+    - fundflow_prefer: 资金流来源偏好 auto|db|ak_today|eastmoney
+      auto：优先 DB（EOD），不足则回退到当日排行或东方财富
+    """
+    from sqlalchemy import func
+    from .models import FundFlowDaily
+    with SessionLocal() as session:
+        # Get enabled watchlist
+        watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+        if limit and limit>0:
+            watches = watches[:limit]
+        symbols = [w.symbol for w in watches]
+        # spot
+        spot = get_spot_snapshot(symbols)
+        rows = []
+        # Prepare intraday fund flow rank (today) map once if needed
+        rank_today_map = None
+        rank_today_date = None
+        def get_today_rank_map():
+            nonlocal rank_today_map, rank_today_date
+            if rank_today_map is not None:
+                return rank_today_map, rank_today_date
+            try:
+                import akshare as ak
+                rdf = ak.stock_individual_fund_flow_rank(indicator="今日")
+                if rdf is None or rdf.empty:
+                    rank_today_map = {}
+                    rank_today_date = None
+                    return rank_today_map, rank_today_date
+                # Build map base_code -> main_net (yuan)
+                # Columns may be "代码" and one of ["今日主力净流入-净额","主力净流入-净额"] in 万元
+                code_col = "代码" if "代码" in rdf.columns else ("symbol" if "symbol" in rdf.columns else None)
+                if not code_col:
+                    rank_today_map = {}
+                    rank_today_date = None
+                    return rank_today_map, rank_today_date
+                def pick(row, names):
+                    for n in names:
+                        if n in rdf.columns:
+                            return row.get(n)
+                    return None
+                m = {}
+                for _, r in rdf.iterrows():
+                    base = str(r[code_col])
+                    val = pick(r, ["今日主力净流入-净额","主力净流入-净额"])
+                    try:
+                        v = float(val) * 1e4 if val is not None else None  # 万元 -> 元
+                    except Exception:
+                        v = None
+                    m[base] = v
+                rank_today_map = m
+                # Date is "today" by definition; include server's local date
+                from datetime import datetime as _dt
+                rank_today_date = _dt.now().date().isoformat()
+            except Exception:
+                rank_today_map = {}
+                rank_today_date = None
+            return rank_today_map, rank_today_date
+
+        def compute_radar_and_trend(symbol: str):
+            try:
+                # Pull last 40 trading days to compute light indicators
+                qdf = pd.read_sql_query(
+                    "SELECT trade_date, close FROM prices_daily WHERE symbol = %s ORDER BY trade_date DESC LIMIT 40",
+                    con=engine,
+                    params=(symbol,),
+                )
+                if qdf is None or qdf.empty:
+                    return {"momentum": 0.0, "trend": 0.0, "volatility": 0.0, "recent_return": 0.0}, 0.0
+                qdf = qdf.iloc[::-1].reset_index(drop=True)
+                closes = qdf["close"].astype(float)
+                # RSI(14)
+                delta = closes.diff()
+                gain = delta.clip(lower=0)
+                loss = (-delta.clip(upper=0))
+                roll = 14
+                avg_gain = gain.rolling(roll, min_periods=roll).mean()
+                avg_loss = loss.rolling(roll, min_periods=roll).mean()
+                rsi = 100 - 100 / (1 + (avg_gain / (avg_loss.replace(0, pd.NA))))
+                rsi_val = float(rsi.iloc[-1]) if pd.notna(rsi.iloc[-1]) else 0.0
+                # Trend: (MA5 - MA20) / MA20
+                ma5 = closes.rolling(5, min_periods=5).mean()
+                ma20 = closes.rolling(20, min_periods=20).mean()
+                if pd.notna(ma20.iloc[-1]) and ma20.iloc[-1] != 0:
+                    trend_val = float((ma5.iloc[-1] - ma20.iloc[-1]) / ma20.iloc[-1] * 100.0)
+                else:
+                    trend_val = 0.0
+                # Volatility over last 10 returns
+                rets = closes.pct_change()
+                vol_val = float(rets.tail(10).std() * 100.0) if len(rets) >= 2 else 0.0
+                # Recent return last 10
+                if len(closes) >= 10 and closes.iloc[-10] not in (None, 0):
+                    recent_ret = float((closes.iloc[-1] / closes.iloc[-10] - 1.0) * 100.0)
+                else:
+                    recent_ret = 0.0
+                radar = {
+                    "momentum": rsi_val,
+                    "trend": trend_val,
+                    "volatility": vol_val,
+                    "recent_return": recent_ret,
+                }
+                return radar, trend_val
+            except Exception:
+                return {"momentum": 0.0, "trend": 0.0, "volatility": 0.0, "recent_return": 0.0}, 0.0
+        def get_eastmoney_intraday(sym_full: str, base: str):
+            try:
+                mk = "1" if sym_full.endswith(".SH") else "0"
+                url = "https://push2.eastmoney.com/api/qt/stock/get"
+                params = {"secid": f"{mk}.{base}", "fields": "f62"}
+                with httpx.Client(timeout=4.0) as client:
+                    resp = client.get(url, params=params)
+                    if resp.status_code == 200:
+                        j = resp.json()
+                        data = j.get("data") if isinstance(j, dict) else None
+                        if data and (data.get("f62") is not None):
+                            try:
+                                return float(data.get("f62"))
+                            except Exception:
+                                return None
+                return None
+            except Exception:
+                return None
+
+        for w in watches:
+            sym = w.symbol
+            # historical metrics
+            # Use added_at as baseline if available: first close on/after the added date
+            if getattr(w, 'added_at', None):
+                first_row = session.execute(
+                    text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s AND trade_date >= :d ORDER BY trade_date ASC LIMIT 1"),
+                    {"s": sym, "d": w.added_at.date()},
+                ).first()
+                if not first_row:
+                    # 若添加时间太近导致无匹配，回退到首条记录
+                    first_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).first()
+            else:
+                # fallback to first available record
+                first_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).first()
+            last_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
+            # near 3d & 20d
+            d3 = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC OFFSET 2 LIMIT 1"), {"s": sym}).scalar()
+            d20 = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC OFFSET 19 LIMIT 1"), {"s": sym}).scalar()
+            # YTD: first close of this year
+            ytd = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s AND EXTRACT(YEAR FROM trade_date)=EXTRACT(YEAR FROM CURRENT_DATE) ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).scalar()
+            latest_row = session.execute(text("SELECT trade_date, main_net FROM fundflow_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
+            # 优先获取实时资金流数据，失败则回退
+            ff_val = None
+            ff_date = None
+            ff_source = None
+            
+            try:
+                from .data_source import fetch_fund_flow_daily
+                # 调用 data_source 中的函数，它封装了主/备用逻辑
+                # include_today_rank=True 允许它在主接口失败时回退到“今日排行”
+                df_ff = fetch_fund_flow_daily(sym, include_today_rank=True)
+                
+                if df_ff is not None and not df_ff.empty:
+                    # 获取最新一条记录
+                    latest_ff_record = df_ff.iloc[-1]
+                    ff_val = float(latest_ff_record["main_net"]) if pd.notna(latest_ff_record["main_net"]) else None
+                    ff_date = latest_ff_record["trade_date"].isoformat() if pd.notna(latest_ff_record["trade_date"]) else datetime.now().date().isoformat()
+                    ff_source = "realtime" # 标记为实时来源
+                else:
+                    # 如果实时数据为空，则尝试从数据库获取
+                    if latest_row and latest_row.main_net is not None:
+                        ff_val = float(latest_row.main_net)
+                        ff_date = latest_row.trade_date.isoformat() if latest_row.trade_date else None
+                        ff_source = "db_latest"
+
+            except Exception as e:
+                # 如果实时获取过程中出现任何异常，安全回退到数据库
+                print(f"Fundflow fetch failed for {sym}, falling back to DB. Error: {e}")
+                if latest_row and latest_row.main_net is not None:
+                    ff_val = float(latest_row.main_net)
+                    ff_date = latest_row.trade_date.isoformat() if latest_row.trade_date else None
+                    ff_source = "db_fallback"
+
+            sp = spot.get(sym, {})
+            # non-null helper
+            def nz(v):
+                return v if v is not None else 0
+            price = sp.get('price') if sp else (float(last_row.close) if last_row and last_row.close is not None else None)
+            def pct(a,b):
+                try:
+                    if a is None or b is None or b==0: return None
+                    return (a-b)/b*100.0
+                except Exception:
+                    return None
+            since_watch = pct(price, float(first_row.close) if first_row and first_row.close is not None else None)
+            near_3d = pct(price, float(d3) if d3 is not None else None)
+            near_20d = pct(price, float(d20) if d20 is not None else None)
+            ytd_chg = pct(price, float(ytd) if ytd is not None else None)
+            radar, trend_val = compute_radar_and_trend(sym)
+            rows.append({
+                "name": sp.get('name') or w.name,
+                "symbol": sym,
+                "price": price,
+                "change": nz(sp.get('change')),
+                "pct_change": nz(sp.get('pct_change')),
+                "since_watch_pct": since_watch,
+                # placeholders for radar/speed; can compute via signals in analysis endpoint
+                "radar": radar,
+                "trend": trend_val,
+                "speed": nz(sp.get('speed')),
+                "volume": nz(sp.get('volume')),
+                "amount": nz(sp.get('amount')),
+                "spot_source": sp.get('spot_source'),
+                "amount_unit": "yuan",  # 成交额统一为元
+                "turnover_rate": nz(sp.get('turnover_rate')),
+                "volume_ratio": nz(sp.get('volume_ratio')),
+                "amplitude": nz(sp.get('amplitude')),
+                "main_net": ff_val if ff_val is not None else None,
+                "fundflow_unit": "yuan",  # 主力净流入统一为元
+                "fundflow_date": ff_date,
+                "fundflow_source": ff_source,
+                "last_volume": nz(sp.get('last_volume')),
+                "high": nz(sp.get('high')),
+                "low": nz(sp.get('low')),
+                "open": nz(sp.get('open')),
+                "pre_close": nz(sp.get('pre_close')),
+                "order_ratio": nz(sp.get('order_ratio')),
+                "pe_ttm": nz(sp.get('pe_ttm')),
+                "pb": nz(sp.get('pb')),
+                "total_market_cap": nz(sp.get('total_market_cap')),
+                "chg_3d_pct": near_3d,
+                "chg_20d_pct": near_20d,
+                "chg_ytd_pct": ytd_chg,
+            })
+        return {"rows": rows, "count": len(rows)}
+
+# --- Fund Flow Diagnostics ---
+@app.get("/api/fundflow/diagnostics")
+def fundflow_diagnostics(
+    symbol: str = Query(..., description="Symbol like 300251.SZ or 600519.SH"),
+    date: Optional[str] = Query(None, description="YYYY-MM-DD; defaults to today for rank, latest for DB"),
+):
+    """Return diagnostic comparison of fund flow main_net values from:
+    - DB latest and DB on date (if provided)
+    - Akshare individual history on date (if provided)
+    - Akshare intraday rank (indicator=今日)
+
+    All normalized to yuan with provenance and raw units.
+    """
+    sym = symbol.upper()
+    base = sym.replace(".SH", "").replace(".SZ", "")
+    out = {
+        "symbol": sym,
+        "base_code": base,
+        "requested_date": date,
+        "db_latest": None,
+        "db_on_date": None,
+        "ak_history_on_date": None,
+        "ak_today_rank": None,
+        "eastmoney_intraday": None,
+        "eastmoney_eod": None,
+        "sina_eod": None,
+        "notes": [],
+    }
+    try:
+        with SessionLocal() as session:
+            latest_row = session.execute(text("SELECT trade_date, main_net FROM fundflow_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
+            if latest_row:
+                out["db_latest"] = {
+                    "trade_date": latest_row.trade_date.isoformat() if latest_row.trade_date else None,
+                    "main_net": float(latest_row.main_net) if latest_row.main_net is not None else None,
+                    "unit": "yuan",
+                    "source": "db",
+                }
+            if date:
+                row_on = session.execute(text("SELECT trade_date, main_net FROM fundflow_daily WHERE symbol=:s AND trade_date=:d LIMIT 1"), {"s": sym, "d": date}).first()
+                if row_on:
+                    out["db_on_date"] = {
+                        "trade_date": row_on.trade_date.isoformat() if row_on.trade_date else date,
+                        "main_net": float(row_on.main_net) if row_on.main_net is not None else None,
+                        "unit": "yuan",
+                        "source": "db",
+                    }
+    except Exception as e:
+        out["notes"].append(f"DB error: {e}")
+    # Akshare history on date
+    if date:
+        try:
+            import akshare as ak
+            hdf = ak.stock_individual_fund_flow(stock=base)
+            if hdf is not None and not hdf.empty:
+                # Expect columns like 日期, 主力净流入-净额 (万元)
+                date_col = "日期" if "日期" in hdf.columns else ("date" if "date" in hdf.columns else None)
+                val_cols = ["主力净流入-净额", "今日主力净流入-净额", "main_net"]
+                vcol = None
+                for c in val_cols:
+                    if c in hdf.columns:
+                        vcol = c
+                        break
+                if date_col and vcol:
+                    row = hdf[hdf[date_col].astype(str) == str(date)]
+                    if not row.empty:
+                        raw = row.iloc[0][vcol]
+                        try:
+                            val_yuan = float(raw) * 1e4 if raw is not None else None  # 万元->元
+                        except Exception:
+                            val_yuan = None
+                        out["ak_history_on_date"] = {
+                            "trade_date": date,
+                            "main_net": val_yuan,
+                            "unit": "yuan",
+                            "raw": raw,
+                            "raw_unit": "万元",
+                            "source": "akshare.stock_individual_fund_flow",
+                        }
+                    else:
+                        out["notes"].append("Akshare history: no row for date")
+                else:
+                    out["notes"].append("Akshare history columns missing")
+            else:
+                out["notes"].append("Akshare history empty")
+        except Exception as e:
+            out["notes"].append(f"Akshare history error: {e}")
+    # Akshare today rank (intraday)
+    try:
+        import akshare as ak
+        rdf = ak.stock_individual_fund_flow_rank(indicator="今日")
+        if rdf is not None and not rdf.empty:
+            code_col = "代码" if "代码" in rdf.columns else ("symbol" if "symbol" in rdf.columns else None)
+            val_col = None
+            for c in ["今日主力净流入-净额", "主力净流入-净额"]:
+                if c in rdf.columns:
+                    val_col = c
+                    break
+            if code_col and val_col:
+                r = rdf[rdf[code_col].astype(str) == base]
+                if not r.empty:
+                    raw = r.iloc[0][val_col]
+                    try:
+                        val_yuan = float(raw) * 1e4 if raw is not None else None
+                    except Exception:
+                        val_yuan = None
+                    from datetime import datetime as _dt
+                    out["ak_today_rank"] = {
+                        "date": (_dt.now().date().isoformat()),
+                        "main_net": val_yuan,
+                        "unit": "yuan",
+                        "raw": raw,
+                        "raw_unit": "万元",
+                        "source": "akshare.stock_individual_fund_flow_rank(今日)",
+                    }
+                else:
+                    out["notes"].append("Akshare rank: symbol not found")
+            else:
+                out["notes"].append("Akshare rank columns missing")
+        else:
+            out["notes"].append("Akshare rank empty")
+    except Exception as e:
+        out["notes"].append(f"Akshare rank error: {e}")
+    # Eastmoney push2 intraday main_net (f62)
+    try:
+        mk = "1" if sym.endswith(".SH") else "0"
+        code = base
+        url = "https://push2.eastmoney.com/api/qt/stock/get"
+        params = {
+            "secid": f"{mk}.{code}",
+            "fields": "f58,f62",  # f58: name, f62: 主力净流入(元)
+        }
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get(url, params=params)
+            if resp.status_code == 200:
+                j = resp.json()
+                data = j.get("data") if isinstance(j, dict) else None
+                if data:
+                    name = data.get("f58")
+                    f62 = data.get("f62")
+                    try:
+                        val = float(f62) if f62 is not None else None
+                    except Exception:
+                        val = None
+                    out["eastmoney_intraday"] = {
+                        "name": name,
+                        "main_net": val,
+                        "unit": "yuan",
+                        "source": "eastmoney.push2.stock.get(f62)",
+                    }
+                else:
+                    out["notes"].append("Eastmoney push2: empty data")
+            else:
+                out["notes"].append(f"Eastmoney push2 HTTP {resp.status_code}")
+    except Exception as e:
+        out["notes"].append(f"Eastmoney push2 error: {e}")
+    # Eastmoney EOD (historical) via push2his daykline for fund flow
+    if date:
+        try:
+            mk = "1" if sym.endswith(".SH") else "0"
+            code = base
+            url = "https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get"
+            params = {
+                "secid": f"{mk}.{code}",
+                "fields1": "f1,f2,f3,f7",
+                "fields2": "f51,f52,f53,f54,f55,f56",  # date, main, super, large, medium, small
+                "klt": "103",  # daily
+                "lmt": "0",
+            }
+            with httpx.Client(timeout=5.0) as client:
+                resp = client.get(url, params=params)
+                if resp.status_code == 200:
+                    j = resp.json()
+                    data = j.get("data") if isinstance(j, dict) else None
+                    klines = data.get("klines") if data else None
+                    if isinstance(klines, list):
+                        # Find row for requested date
+                        target = None
+                        for item in klines:
+                            # item like "YYYY-MM-DD,main,super,large,medium,small"
+                            if isinstance(item, str) and item.startswith(date):
+                                target = item
+                                break
+                        if target:
+                            parts = target.split(",")
+                            def _num(i):
+                                try:
+                                    return float(parts[i]) if len(parts) > i and parts[i] != "" else None
+                                except Exception:
+                                    return None
+                            out["eastmoney_eod"] = {
+                                "trade_date": parts[0] if parts else date,
+                                "main_net": _num(1),
+                                "super_net": _num(2),
+                                "large_net": _num(3),
+                                "medium_net": _num(4),
+                                "small_net": _num(5),
+                                "unit": "yuan",
+                                "source": "eastmoney.push2his.fflow.daykline",
+                            }
+                        else:
+                            out["notes"].append("Eastmoney EOD: date not found in klines")
+                    else:
+                        out["notes"].append("Eastmoney EOD: no klines")
+                else:
+                    out["notes"].append(f"Eastmoney EOD HTTP {resp.status_code}")
+        except Exception as e:
+            out["notes"].append(f"Eastmoney EOD error: {e}")
+    # Sina EOD daily moneyflow (best effort, units often in 万元)
+    if date:
+        try:
+            pre = "sh" if sym.endswith(".SH") else "sz"
+            sina_symbol = f"{pre}{base}"
+            url = "http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/MoneyFlow.ssi_sshd_by_day"
+            params = {"symbol": sina_symbol, "days": "90"}
+            with httpx.Client(timeout=6.0) as client:
+                resp = client.get(url, params=params)
+                if resp.status_code == 200:
+                    # Some Sina endpoints return JSON array text
+                    try:
+                        arr = resp.json()
+                    except Exception:
+                        import json as _json
+                        arr = _json.loads(resp.text)
+                    if isinstance(arr, list):
+                        row = None
+                        for it in arr:
+                            d = str(it.get("date")) if isinstance(it, dict) else None
+                            if d == date:
+                                row = it
+                                break
+                        if row:
+                            raw = row.get("netAmount")  # likely in 万元
+                            try:
+                                val_yuan = float(raw) * 1e4 if raw is not None else None
+                            except Exception:
+                                val_yuan = None
+                            out["sina_eod"] = {
+                                "trade_date": date,
+                                "main_net_assumed": val_yuan,
+                                "unit": "yuan",
+                                "raw": raw,
+                                "raw_unit": "万元 (assumed)",
+                                "source": "sina.MoneyFlow.ssi_sshd_by_day",
+                            }
+                        else:
+                            out["notes"].append("Sina EOD: date not found")
+                    else:
+                        out["notes"].append("Sina EOD: unexpected payload")
+                else:
+                    out["notes"].append(f"Sina EOD HTTP {resp.status_code}")
+        except Exception as e:
+            out["notes"].append(f"Sina EOD error: {e}")
+    return out
+
+class AnalysisRequest(BaseModel):
+    days: int = Field(default=10, ge=5, le=30)
+
+@app.post("/api/watchlist/analysis")
+def watchlist_analysis(req: AnalysisRequest):
+    """Compute 1-2 week analysis per symbol: basic momentum, volatility, RSI and simple heuristic advice."""
+    from .signals import compute_signals
+    with SessionLocal() as session:
+        watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+        out = []
+        for w in watches:
+            qdf = pd.read_sql_query(
+                "SELECT trade_date, open, high, low, close, pct_chg, vol, amount FROM prices_daily WHERE symbol = %s ORDER BY trade_date",
+                con=engine,
+                params=(w.symbol,),
+            )
+            if len(qdf) < max(30, req.days+5):
+                out.append({"symbol": w.symbol, "name": w.name, "enough_data": False})
+                continue
+            sig = compute_signals(qdf)
+            tail = sig.tail(req.days)
+            # simple radar-like scores
+            momentum = float(tail['rsi'].mean()) if 'rsi' in tail else None
+            trend = float((tail['ma_s'] - tail['ma_l']).mean()) if 'ma_s' in tail and 'ma_l' in tail else None
+            volatility = float(tail['close'].pct_change().std()*100.0)
+            macd = float(tail['macd'].mean()) if 'macd' in tail else None
+            recent_return = float((tail['close'].iloc[-1] / tail['close'].iloc[0] - 1.0) * 100.0)
+            # heuristic advice
+            advice = []
+            risk = []
+            if momentum is not None:
+                if momentum > 60: advice.append("动量偏强，关注突破机会")
+                elif momentum < 40: advice.append("动量偏弱，谨慎追高")
+            if trend is not None:
+                if trend > 0: advice.append("短期均线高于长期，趋势偏多")
+                else: advice.append("短期弱于长期，等待企稳")
+            if volatility is not None and volatility > 3:
+                risk.append("波动率较高，控制仓位")
+            if recent_return > 5:
+                risk.append("短期涨幅较大，警惕回撤")
+            out.append({
+                "symbol": w.symbol,
+                "name": w.name,
+                "days": req.days,
+                "radar": {
+                    "momentum": momentum,
+                    "trend": trend,
+                    "volatility": volatility,
+                    "macd": macd,
+                    "recent_return": recent_return,
+                },
+                "advice": advice,
+                "risk": risk,
+                "enough_data": True,
+            })
+        return {"items": out}
 
 @app.get("/report/{symbol}")
 async def get_report(symbol: str, version: int = Query(None, description="报告版本号，默认返回最新版本")):
@@ -381,6 +1226,108 @@ async def check_missing_report_tasks():
     """检查并创建缺失的报告任务"""
     created_tasks = await task_manager.check_and_create_missing_report_tasks()
     return {"created_tasks": created_tasks, "count": len(created_tasks)}
+
+@app.get("/api/news/host-refs")
+async def get_articles_by_host(
+    host: str = Query(..., description="目标主机名，例如 tw.stock.yahoo.com"),
+    include_content_refs: bool = Query(True, description="是否包含正文中包含该host的文章"),
+    limit: int = Query(200, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    validate: bool = Query(False, description="是否同时校验链接可用性"),
+    concurrency: int = Query(5, ge=1, le=20),
+    timeout: int = Query(15, ge=3, le=60),
+):
+    """列出引用指定主机的文章，并可选对这些URL进行联网校验。
+
+    - host: 例如 'tw.stock.yahoo.com'
+    - include_content_refs: 也匹配正文包含该host的文章
+    - validate: 若为 true，将对匹配到的 url 逐个进行HTTP校验（HEAD或GET）
+    """
+    try:
+        with SessionLocal() as session:
+            from sqlalchemy import or_
+            pattern = f"%://{host}/%"
+            q = select(NewsArticle).where(NewsArticle.url.like(pattern))
+            if include_content_refs:
+                q = q.union_all(
+                    select(NewsArticle).where(NewsArticle.content.ilike(f"%{host}%"))
+                )
+            q = q.order_by(NewsArticle.published_at.desc().nullslast()).offset(offset).limit(limit)
+            arts = session.execute(q).scalars().all()
+
+        # 基本列表
+        out_articles = [
+            {
+                "id": a.id,
+                "title": a.title,
+                "url": a.url,
+                "published_at": a.published_at.isoformat() if a.published_at else None,
+                "source": a.source.name if a.source else None,
+            }
+            for a in arts
+        ]
+
+        result = {
+            "host": host,
+            "count": len(out_articles),
+            "articles": out_articles,
+        }
+
+        if not validate or not out_articles:
+            return result
+
+        # 校验URL有效性
+        headers_base = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Connection": "keep-alive",
+            "Accept-Encoding": "gzip, deflate, br",
+        }
+        ua_pool = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+        ]
+
+        uniq_urls = []
+        seen = set()
+        for a in out_articles:
+            u = a.get("url")
+            if isinstance(u, str) and u not in seen:
+                seen.add(u)
+                uniq_urls.append(u)
+
+        sem = asyncio.Semaphore(concurrency)
+
+        async def check_url(i: int, url: str):
+            parsed = urlparse(url)
+            origin = f"{parsed.scheme}://{parsed.netloc}/"
+            headers = dict(headers_base)
+            headers["User-Agent"] = ua_pool[i % len(ua_pool)]
+            headers["Referer"] = origin
+            try:
+                async with sem:
+                    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=headers) as client:
+                        # Try HEAD first
+                        try:
+                            r = await client.head(url)
+                            if r.status_code in (200, 301, 302, 303, 307, 308):
+                                return {"url": url, "status": r.status_code, "ok": True, "final_url": str(r.url)}
+                            # Some hosts block HEAD; fall back to GET
+                        except Exception:
+                            pass
+                        r = await client.get(url)
+                        ok = 200 <= r.status_code < 400
+                        return {"url": url, "status": r.status_code, "ok": ok, "final_url": str(r.url)}
+            except Exception as e:
+                return {"url": url, "status": None, "ok": False, "error": str(e)}
+
+        tasks = [check_url(i, u) for i, u in enumerate(uniq_urls)]
+        validations = await asyncio.gather(*tasks)
+        result["validation"] = validations
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"host refs inspection failed: {e}")
 
 @app.get("/api/report/{symbol}/full")
 async def get_full_report(symbol: str, timeRange: str = Query('5d', description="时间区间: 5d, 1m, 3m, 6m, 1y, all")):
@@ -808,12 +1755,20 @@ def list_tasks_api(status: Optional[str] = None, symbol: Optional[str] = None, d
 # ================ NEWS API ENDPOINTS ================
 
 from .news_service import NewsSearchService, NewsProcessor, NewsScheduler
-from .models import NewsArticle, NewsSource, SearchLog, NewsCategory, SentimentType
+from .models import NewsArticle, NewsSource, SearchLog, NewsCategory, SentimentType, NewsURLPattern
+from .stock_manager import StockListManager
+from .enhanced_news_scheduler import EnhancedNewsScheduler
+from .news_deduplication import NewsDeduplicator
+from .llm_processor import LLMNewsProcessor
+from .mongo_storage import get_storage
+from .metrics import NewsMetrics
 
 # Initialize news services
 news_search_service = NewsSearchService()
 news_processor = NewsProcessor()
 news_scheduler = NewsScheduler()
+enhanced_news_scheduler = EnhancedNewsScheduler()
+stock_list_manager = StockListManager()
 
 class NewsSearchRequest(BaseModel):
     query: str
@@ -826,6 +1781,63 @@ class NewsResponse(BaseModel):
     total_count: int
     query: str
     processing_time: float
+
+class StockManagementRequest(BaseModel):
+    symbol: str
+    name: Optional[str] = None
+    sector: Optional[str] = None
+    enabled: bool = True
+
+@app.delete("/api/news/cleanup/non-articles")
+def cleanup_non_article_entries(
+    host: Optional[str] = Query(None, description="可选，仅清理该主机名下的非文章链接"),
+    pattern: Optional[str] = Query(None, description="可选，LIKE 模式，例如 '%/equities/%' 或 '%/quote/%'"),
+    dry_run: bool = Query(True, description="默认试运行，只返回将删除的数量和样例；设为false才真正删除"),
+    limit: int = Query(500, ge=1, le=5000, description="最大处理数量（试运行时返回样例数量）"),
+):
+    """清理明显的非新闻文章记录（如 /equities/、/quote/ 等）。
+
+    用例：
+    - 按 host 清理：/api/news/cleanup/non-articles?host=cn.investing.com
+    - 按路径模式清理：/api/news/cleanup/non-articles?pattern=%/equities/%
+    - 干跑：默认 true；确认无误后 dry_run=false 执行
+    """
+    from sqlalchemy import or_
+    with SessionLocal() as session:
+        # 构造条件：常见的非文章路径
+        conditions = [
+            NewsArticle.url.ilike("%/quote/%"),
+            NewsArticle.url.ilike("%/quotes/%"),
+            NewsArticle.url.ilike("%/equities/%"),
+            NewsArticle.url.ilike("%/keywords/%"),
+            NewsArticle.url.ilike("%/tag/%"),
+            NewsArticle.url.ilike("%/category/%"),
+            NewsArticle.url.ilike("%/search%"),
+            NewsArticle.url.ilike("%/sitemap%"),
+            NewsArticle.url.ilike("%/index%"),
+            NewsArticle.url.ilike("%/topic%"),
+            NewsArticle.url.ilike("%/list%"),
+            NewsArticle.url.ilike("%/stocks/%"),
+        ]
+        if host:
+            conditions.append(NewsArticle.url.ilike(f"%://{host}/%"))
+        if pattern:
+            conditions.append(NewsArticle.url.ilike(pattern))
+
+        q = select(NewsArticle).where(or_(*conditions)).limit(limit)
+        rows = session.execute(q).scalars().all()
+        count = len(rows)
+        sample = [
+            {"id": r.id, "url": r.url, "title": r.title}
+            for r in rows[: min(20, count)]
+        ]
+        if dry_run or count == 0:
+            return {"dry_run": True, "matched": count, "sample": sample}
+        # 真正删除
+        ids = [r.id for r in rows]
+        session.execute(text("DELETE FROM news_articles WHERE id = ANY(:ids)"), {"ids": ids})
+        session.commit()
+        return {"dry_run": False, "deleted": count}
 
 @app.post("/api/news/search")
 async def search_news(request: NewsSearchRequest):
@@ -862,13 +1874,21 @@ async def get_stock_news(symbol: str, limit: int = Query(20, ge=1, le=100)):
     try:
         print(f"🔍 API called for stock: {symbol}")
         
-        # Get stock info first
+        # Get stock info first (tolerate network failures)
         stock_info = get_stock_info(symbol)
+        fallback_name = None
         if not stock_info:
-            print(f"❌ Stock not found: {symbol}")
-            raise HTTPException(status_code=404, detail="Stock not found")
-        
-        print(f"📊 Stock info: {stock_info.get('name')}")
+            # Try to get a name from watchlist as a best-effort fallback
+            try:
+                with SessionLocal() as session:
+                    w = session.execute(select(Watchlist).where(Watchlist.symbol == symbol.upper())).scalar_one_or_none()
+                    if w and getattr(w, 'name', None):
+                        fallback_name = w.name
+            except Exception as e:
+                print(f"⚠️ Fallback watchlist lookup failed: {e}")
+            print(f"⚠️ Stock info unavailable for {symbol}. Continuing with symbol only.")
+        else:
+            print(f"📊 Stock info: {stock_info.get('name')}")
         
         # Initialize services
         news_search_service = NewsSearchService()
@@ -878,7 +1898,7 @@ async def get_stock_news(symbol: str, limit: int = Query(20, ge=1, le=100)):
         print(f"🔎 Searching news...")
         results = await news_search_service.search_stock_news(
             symbol=symbol,
-            company_name=stock_info.get('name')
+            company_name=(stock_info.get('name') if stock_info else fallback_name)
         )
         
         print(f"🔎 Found {len(results)} search results")
@@ -955,7 +1975,7 @@ async def get_stock_news(symbol: str, limit: int = Query(20, ge=1, le=100)):
         # Return response
         return {
             "symbol": symbol,
-            "company_name": stock_info.get('name'),
+            "company_name": (stock_info.get('name') if stock_info else fallback_name),
             "articles": response_articles,
             "total_count": len(response_articles)
         }
@@ -975,57 +1995,181 @@ async def get_news_articles(
     sentiment: Optional[str] = Query(None),
     symbol: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0)
+    offset: int = Query(0, ge=0),
+    include_content: bool = Query(False, description="是否包含全文内容")
+):
+    # Build base query
+    query = select(NewsArticle).join(NewsSource)
+
+    # Apply filters
+    if category:
+        query = query.where(NewsArticle.category == category)
+    if sentiment:
+        query = query.where(NewsArticle.sentiment_type == sentiment)
+    if symbol:
+        query = query.where(NewsArticle.related_stocks.contains([symbol]))
+
+    # Order by published date, most recent first
+    query = query.order_by(NewsArticle.published_at.desc().nullslast())
+    # Apply pagination
+    query = query.offset(offset).limit(limit)
+
+    articles = db.execute(query).scalars().all()
+
+    return {
+        "articles": [
+            {
+                "id": article.id,
+                "title": article.title,
+                "url": article.url,
+                "summary": article.summary,
+                **({"content": article.content} if include_content else {}),
+                "published_at": article.published_at.isoformat() if article.published_at else None,
+                # Alias for clients expecting published_dt
+                "published_dt": article.published_at.isoformat() if article.published_at else None,
+                "source": article.source.name,
+                "category": article.category,
+                # Include bookmark/read flags for client state and filtering
+                "is_bookmarked": getattr(article, "is_bookmarked", None),
+                "is_read": getattr(article, "is_read", None),
+                "sentiment_type": article.sentiment_type,
+                "sentiment_score": article.sentiment_score,
+                "relevance_score": article.relevance_score,
+                "related_stocks": article.related_stocks,
+                "keywords": article.keywords,
+                # Expose structured analysis bundle for richer rendering
+                "analysis": {
+                    "companies": (article.entities or {}).get("companies") if isinstance(article.entities, dict) else [],
+                    "people": (article.entities or {}).get("people") if isinstance(article.entities, dict) else [],
+                    "locations": (article.entities or {}).get("locations") if isinstance(article.entities, dict) else [],
+                    "stock_symbols": article.related_stocks or [],
+                    "financial_metrics": (article.entities or {}).get("financial_metrics") if isinstance(article.entities, dict) else {},
+                    "main_topics": (article.entities or {}).get("main_topics") if isinstance(article.entities, dict) else ((article.keywords or [])[:3] if article.keywords else []),
+                    "market_impact": (article.entities or {}).get("market_impact") if isinstance(article.entities, dict) else None,
+                    "time_references": (article.entities or {}).get("time_references") if isinstance(article.entities, dict) else [],
+                    "reliability_assessment": (article.entities or {}).get("reliability_assessment") if isinstance(article.entities, dict) else None,
+                    "sentiment": {
+                        "type": article.sentiment_type,
+                        "score": article.sentiment_score,
+                    }
+                }
+            }
+            for article in articles
+        ],
+        "limit": limit,
+        "offset": offset,
+        "total_count": len(articles)
+    }
+
+@app.get("/api/news/audit")
+async def audit_news_quality(
+    db: Session = Depends(get_db),
+    sample_limit: int = Query(5, ge=1, le=50),
+    short_content_threshold: int = Query(60, ge=20, le=300),
+    mismatch_threshold: float = Query(0.25, ge=0.0, le=1.0, description="摘要与正文的一致性最低大ram-Jaccard阈值，低于则视为不一致"),
+    content_sample_len: int = Query(220, ge=50, le=1000, description="计算一致性的正文抽样长度（取前N字符）"),
 ):
     """
-    Get news articles with filtering
+    审计新闻数据质量：统计摘要缺失/占位符、内容缺失/过短，以及LLM扩展字段覆盖率，并返回样本。
     """
     try:
-        query = select(NewsArticle).join(NewsSource)
-        
-        # Apply filters
-        if category:
-            query = query.where(NewsArticle.category == category)
-        
-        if sentiment:
-            query = query.where(NewsArticle.sentiment_type == sentiment)
-        
-        if symbol:
-            query = query.where(NewsArticle.related_stocks.contains([symbol]))
-        
-        # Order by published date, most recent first
-        query = query.order_by(NewsArticle.published_at.desc().nullslast())
-        
-        # Apply pagination
-        query = query.offset(offset).limit(limit)
-        
-        articles = db.execute(query).scalars().all()
-        
+        articles = db.execute(select(NewsArticle)).scalars().all()
+        total = len(articles)
+
+        placeholder_markers = [
+            "请启用javascript", "enable javascript", "document", "cookie", "隐私", "验证码", "正在跳转", "安全验证"
+        ]
+
+        def is_empty(s: str | None) -> bool:
+            return (s is None) or (isinstance(s, str) and len(s.strip()) == 0)
+
+        def has_placeholder(s: str | None) -> bool:
+            if not s:
+                return False
+            lower = s.strip().lower()
+            return any(m in lower for m in placeholder_markers)
+
+        # Helpers for mismatch detection (bigram Jaccard)
+        def _bigrams(text: str) -> set:
+            t = (text or "").lower()
+            # Keep letters/numbers/CJK; collapse spaces
+            import re
+            t = re.sub(r"\s+", " ", t)
+            # build bigrams over characters to be language-agnostic
+            return {t[i:i+2] for i in range(len(t)-1)} if len(t) >= 2 else set()
+
+        def jaccard(a: str, b: str) -> float:
+            A, B = _bigrams(a), _bigrams(b)
+            if not A or not B:
+                return 0.0
+            inter = len(A & B)
+            union = len(A | B)
+            return (inter / union) if union else 0.0
+
+        # Metrics
+        summary_empty = []
+        summary_placeholder = []
+        content_empty = []
+        content_too_short = []
+        mismatch_summary_content = []
+        llm_enriched = 0
+
+        for a in articles:
+            if is_empty(a.summary):
+                summary_empty.append(a)
+            elif has_placeholder(a.summary):
+                summary_placeholder.append(a)
+
+            if is_empty(a.content):
+                content_empty.append(a)
+            elif isinstance(a.content, str) and len(a.content.strip()) < short_content_threshold:
+                content_too_short.append(a)
+
+            # Mismatch detection
+            if isinstance(a.summary, str) and isinstance(a.content, str):
+                content_slice = a.content.strip()[:content_sample_len]
+                sim = jaccard(a.summary.strip(), content_slice)
+                if sim < mismatch_threshold:
+                    mismatch_summary_content.append({
+                        "id": a.id,
+                        "title": a.title,
+                        "url": a.url,
+                        "sim": sim,
+                    })
+
+            ents = a.entities if isinstance(a.entities, dict) else {}
+            if isinstance(ents, dict) and (
+                ents.get("financial_metrics") or ents.get("main_topics") or ents.get("companies")
+            ):
+                llm_enriched += 1
+
+        def sample(items):
+            return [
+                {"id": x.id, "title": x.title, "url": x.url, "source": (x.source.name if x.source else None)}
+                for x in items[:sample_limit]
+            ]
+
+        def sample_m(items):
+            return items[:sample_limit]
+
         return {
-            "articles": [
-                {
-                    "id": article.id,
-                    "title": article.title,
-                    "url": article.url,
-                    "summary": article.summary,
-                    "published_at": article.published_at.isoformat() if article.published_at else None,
-                    "source": article.source.name,
-                    "category": article.category,
-                    "sentiment_type": article.sentiment_type,
-                    "sentiment_score": article.sentiment_score,
-                    "relevance_score": article.relevance_score,
-                    "related_stocks": article.related_stocks,
-                    "keywords": article.keywords
-                }
-                for article in articles
-            ],
-            "limit": limit,
-            "offset": offset,
-            "total_count": len(articles)
+            "total": total,
+            "summary_empty_count": len(summary_empty),
+            "summary_placeholder_count": len(summary_placeholder),
+            "content_empty_count": len(content_empty),
+            "content_too_short_count": len(content_too_short),
+            "mismatch_count": len(mismatch_summary_content),
+            "llm_enriched_ratio": (llm_enriched / total) if total else 0.0,
+            "samples": {
+                "summary_empty": sample(summary_empty),
+                "summary_placeholder": sample(summary_placeholder),
+                "content_empty": sample(content_empty),
+                "content_too_short": sample(content_too_short),
+                "mismatch_summary_content": sample_m(mismatch_summary_content),
+            }
         }
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching articles: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error auditing news: {str(e)}")
 
 @app.get("/api/news/sources")
 async def get_news_sources(db: Session = Depends(get_db)):
@@ -1059,10 +2203,21 @@ async def collect_news_for_stock(symbol: str, db: Session = Depends(get_db)):
     Manually trigger news collection for a specific stock
     """
     try:
-        # Get stock info
+        # Get stock info (tolerate network issues with fallback)
         stock_info = get_stock_info(symbol)
+        company_name = None
         if not stock_info:
-            raise HTTPException(status_code=404, detail="Stock not found")
+            # Try to fallback to watchlist stored name
+            try:
+                w = db.execute(select(Watchlist).where(Watchlist.symbol == symbol.upper())).scalar_one_or_none()
+                if w and getattr(w, 'name', None):
+                    company_name = w.name
+            except Exception as e:
+                print(f"⚠️ collect fallback watchlist lookup failed: {e}")
+            if not company_name:
+                company_name = symbol.upper()
+        else:
+            company_name = stock_info.get('name')
         
         # Add news collection task
         task = Task(
@@ -1071,7 +2226,7 @@ async def collect_news_for_stock(symbol: str, db: Session = Depends(get_db)):
             status=TaskStatus.PENDING.value,
             priority=3,
             task_metadata=json.dumps({
-                "company_name": stock_info.get('name'),
+                "company_name": company_name,
                 "manual_trigger": True
             })
         )
@@ -1083,7 +2238,7 @@ async def collect_news_for_stock(symbol: str, db: Session = Depends(get_db)):
         return {
             "message": f"News collection task created for {symbol}",
             "symbol": symbol,
-            "company_name": stock_info.get('name'),
+            "company_name": company_name,
             "task_id": task_id
         }
         
@@ -1097,22 +2252,862 @@ async def run_intelligent_news_collection():
     Manually trigger intelligent news collection based on watchlist strategies
     """
     try:
-        from .scheduler import run_manual_intelligent_collection
-        
-        result = await run_manual_intelligent_collection()
-        
-        return {
-            "message": "Intelligent news collection completed",
-            "status": result.get("status"),
-            "strategies_executed": result.get("strategies_executed", 0),
-            "strategies_skipped": result.get("strategies_skipped", 0),
-            "strategies_failed": result.get("strategies_failed", 0),
-            "total_articles": result.get("total_articles", 0),
-            "strategy_results": result.get("strategy_results", [])
-        }
+        result = await enhanced_news_scheduler.run_intelligent_news_collection()
+        return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error running intelligent news collection: {str(e)}")
+
+@app.post("/api/news/collect/daily")
+async def run_daily_news_collection():
+    """
+    Manually trigger daily news collection for all enabled stocks
+    """
+    try:
+        result = await enhanced_news_scheduler.run_daily_news_collection()
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error running daily news collection: {str(e)}")
+
+@app.get("/api/news/collection/status")
+async def get_news_collection_status():
+    """
+    Get current news collection status and statistics
+    """
+    try:
+        status = await enhanced_news_scheduler.get_collection_status()
+        return status
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting collection status: {str(e)}")
+
+# ================ STOCK MANAGEMENT API ENDPOINTS ================
+
+@app.post("/api/stocks/add")
+async def add_stock_to_watchlist(request: StockManagementRequest):
+    """
+    Add a stock to the monitoring watchlist
+    """
+    try:
+        stock = await stock_list_manager.add_stock(
+            symbol=request.symbol,
+            name=request.name,
+            sector=request.sector,
+            enabled=request.enabled
+        )
+        
+        return {
+            "message": f"Stock {request.symbol} added successfully",
+            "stock": {
+                "symbol": stock.symbol,
+                "name": stock.name,
+                "sector": stock.sector,
+                "enabled": stock.enabled
+            }
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding stock: {str(e)}")
+
+@app.delete("/api/stocks/{symbol}")
+async def remove_stock_from_watchlist(symbol: str):
+    """
+    Remove a stock from the monitoring watchlist
+    """
+    try:
+        success = await stock_list_manager.remove_stock(symbol)
+        
+        if success:
+            return {"message": f"Stock {symbol} removed successfully"}
+        else:
+            raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error removing stock: {str(e)}")
+
+@app.put("/api/stocks/{symbol}")
+async def update_stock_in_watchlist(symbol: str, request: StockManagementRequest):
+    """
+    Update a stock in the monitoring watchlist
+    """
+    try:
+        update_data = {}
+        if request.name is not None:
+            update_data['name'] = request.name
+        if request.sector is not None:
+            update_data['sector'] = request.sector
+        update_data['enabled'] = request.enabled
+        
+        stock = await stock_list_manager.update_stock(symbol, **update_data)
+        
+        if stock:
+            return {
+                "message": f"Stock {symbol} updated successfully",
+                "stock": {
+                    "symbol": stock.symbol,
+                    "name": stock.name,
+                    "sector": stock.sector,
+                    "enabled": stock.enabled
+                }
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating stock: {str(e)}")
+
+@app.get("/api/stocks")
+async def list_stocks(
+    enabled_only: bool = Query(False, description="只返回启用的股票"),
+    sector: Optional[str] = Query(None, description="按行业筛选"),
+    limit: int = Query(100, ge=1, le=1000, description="返回数量限制"),
+    offset: int = Query(0, ge=0, description="偏移量")
+):
+    """
+    Get list of stocks in the monitoring watchlist
+    """
+    try:
+        stocks = await stock_list_manager.list_stocks(
+            enabled_only=enabled_only,
+            sector=sector,
+            limit=limit,
+            offset=offset
+        )
+        
+        return {
+            "stocks": [
+                {
+                    "symbol": stock.symbol,
+                    "name": stock.name,
+                    "sector": stock.sector,
+                    "enabled": stock.enabled
+                }
+                for stock in stocks
+            ],
+            "count": len(stocks),
+            "filters": {
+                "enabled_only": enabled_only,
+                "sector": sector
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing stocks: {str(e)}")
+
+@app.get("/api/stocks/statistics")
+async def get_stocks_statistics():
+    """
+    Get statistics about the stock monitoring system
+    """
+    try:
+        stats = await stock_list_manager.get_stock_statistics()
+        return stats
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting statistics: {str(e)}")
+
+@app.get("/api/stocks/sectors")
+async def get_stock_sectors():
+    """
+    Get all available stock sectors
+    """
+    try:
+        sectors = await stock_list_manager.get_sectors()
+        return {"sectors": sectors}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting sectors: {str(e)}")
+
+@app.post("/api/stocks/{symbol}/enable")
+async def enable_stock_monitoring(symbol: str):
+    """
+    Enable monitoring for a specific stock
+    """
+    try:
+        success = await stock_list_manager.enable_stock(symbol)
+        
+        if success:
+            return {"message": f"Stock {symbol} monitoring enabled"}
+        else:
+            raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error enabling stock: {str(e)}")
+
+@app.post("/api/stocks/{symbol}/disable")
+async def disable_stock_monitoring(symbol: str):
+    """
+    Disable monitoring for a specific stock
+    """
+    try:
+        success = await stock_list_manager.disable_stock(symbol)
+        
+        if success:
+            return {"message": f"Stock {symbol} monitoring disabled"}
+        else:
+            raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error disabling stock: {str(e)}")
+
+@app.post("/api/stocks/batch/enable")
+async def batch_enable_stocks(symbols: List[str]):
+    """
+    Batch enable monitoring for multiple stocks
+    """
+    try:
+        count = await stock_list_manager.batch_update_enabled(symbols, enabled=True)
+        return {
+            "message": f"Enabled monitoring for {count} stocks",
+            "symbols": symbols,
+            "updated_count": count
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error batch enabling stocks: {str(e)}")
+
+@app.post("/api/stocks/batch/disable")
+async def batch_disable_stocks(symbols: List[str]):
+    """
+    Batch disable monitoring for multiple stocks
+    """
+    try:
+        count = await stock_list_manager.batch_update_enabled(symbols, enabled=False)
+        return {
+            "message": f"Disabled monitoring for {count} stocks",
+            "symbols": symbols,
+            "updated_count": count
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error batch disabling stocks: {str(e)}")
+
+# ================ NEWS DEDUPLICATION API ENDPOINTS ================
+
+@app.get("/api/news/deduplication/stats")
+async def get_deduplication_stats():
+    """
+    Get news deduplication statistics
+    """
+    try:
+        deduplicator = NewsDeduplicator()
+        stats = await deduplicator.get_deduplication_stats()
+        return stats
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting deduplication stats: {str(e)}")
+
+@app.post("/api/news/deduplication/clean")
+async def clean_duplicate_news(dry_run: bool = Query(True, description="预览模式，不实际删除")):
+    """
+    Clean duplicate news articles
+    """
+    try:
+        deduplicator = NewsDeduplicator()
+        result = await deduplicator.clean_duplicates(dry_run=dry_run)
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error cleaning duplicates: {str(e)}")
+
+# ================ LLM PROCESSING API ENDPOINTS ================
+
+@app.post("/api/news/analyze")
+async def analyze_news_content(
+    title: str = Form(..., description="新闻标题"),
+    content: str = Form(..., description="新闻内容"),
+    url: Optional[str] = Form(None, description="新闻URL")
+):
+    """
+    Analyze news content using LLM
+    """
+    try:
+        async with LLMNewsProcessor() as llm_processor:
+            result = await llm_processor.analyze_news(title, content, url)
+            
+            if result:
+                return {
+                    "status": "success",
+                    "analysis": llm_processor.to_dict(result)
+                }
+            else:
+                return {
+                    "status": "failed",
+                    "message": "Analysis failed"
+                }
+                
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing news: {str(e)}")
+
+@app.post("/api/news/backfill")
+async def backfill_news_content(
+    limit: int = Query(50, ge=1, le=500, description="每次处理的最大文章数"),
+    only_missing_summary: bool = Query(True, description="仅处理缺少摘要的文章"),
+    only_missing_content: bool = Query(True, description="仅处理缺少内容的文章"),
+    concurrency: int = Query(5, ge=1, le=20, description="并发抓取与分析的协程数上限"),
+    refresh_placeholders: bool = Query(True, description="如果摘要或正文包含占位符/垃圾文本则强制重抓与重生"),
+    force_refresh: bool = Query(False, description="即使已存在也强制刷新摘要与结构化分析"),
+    offset: int = Query(0, ge=0, description="当 force_refresh=true 时支持分页处理的偏移量"),
+    fix_mismatches: bool = Query(True, description="检测到摘要与正文不一致时自动重生摘要/重抓内容"),
+    mismatch_threshold: float = Query(0.25, ge=0.0, le=1.0, description="摘要与正文的一致性最低大ram-Jaccard阈值"),
+    content_sample_len: int = Query(220, ge=50, le=1000, description="计算一致性的正文抽样长度（取前N字符）"),
+    short_content_threshold: int = Query(60, ge=20, le=300, description="如果正文长度低于该值将视为需要重抓"),
+    ids: Optional[str] = Query(None, description="可选，逗号分隔的文章ID列表，仅处理这些ID"),
+    skip_non_article: bool = Query(True, description="跳过非新闻文章URL（如/quote、/equities等）。设为false则强制尝试处理"),
+):
+    """
+    Backfill existing news articles with missing content/summary using crawler + LLM (if enabled).
+    """
+    try:
+        session = next(get_db())
+        processed = 0
+        updated_summary = 0
+        updated_content = 0
+        skipped = 0
+
+        # Build base query
+        q = select(NewsArticle).order_by(NewsArticle.published_at.desc().nullslast())
+        conditions = []
+        # Filter by IDs if provided
+        if ids:
+            try:
+                id_list = [int(x.strip()) for x in ids.split(',') if x.strip().isdigit()]
+                if id_list:
+                    from sqlalchemy import or_
+                    conditions.append(NewsArticle.id.in_(id_list))
+            except Exception:
+                pass
+        if only_missing_summary and not force_refresh:
+            conditions.append((NewsArticle.summary.is_(None)) | (NewsArticle.summary == ""))
+        if only_missing_content and not force_refresh:
+            conditions.append((NewsArticle.content.is_(None)) | (NewsArticle.content == ""))
+        if conditions:
+            from sqlalchemy import or_
+            q = q.where(or_(*conditions))
+
+        # 支持分页（主要用于 force_refresh 扫描全库场景）
+        q = q.offset(offset).limit(limit)
+
+        articles = session.execute(q).scalars().all()
+        if not articles:
+            return {"status": "ok", "processed": 0, "message": "没有需要补充的文章"}
+
+        processor = NewsProcessor()
+
+        # Helpers for mismatch detection
+        def _bigrams(text: str) -> set:
+            t = (text or "").lower()
+            import re
+            t = re.sub(r"\s+", " ", t)
+            return {t[i:i+2] for i in range(len(t)-1)} if len(t) >= 2 else set()
+
+        def jaccard(a: str, b: str) -> float:
+            A, B = _bigrams(a), _bigrams(b)
+            if not A or not B:
+                return 0.0
+            inter = len(A & B)
+            union = len(A | B)
+            return (inter / union) if union else 0.0
+
+        # Process concurrently with semaphore
+        import asyncio as _asyncio
+        sem = _asyncio.Semaphore(concurrency)
+
+        placeholder_markers = [
+            "请启用javascript", "enable javascript", "document", "cookie", "隐私", "验证码", "正在跳转", "安全验证"
+        ]
+
+        def has_placeholder(s: str | None) -> bool:
+            if not s:
+                return False
+            lower = s.strip().lower()
+            return any(m in lower for m in placeholder_markers)
+
+        def is_empty(s: str | None) -> bool:
+            return (s is None) or (isinstance(s, str) and len(s.strip()) == 0)
+
+        async def handle_article(art):
+            nonlocal updated_content, updated_summary, processed, skipped
+            async with sem:
+                try:
+                    # Skip non-article-like URLs to avoid empty content/summary loops
+                    if skip_non_article and not processor._is_article_like_url(art.url or ""):
+                        skipped += 1
+                        return
+                    # Fetch content if missing
+                    need_content = (
+                        (only_missing_content and (not art.content or not art.content.strip()))
+                        or (not only_missing_content and not art.content)
+                        or (force_refresh)
+                        or (refresh_placeholders and (has_placeholder(art.content) or (isinstance(art.content, str) and len(art.content.strip()) < short_content_threshold)))
+                    )
+                    if need_content:
+                        soup = await processor._fetch_soup(art.url)
+                        content = await processor._extract_content(art.url, soup)
+                        if content:
+                            # Repair potential mojibake to improve CN ratio/readability
+                            try:
+                                content = processor._maybe_fix_mojibake(content)
+                            except Exception:
+                                pass
+                            art.content = content
+                            updated_content += 1
+
+                    # Generate/refresh summary (and structured fields) if missing or if content updated
+                    need_summary = (
+                        (only_missing_summary and (not art.summary or not art.summary.strip()))
+                        or (not only_missing_summary and not art.summary)
+                        or force_refresh
+                        or (refresh_placeholders and has_placeholder(art.summary))
+                    )
+                    # Also trigger refresh when mismatch detected
+                    if fix_mismatches and isinstance(art.summary, str) and isinstance(art.content, str):
+                        try:
+                            content_slice = art.content.strip()[:content_sample_len]
+                            sim = jaccard(art.summary.strip(), content_slice)
+                            if sim < mismatch_threshold:
+                                need_summary = True
+                                if len(content_slice) < short_content_threshold:
+                                    try:
+                                        soup = await processor._fetch_soup(art.url)
+                                        content2 = await processor._extract_content(art.url, soup)
+                                        if content2 and content2.strip() != (art.content or "").strip():
+                                            art.content = content2
+                                            updated_content += 1
+                                    except Exception:
+                                        pass
+                        except Exception:
+                            pass
+                    if need_summary or need_content:
+                        llm_summary = None
+                        if getattr(processor, "_use_llm", False):
+                            try:
+                                from .llm_processor import LLMNewsProcessor
+                                async with LLMNewsProcessor() as llm:
+                                    res = await llm.analyze_news(title=art.title or "", content=art.content or "", url=art.url)
+                                    if res:
+                                        # Persist extended analysis
+                                        llm_summary = res.summary or None
+                                        # Sentiment
+                                        art.sentiment_type = res.sentiment_type or art.sentiment_type
+                                        art.sentiment_score = res.sentiment_score or art.sentiment_score
+                                        art.sentiment_confidence = res.sentiment_confidence or art.sentiment_confidence
+                                        # Keywords
+                                        art.keywords = (res.keywords or [])[:15]
+                                        # Entities bundle (store extended fields inside entities JSON)
+                                        art.entities = {
+                                            "companies": res.companies or [],
+                                            "people": res.people or [],
+                                            "locations": res.locations or [],
+                                            "financial_metrics": res.financial_metrics or {},
+                                            "main_topics": (res.main_topics or [])[:5],
+                                            "time_references": res.time_references or [],
+                                            "reliability_assessment": res.reliability_assessment or None,
+                                            "market_impact": res.market_impact or None,
+                                        }
+                                        # Related stocks merge
+                                        merged = set(art.related_stocks or [])
+                                        for s in (res.stock_symbols or []):
+                                            merged.add(s)
+                                        art.related_stocks = list(merged) if merged else None
+                                        # Category & quality & relevance
+                                        art.category = res.category or art.category
+                                        art.relevance_score = res.relevance_score or art.relevance_score
+                                        art.content_quality = res.content_quality or art.content_quality
+                            except Exception as _e:
+                                llm_summary = None
+                        art.summary = llm_summary or processor._generate_summary(art.content or "")
+                        updated_summary += 1
+                except Exception as e:
+                    print(f"Backfill failed for {art.id} {art.url}: {e}")
+                finally:
+                    processed += 1
+
+        await _asyncio.gather(*(handle_article(a) for a in articles))
+
+        session.commit()
+
+        return {
+            "status": "ok",
+            "processed": processed,
+            "updated_content": updated_content,
+            "updated_summary": updated_summary,
+            "skipped": skipped,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error backfilling news: {str(e)}")
+
+@app.get("/api/news/metrics")
+def get_news_metrics(db: Session = Depends(get_db)):
+    """Return runtime counters and basic DB aggregates for news quality/volume."""
+    try:
+        runtime = NewsMetrics.snapshot()
+        # DB aggregates
+        # Note: simple counts; avoid heavy queries
+        totals = {
+            "articles_total": db.execute(text("SELECT COUNT(*) FROM news_articles")).scalar() or 0,
+            "articles_with_content": db.execute(text("SELECT COUNT(*) FROM news_articles WHERE content IS NOT NULL AND length(trim(content)) > 0")).scalar() or 0,
+            "articles_with_summary": db.execute(text("SELECT COUNT(*) FROM news_articles WHERE summary IS NOT NULL AND length(trim(summary)) > 0")).scalar() or 0,
+            "articles_duplicates": db.execute(text("SELECT COUNT(*) FROM news_articles WHERE is_duplicate = TRUE")).scalar() or 0,
+            "sources_total": db.execute(text("SELECT COUNT(*) FROM news_sources")).scalar() or 0,
+        }
+        return {"runtime": runtime, "totals": totals}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"metrics error: {e}")
+
+class URLPatternIn(BaseModel):
+    kind: str  # 'block' or 'allow'
+    scope: str = "substring"  # 'substring' or 'regex' (only 'substring' supported in processor)
+    pattern: str
+    host: Optional[str] = None
+    enabled: bool = True
+    notes: Optional[str] = None
+
+@app.get("/api/news/url-filters")
+def list_url_filters(db: Session = Depends(get_db)):
+    try:
+        rows = db.execute(select(NewsURLPattern).order_by(NewsURLPattern.id.desc())).scalars().all()
+        return {
+            "filters": [
+                {
+                    "id": r.id,
+                    "kind": r.kind,
+                    "scope": r.scope,
+                    "host": r.host,
+                    "pattern": r.pattern,
+                    "enabled": r.enabled,
+                    "notes": r.notes,
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                    "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+                }
+                for r in rows
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"list url filters error: {e}")
+
+@app.post("/api/news/url-filters")
+def create_url_filter(payload: URLPatternIn, db: Session = Depends(get_db)):
+    try:
+        item = NewsURLPattern(
+            kind=payload.kind,
+            scope=payload.scope,
+            host=(payload.host.strip() if payload.host else None),
+            pattern=payload.pattern.strip(),
+            enabled=payload.enabled,
+            notes=payload.notes,
+            updated_at=datetime.utcnow(),
+        )
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+        # Warm reload for processors
+        try:
+            news_processor.reload_url_filters(force=True)
+        except Exception:
+            pass
+        return {"ok": True, "id": item.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"create url filter error: {e}")
+
+@app.put("/api/news/url-filters/{item_id}")
+def update_url_filter(item_id: int, payload: URLPatternIn, db: Session = Depends(get_db)):
+    try:
+        item = db.get(NewsURLPattern, item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="not found")
+        item.kind = payload.kind
+        item.scope = payload.scope
+        item.host = payload.host.strip() if payload.host else None
+        item.pattern = payload.pattern.strip()
+        item.enabled = payload.enabled
+        item.notes = payload.notes
+        item.updated_at = datetime.utcnow()
+        db.commit()
+        # Reload
+        try:
+            news_processor.reload_url_filters(force=True)
+        except Exception:
+            pass
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"update url filter error: {e}")
+
+@app.delete("/api/news/url-filters/{item_id}")
+def delete_url_filter(item_id: int, db: Session = Depends(get_db)):
+    try:
+        item = db.get(NewsURLPattern, item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="not found")
+        db.delete(item)
+        db.commit()
+        try:
+            news_processor.reload_url_filters(force=True)
+        except Exception:
+            pass
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"delete url filter error: {e}")
+
+class CleanupRequest(BaseModel):
+    """Cleanup request payload for article auditing and correction."""
+    symbol: str = Field(..., description="指定股票代码，例如 300251.SZ")
+    company_name: Optional[str] = Field(None, description="可选，公司名称，帮助提升相关性判断")
+    dry_run: bool = Field(True, description="预览模式，仅返回将执行的操作，不更改数据库")
+    limit: int = Field(100, ge=1, le=1000, description="每次处理的文章数量上限")
+    offset: int = Field(0, ge=0, description="分页偏移")
+    blacklist_non_cn: bool = Field(True, description="将非中文文章加入URL黑名单")
+    blacklist_unrelated: bool = Field(True, description="将与指定股票无关的文章加入URL黑名单")
+    delete_blacklisted: bool = Field(True, description="对判定为黑名单的文章从库中删除")
+    refresh_relevant: bool = Field(True, description="对相关文章重新抓取内容并用LLM重生摘要/结构化字段")
+    check_summary_match: bool = Field(True, description="校验摘要与正文一致性，不一致则重生摘要")
+    max_concurrency: int = Field(5, ge=1, le=20, description="并发处理上限")
+
+@app.post("/api/news/cleanup")
+async def cleanup_news(payload: CleanupRequest, db: Session = Depends(get_db)):
+    """清理与指定股票无关或低质量的新闻，并刷新相关新闻的内容与摘要。
+
+    步骤：
+    - 选择一批文章（按发布时间倒序，分页）
+    - 语言检测（中文占比）与A股相关性判断；不合格加入URL黑名单（可选）并删除（可选）
+    - 对相关文章：必要时重抓正文；可选校验摘要与正文一致性；用LLM提取结构化观点并更新摘要
+    - 支持dry_run预览
+    """
+    try:
+        symbol = payload.symbol.upper().strip()
+        company_name = (payload.company_name or "").strip()
+
+        # 选取待处理文章（最新优先）
+        q = select(NewsArticle).order_by(NewsArticle.published_at.desc().nullslast())
+        q = q.offset(payload.offset).limit(payload.limit)
+        rows: list[NewsArticle] = db.execute(q).scalars().all()
+        if not rows:
+            return {"status": "ok", "processed": 0, "blacklisted": 0, "deleted": 0, "refreshed": 0}
+
+        processor = NewsProcessor()
+
+        # Helpers
+        def _bigrams(text: str) -> set[str]:
+            t = (text or "").lower()
+            import re as _re
+            t = _re.sub(r"\s+", " ", t)
+            return {t[i:i+2] for i in range(len(t)-1)} if len(t) >= 2 else set()
+
+        def jaccard(a: str, b: str) -> float:
+            A, B = _bigrams(a), _bigrams(b)
+            if not A or not B:
+                return 0.0
+            inter = len(A & B)
+            union = len(A | B)
+            return (inter / union) if union else 0.0
+
+        def looks_related(a: NewsArticle, content_text: str) -> bool:
+            # 强相关：related_stocks包含；标题/正文含有 6位代码或symbol或公司名
+            try:
+                if a.related_stocks and isinstance(a.related_stocks, list) and symbol in a.related_stocks:
+                    return True
+            except Exception:
+                pass
+            import re as _re
+            base = symbol.replace(".SH", "").replace(".SZ", "")
+            text = f"{a.title or ''} {content_text or ''}".lower()
+            if base and _re.search(rf"\b{_re.escape(base)}\b", text):
+                return True
+            if symbol.lower() in text:
+                return True
+            if company_name and company_name.lower() in text:
+                return True
+            # fallback到A股通用相关性判断
+            return processor._is_relevant_to_a_share(a.title or "", content_text or "", a.url or "", hint_symbol=symbol)
+
+        # 并发处理
+        import asyncio as _asyncio
+        sem = _asyncio.Semaphore(payload.max_concurrency)
+
+        actions = {"blacklisted": [], "deleted": [], "refreshed": [], "kept": []}
+
+        async def handle_article(a: NewsArticle):
+            async with sem:
+                nonlocal db
+                url = a.url or ""
+                title = a.title or ""
+                # 语言与相关性预判（使用已有正文或标题）
+                content_text = a.content or ""
+                cn_ratio = processor._chinese_ratio(f"{title} {content_text}")
+                relevant = looks_related(a, content_text)
+
+                to_blacklist = False
+                reason = None
+                if payload.blacklist_non_cn and (cn_ratio < processor._min_cn_ratio) and not processor._force_allow_non_cn:
+                    to_blacklist = True
+                    reason = "non_chinese"
+                elif payload.blacklist_unrelated and not relevant:
+                    to_blacklist = True
+                    reason = "unrelated"
+
+                # Blacklist + optional delete
+                if to_blacklist:
+                    if not payload.dry_run:
+                        # Insert URL block pattern (exact URL as substring)
+                        try:
+                            host = urlparse(url).netloc if url else None
+                            blk = NewsURLPattern(
+                                kind="block",
+                                scope="substring",
+                                host=host,
+                                pattern=url,
+                                enabled=True,
+                                notes=f"auto-cleanup: {reason} for {symbol}"
+                            )
+                            db.add(blk)
+                            db.commit()
+                        except Exception:
+                            db.rollback()
+                    actions["blacklisted"].append({"id": a.id, "url": url, "reason": reason})
+                    if payload.delete_blacklisted and not payload.dry_run:
+                        try:
+                            db.delete(a)
+                            db.commit()
+                        except Exception:
+                            db.rollback()
+                    if payload.delete_blacklisted:
+                        actions["deleted"].append({"id": a.id, "url": url})
+                    return
+
+                # 对相关文章进行刷新（抓取内容+LLM重生）
+                if payload.refresh_relevant:
+                    try:
+                        soup = await processor._fetch_soup(url)
+                        new_content = await processor._extract_content(url, soup)
+                        # 保留与股票更相关的段落（简单段落筛选）
+                        if new_content:
+                            paragraphs = [p.strip() for p in new_content.split("\n") if p.strip()]
+                            base = symbol.replace(".SH", "").replace(".SZ", "")
+                            def _keep(p: str) -> bool:
+                                low = p.lower()
+                                if symbol.lower() in low:
+                                    return True
+                                if company_name and company_name.lower() in low:
+                                    return True
+                                import re as _re
+                                if base and _re.search(rf"\b{_re.escape(base)}\b", low):
+                                    return True
+                                return False
+                            filtered = "\n".join([p for p in paragraphs if _keep(p)])
+                            # 若筛选后过短，退回完整正文
+                            if filtered and len(filtered) >= 60:
+                                a.content = filtered[:8000]
+                            elif new_content and len(new_content) >= 60:
+                                a.content = new_content[:8000]
+                        # 摘要匹配或重生
+                        need_summary = payload.check_summary_match
+                        if payload.check_summary_match and isinstance(a.summary, str) and isinstance(a.content, str):
+                            sim = jaccard(a.summary.strip(), a.content.strip()[:220])
+                            if sim >= 0.25:
+                                need_summary = False
+                        # 使用LLM生成/刷新
+                        llm_summary = None
+                        if getattr(processor, "_use_llm", False):
+                            try:
+                                from .llm_processor import LLMNewsProcessor
+                                async with LLMNewsProcessor() as llm:
+                                    res = await llm.analyze_news(title=title, content=a.content or new_content or "", url=url)
+                                    if res:
+                                        llm_summary = res.summary or None
+                                        a.sentiment_type = res.sentiment_type or a.sentiment_type
+                                        a.sentiment_score = res.sentiment_score or a.sentiment_score
+                                        a.sentiment_confidence = res.sentiment_confidence or a.sentiment_confidence
+                                        a.keywords = (res.keywords or [])[:15]
+                                        a.entities = {
+                                            "companies": res.companies or [],
+                                            "people": res.people or [],
+                                            "locations": res.locations or [],
+                                            "financial_metrics": res.financial_metrics or {},
+                                            "main_topics": (res.main_topics or [])[:5],
+                                            "time_references": res.time_references or [],
+                                            "reliability_assessment": res.reliability_assessment or None,
+                                            "market_impact": res.market_impact or None,
+                                        }
+                                        merged = set(a.related_stocks or [])
+                                        for s in (res.stock_symbols or []):
+                                            merged.add(s)
+                                        a.related_stocks = list(merged) if merged else None
+                                        a.category = res.category or a.category
+                                        a.relevance_score = res.relevance_score or a.relevance_score
+                                        a.content_quality = res.content_quality or a.content_quality
+                            except Exception:
+                                llm_summary = None
+                        if need_summary or (llm_summary is not None):
+                            a.summary = llm_summary or processor._generate_summary(a.content or new_content or "")
+                        if not payload.dry_run:
+                            db.add(a)
+                            db.commit()
+                        actions["refreshed"].append({"id": a.id, "url": url})
+                    except Exception:
+                        # 忽略单条错误以便继续批处理
+                        if not payload.dry_run:
+                            db.rollback()
+                        actions["kept"].append({"id": a.id, "url": url, "note": "refresh_failed"})
+                        return
+                else:
+                    actions["kept"].append({"id": a.id, "url": url})
+
+        await _asyncio.gather(*(handle_article(a) for a in rows))
+
+        # 变更URL过滤器缓存
+        try:
+            news_processor.reload_url_filters(force=True)
+        except Exception:
+            pass
+
+        return {
+            "status": "ok",
+            "processed": len(rows),
+            "blacklisted": len(actions["blacklisted"]),
+            "deleted": len(actions["deleted"]),
+            "refreshed": len(actions["refreshed"]),
+            "kept": len(actions["kept"]),
+            "actions": actions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"cleanup error: {e}")
+
+@app.get("/api/news/categories")
+async def get_news_categories():
+    """
+    Get all available news categories
+    """
+    return {
+        "categories": [category.value for category in NewsCategory]
+    }
+
+@app.get("/api/news/sentiment-types")
+async def get_sentiment_types():
+    """
+    Get all available sentiment types
+    """
+    return {
+        "sentiment_types": [sentiment.value for sentiment in SentimentType]
+    }
 
 @app.get("/api/news/strategies/test")
 async def test_strategies():
@@ -1284,9 +3279,387 @@ async def get_stock_sentiment(symbol: str, db: Session = Depends(get_db), days: 
                 for article in articles[:10]
             ]
         }
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing sentiment: {str(e)}")
+
+# ================ MONGODB STORAGE API ENDPOINTS ================
+
+class MongoNewsRequest(BaseModel):
+    stock_symbol: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    limit: Optional[int] = 100
+    min_relevance: Optional[float] = 0.0
+
+@app.get("/api/storage/stock-news/{stock_symbol}")
+async def get_stock_news_from_mongo(
+    stock_symbol: str,
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    limit: int = Query(100, le=1000),
+    min_relevance: float = Query(0.0, ge=0.0, le=1.0)
+):
+    """
+    Get stock-specific news from MongoDB archive
+    获取特定股票的新闻存档
+    """
+    try:
+        storage = await get_storage()
+        if storage is None:
+            raise HTTPException(status_code=503, detail="MongoDB storage is not available")
+        
+        # Parse dates
+        start_dt = datetime.fromisoformat(start_date) if start_date else None
+        end_dt = datetime.fromisoformat(end_date) if end_date else None
+        
+        news_data = await storage.get_stock_news(
+            stock_symbol=stock_symbol,
+            start_date=start_dt,
+            end_date=end_dt,
+            limit=limit,
+            min_relevance=min_relevance
+        )
+        
+        return {
+            "status": "success",
+            "stock_symbol": stock_symbol.upper(),
+            "count": len(news_data),
+            "news": news_data
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving stock news: {str(e)}")
+
+@app.get("/api/storage/stock-statistics/{stock_symbol}")
+async def get_stock_news_statistics(
+    stock_symbol: str,
+    days: int = Query(30, ge=1, le=365)
+):
+    """
+    Get stock news statistics from MongoDB
+    获取股票新闻统计信息
+    """
+    try:
+        storage = await get_storage()
+        if storage is None:
+            raise HTTPException(status_code=503, detail="MongoDB storage is not available")
+        
+        statistics = await storage.get_stock_statistics(
+            stock_symbol=stock_symbol,
+            days=days
+        )
+        
+        return {
+            "status": "success",
+            "statistics": statistics
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving statistics: {str(e)}")
+
+@app.post("/api/storage/cleanup")
+async def cleanup_old_data(
+    days_to_keep: int = Query(90, ge=7, le=365)
+):
+    """
+    Clean up old data from MongoDB
+    清理MongoDB中的旧数据
+    """
+    try:
+        storage = await get_storage()
+        if storage is None:
+            raise HTTPException(status_code=503, detail="MongoDB storage is not available")
+        
+        success = await storage.cleanup_old_data(days_to_keep=days_to_keep)
+        
+        return {
+            "status": "success" if success else "failed",
+            "message": f"Cleanup completed for data older than {days_to_keep} days"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during cleanup: {str(e)}")
+
+@app.get("/api/storage/check-duplicate")
+async def check_news_duplicate(
+    url: Optional[str] = Query(None),
+    content_hash: Optional[str] = Query(None)
+):
+    """
+    Check if content is duplicate in MongoDB
+    检查内容是否为重复
+    """
+    try:
+        if not url and not content_hash:
+            raise HTTPException(status_code=400, detail="Either url or content_hash must be provided")
+        
+        storage = await get_storage()
+        if storage is None:
+            raise HTTPException(status_code=503, detail="MongoDB storage is not available")
+        
+        is_duplicate = await storage.check_duplicate(
+            url=url,
+            content_hash=content_hash
+        )
+        
+        return {
+            "status": "success",
+            "is_duplicate": is_duplicate,
+            "url": url,
+            "content_hash": content_hash
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking duplicate: {str(e)}")
+
+
+# 新闻管理API端点
+@app.get("/api/news/stats")
+async def get_news_stats(db: Session = Depends(get_db)):
+    """
+    获取新闻统计信息
+    """
+    try:
+        # 获取总文章数
+        total_result = db.execute(text("SELECT COUNT(*) as count FROM news_articles")).first()
+        total_articles = total_result.count if total_result else 0
+
+        # 获取今日文章数
+        today = datetime.now().date()
+        today_result = db.execute(
+            text("SELECT COUNT(*) as count FROM news_articles WHERE DATE(crawled_at) = :today"),
+            {"today": today}
+        ).first()
+        today_articles = today_result.count if today_result else 0
+
+        # 获取情感统计
+        sentiment_result = db.execute(text("""
+            SELECT sentiment_type, COUNT(*) as count
+            FROM news_articles
+            WHERE sentiment_type IS NOT NULL
+            GROUP BY sentiment_type
+        """)).all()
+
+        positive_sentiment = 0
+        negative_sentiment = 0
+        neutral_sentiment = 0
+
+        for row in sentiment_result:
+            if row.sentiment_type == 'positive':
+                positive_sentiment = row.count
+            elif row.sentiment_type == 'negative':
+                negative_sentiment = row.count
+            elif row.sentiment_type == 'neutral':
+                neutral_sentiment = row.count
+
+        # 计算百分比
+        total_sentiment = positive_sentiment + negative_sentiment + neutral_sentiment
+        if total_sentiment > 0:
+            positive_sentiment = round((positive_sentiment / total_sentiment) * 100)
+            negative_sentiment = round((negative_sentiment / total_sentiment) * 100)
+            neutral_sentiment = round((neutral_sentiment / total_sentiment) * 100)
+
+        # 获取热门来源
+        sources_result = db.execute(text("""
+            SELECT ns.name as source, COUNT(*) as count
+            FROM news_articles na
+            JOIN news_sources ns ON na.source_id = ns.id
+            WHERE na.source_id IS NOT NULL
+            GROUP BY ns.name
+            ORDER BY count DESC
+            LIMIT 10
+        """)).all()
+        top_sources = [{"source": row.source, "count": row.count} for row in sources_result]
+
+        # 获取热门股票（仅在 related_stocks 为数组且长度>0 时展开）
+        stocks_result = db.execute(text("""
+            SELECT stock, COUNT(*) as count
+            FROM (
+                SELECT jsonb_array_elements_text(related_stocks) AS stock
+                FROM news_articles
+                WHERE COALESCE(
+                    CASE
+                        WHEN related_stocks IS NOT NULL AND jsonb_typeof(related_stocks) = 'array'
+                        THEN jsonb_array_length(related_stocks)
+                    END,
+                    0
+                ) > 0
+            ) t
+            WHERE stock ~ '^[0-9]{6}\.(SH|SZ)$'
+            GROUP BY stock
+            ORDER BY count DESC
+            LIMIT 10
+        """)).all()
+
+        top_stocks = [{"stock": row.stock, "count": row.count} for row in stocks_result]
+
+        return {
+            "total_articles": total_articles,
+            "today_articles": today_articles,
+            "positive_sentiment": positive_sentiment,
+            "negative_sentiment": negative_sentiment,
+            "neutral_sentiment": neutral_sentiment,
+            "top_sources": top_sources,
+            "top_stocks": top_stocks
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting news stats: {str(e)}")
+
+
+@app.post("/api/news/{article_id}/bookmark")
+async def toggle_bookmark(article_id: int, db: Session = Depends(get_db)):
+    """
+    切换新闻书签状态
+    """
+    try:
+        # 检查文章是否存在
+        article = db.execute(
+            text("SELECT id, is_bookmarked FROM news_articles WHERE id = :article_id"),
+            {"article_id": article_id}
+        ).first()
+
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+
+        # 切换书签状态
+        new_bookmark_status = not article.is_bookmarked
+
+        db.execute(
+            text("UPDATE news_articles SET is_bookmarked = :status WHERE id = :article_id"),
+            {"status": new_bookmark_status, "article_id": article_id}
+        )
+
+        db.commit()
+
+        return {
+            "status": "success",
+            "article_id": article_id,
+            "is_bookmarked": new_bookmark_status
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error toggling bookmark: {str(e)}")
+
+
+@app.post("/api/news/{article_id}/read")
+async def toggle_read_status(article_id: int, db: Session = Depends(get_db)):
+    """
+    切换新闻已读状态
+    """
+    try:
+        # 检查文章是否存在
+        article = db.execute(
+            text("SELECT id, is_read FROM news_articles WHERE id = :article_id"),
+            {"article_id": article_id}
+        ).first()
+
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+
+        # 切换已读状态
+        new_read_status = not article.is_read
+
+        db.execute(
+            text("UPDATE news_articles SET is_read = :status WHERE id = :article_id"),
+            {"status": new_read_status, "article_id": article_id}
+        )
+
+        db.commit()
+
+        return {
+            "status": "success",
+            "article_id": article_id,
+            "is_read": new_read_status
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error toggling read status: {str(e)}")
+
+
+@app.post("/api/news/batch-update")
+async def batch_update_news(
+    article_ids: List[int],
+    action: str = Query(..., description="Action to perform: bookmark, unbookmark, mark_read, mark_unread"),
+    db: Session = Depends(get_db)
+):
+    """
+    批量更新新闻状态
+    """
+    try:
+        if not article_ids:
+            raise HTTPException(status_code=400, detail="No article IDs provided")
+
+        if action not in ['bookmark', 'unbookmark', 'mark_read', 'mark_unread']:
+            raise HTTPException(status_code=400, detail="Invalid action")
+
+        # 构建更新语句
+        if action == 'bookmark':
+            update_sql = "UPDATE news_articles SET is_bookmarked = true WHERE id = ANY(:ids)"
+        elif action == 'unbookmark':
+            update_sql = "UPDATE news_articles SET is_bookmarked = false WHERE id = ANY(:ids)"
+        elif action == 'mark_read':
+            update_sql = "UPDATE news_articles SET is_read = true WHERE id = ANY(:ids)"
+        elif action == 'mark_unread':
+            update_sql = "UPDATE news_articles SET is_read = false WHERE id = ANY(:ids)"
+
+        # 执行批量更新
+        db.execute(text(update_sql), {"ids": article_ids})
+        db.commit()
+
+        return {
+            "status": "success",
+            "updated_count": len(article_ids),
+            "action": action
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error batch updating news: {str(e)}")
+
+
+@app.delete("/api/news/{article_id}")
+async def delete_news_article(article_id: int, db: Session = Depends(get_db)):
+    """
+    删除新闻文章
+    """
+    try:
+        # 检查文章是否存在
+        article = db.execute(
+            text("SELECT id FROM news_articles WHERE id = :article_id"),
+            {"article_id": article_id}
+        ).first()
+
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+
+        # 删除文章
+        db.execute(
+            text("DELETE FROM news_articles WHERE id = :article_id"),
+            {"article_id": article_id}
+        )
+
+        db.commit()
+
+        return {
+            "status": "success",
+            "deleted_article_id": article_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting article: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn

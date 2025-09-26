@@ -66,8 +66,6 @@ services:
     container_name: aistock-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password123}
       MONGO_INITDB_DATABASE: aistock_news
     ports:
       - "27017:27017"
@@ -75,6 +73,7 @@ services:
       - mongodb_data:/data/db
       - ./mongodb/init:/docker-entrypoint-initdb.d
     networks: [local-services]
+    command: --noauth
 
 volumes:
   postgres_data:

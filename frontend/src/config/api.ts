@@ -27,6 +27,11 @@ export const API_ENDPOINTS = {
   DASHBOARD: {
     REPORTS: '/api/dashboard/reports',
   },
+
+  // 资金流向相关
+  FUNDFLOW: {
+    LATEST: '/api/fundflow/latest',
+  },
   
   // 任务相关
   TASKS: {
@@ -35,6 +40,10 @@ export const API_ENDPOINTS = {
   
   // 观察列表
   WATCHLIST: '/watchlist',
+  WATCHLIST_API: {
+    SNAPSHOT: '/api/watchlist/snapshot',
+    ANALYSIS: '/api/watchlist/analysis',
+  },
 } as const;
 
 // 辅助函数：构建完整的 API URL

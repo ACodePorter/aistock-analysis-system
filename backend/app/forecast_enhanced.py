@@ -1,7 +1,74 @@
 #!/usr/bin/env python3
 """
-改进的股票价格预测模型
-包含神经网络训练和时间序列预测
+模块说明（中文）
+本模块提供增强型的时间序列特征工程与多种股票收盘价预测方法的实现，旨在结合传统统计模型与机器学习模型对短期价格进行多步预测，并返回带置信区间的预测结果。
+主要功能
+- create_sequence_features: 为输入的股票历史数据构造一组时间序列特征（包括滞后特征、移动平均、波动率、RSI 类指标、布林带等）。
+- neural_network_forecast: 基于多层感知机（MLPRegressor）的回归模型，使用滑动窗口方式进行多步预测并计算置信区间。
+- enhanced_feature_regression_forecast: 基于增强特征和随机森林回归器的多步预测方法，带历史误差估计。
+- predict_stock_price_enhanced: 高层预测接口。优先尝试神经网络预测，失败则降级为增强回归，随后尝试 SARIMAX，最后采用简单的线性趋势与波动率模型。返回统一格式的预测结果或错误信息。
+依赖
+- numpy
+- pandas
+- statsmodels (SARIMAX)
+- scikit-learn (StandardScaler, MinMaxScaler, MLPRegressor, RandomForestRegressor)
+注意：部分方法内部使用随机数（np.random），结果具有随机性；部分模型使用固定 random_state 以提高可复现性，但总体结果仍可能因不同环境有所差异。
+输入数据要求
+- 输入参数通常为 pd.DataFrame，必须包含至少以下列：
+    - "trade_date"（用于排序）
+    - "close"（收盘价，floatable）
+    - "vol"（成交量，可用于构造成交量相关特征）
+    - "high", "low"（用于构造区间相关特征）
+- 数据应为时间序列历史数据，按日期由早到晚或包含可排序的日期列。
+- 不同方法对最小样本量有不同要求（例如 neural_network_forecast 需要较多样本，enhanced_feature_regression_forecast 有自己的最小样本阈值）。
+返回值约定
+- 各预测函数在成功时返回一个结构化的字典，通常包含字段：
+    - "method": 使用的方法名称（"neural_network"、"enhanced_regression"、"sarimax"、"enhanced_linear_trend" 等）
+    - "confidence": 对该方法的置信度估计（0-1）
+    - "predictions": 列表，每项为字典，包含：
+            - "day": 预测步数（从 1 开始）
+            - "predicted_price": 预测的价格（float）
+            - "lower_bound": 置信区间下界（float）
+            - "upper_bound": 置信区间上界（float）
+- 若方法内部失败（如样本不足、模型训练失败等），单个方法会返回 None，并在控制台打印错误信息。
+- 高层函数 predict_stock_price_enhanced 在全部方法均失败或数据不足时，返回带 "error" 字段的字典：
+    - 当输入数据不足时返回 {"symbol": symbol, "error": "Insufficient data for prediction", ...}
+    - 当所有方法失败时返回 {"symbol": symbol, "error": "All prediction methods failed", ...}
+    - 发生异常时返回带具体异常描述的 error 字段。
+实现细节与注意事项
+- 特征工程：
+    - 计算了常用的技术指标：移动平均（MA）、指数移动平均（EMA）、波动率、RSI 风格指标、布林带位置等。
+    - 同时添加了 1-5 天的滞后价格和滞后收益率特征（可用于短期自回归信息）。
+- 神经网络方法：
+    - 使用滑动窗口构建输入序列（sequence_length=10），将每个窗口展平后作为 MLP 的输入。
+    - 输出为未来单步（短期）价格，采用迭代方式推进实现多步预测；在迭代过程中对特征进行简化更新（如更新 close、ret1、部分 MA）。
+    - 对预测加入了基于历史波动率的随机噪声以模拟市场不确定性，并基于历史预测误差估算置信区间（默认近似 80% 区间）。
+    - 若训练样本或序列过少，方法会提前返回 None。
+- 增强回归方法：
+    - 使用 RandomForestRegressor 训练基线回归模型（n_estimators=100, max_depth=10）。
+    - 预测时通过在特征向量上做简化的滚动更新以进行多步预测，并基于训练残差计算 sigma 作为不确定性估计。
+- SARIMAX 回归备选：
+    - 用 statsmodels.tsa.statespace.SARIMAX 作为最后的统计学备选模型（若样本足够且前两种 ML 方法失败）。
+    - 默认的置信区间 alpha=0.2（即约 80% 区间）。
+- 线性趋势备选：
+    - 若前述方法都不可用，使用最近 5 个收盘价的平均斜率做线性外推，并加入基于历史波动率的随机扰动生成置信区间和预测。
+异常处理与日志
+- 各层函数对异常进行捕获并在必要时打印错误信息，但不会抛出未捕获异常到调用者（高层入口函数会返回包含 error 字段的结构）。
+- 若需生产环境使用，建议增强日志记录、异常告警，并对随机种子、模型超参数、特征构造逻辑等进行可配置化管理。
+示例（伪代码）
+- 调用方式（高层）：
+    result = predict_stock_price_enhanced(df, symbol="000001.SZ", ahead_days=5)
+    if "error" in result:
+            # 处理错误
+    else:
+            # 读取 result["predictions"] 并展示或保存
+扩展建议
+- 增加更全面的特征工程（MACD、ADX、成交量动态特征、日期/周/月周期特征等）。
+- 使用时间序列专用模型（如 LSTM、Transformer）替代 MLP 以更好捕捉长期依赖。
+- 增强多步预测时的特征更新逻辑，使未来特征更接近真实更新流程（例如使用模型对所有关键特征同时预测）。
+- 将随机性和超参数暴露为配置参数以便回测与回溯测试时复现。
+版权与免责声明
+- 本模块提供预测工具示例与研究用途，不构成投资建议。模型预测结果仅供参考，实际交易请谨慎决策并承担相应风险。
 """
 import numpy as np
 import pandas as pd

@@ -3,7 +3,7 @@ import json
 
 def test_api_endpoints():
     """测试API端点"""
-    base_url = "http://localhost:8000"
+    base_url = "http://localhost:8080"
     
     endpoints = [
         "/api/dashboard/reports",
@@ -54,7 +54,7 @@ def test_api_endpoints():
 def test_specific_report():
     """测试特定股票报告"""
     symbol = "300251.SZ"
-    url = f"http://localhost:8000/reports/{symbol}/latest"
+    url = f"http://localhost:8080/reports/{symbol}/latest"
     
     try:
         response = requests.get(url)
