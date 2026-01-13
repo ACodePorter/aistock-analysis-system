@@ -1,0 +1,87 @@
+{
+  "timestamp": "20260105_052154",
+  "generated_at_utc": "2026-01-05T05:21:54.119569+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 0,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 3,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 8,
+    "parse_success_stock_retry": 3,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.0,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Max retries exceeded with url: /openai/respo"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 4,
+    "force_no_response_format": true,
+    "azure_fail_count": 1,
+    "parse_mode_counts": {
+      "retry": 3,
+      "direct": 8,
+      "no-news": 9
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2043,
+      "avg": 693.25,
+      "total": 13865,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 55,
+      "sum_original_chars": 13452,
+      "sum_truncated_chars": 5740,
+      "avg_original_per_item": 244.58,
+      "avg_truncated_per_item": 104.36,
+      "overall_ratio_truncated": 0.4267
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4385,
+    "macro_truncation_stats": {
+      "item_count": 69,
+      "original_chars": 8265,
+      "truncated_chars": 4233,
+      "avg_original_per_item": 119.78,
+      "avg_truncated_per_item": 61.35,
+      "ratio_truncated": 0.5122,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 6,
+      "skip_domain": 2247,
+      "skip_not_match_terms": 517,
+      "skip_community": 1,
+      "requery_relax_time": 26,
+      "requery_aug": 142,
+      "requery_general": 23,
+      "skip_duplicate": 24,
+      "skip_low_cjk": 347,
+      "requery_cn_sites": 270,
+      "empty_results": 438,
+      "skip_short_title": 6,
+      "requery_low_quality": 24,
+      "requery_llm_rewrite": 58,
+      "requery_rewrite_sites": 168,
+      "db_fallback_try": 13,
+      "fallback_relaxed_domain": 14,
+      "extreme_fallback": 23,
+      "skip_blocked_title": 68,
+      "skip_generic": 3
+    }
+  },
+  "version": 1
+}

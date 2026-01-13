@@ -1,0 +1,78 @@
+{
+  "timestamp": "20260106_092337",
+  "generated_at_utc": "2026-01-06T09:23:37.858295+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 4,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 6,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 11,
+    "parse_success_stock_retry": 3,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.2,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Max retries exceeded with url: /openai/deplo"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 3,
+    "force_no_response_format": false,
+    "azure_fail_count": 1,
+    "searx_filter_metrics": {
+      "compat_drop_time_range_baidu": 619,
+      "skip_code_only_untrusted": 27,
+      "skip_duplicate": 68,
+      "skip_domain": 258,
+      "skip_not_match_terms": 138,
+      "skip_community": 4,
+      "skip_old_published": 100,
+      "skip_japanese_kana": 80,
+      "requery_relax_time": 16,
+      "skip_low_cjk": 140,
+      "requery_low_quality": 24,
+      "requery_aug": 130,
+      "empty_results": 664,
+      "requery_llm_rewrite": 56,
+      "requery_cn_sites": 260,
+      "db_first_added": 6,
+      "extreme_fallback": 17,
+      "requery_rewrite_sites": 162,
+      "db_fallback_try": 7,
+      "requery_general": 8,
+      "skip_blocked_title": 4,
+      "skip_generic": 1,
+      "http_timeout": 1,
+      "http_timeout_retry": 1
+    },
+    "stock_truncation_summary": {
+      "total_items": 0,
+      "sum_original_chars": 0,
+      "sum_truncated_chars": 0,
+      "avg_original_per_item": 0,
+      "avg_truncated_per_item": 0,
+      "overall_ratio_truncated": 0
+    },
+    "macro_prompt_token_est": 4925,
+    "macro_truncation_stats": {
+      "item_count": 110,
+      "original_chars": 5420,
+      "truncated_chars": 5189,
+      "avg_original_per_item": 49.27,
+      "avg_truncated_per_item": 47.17,
+      "ratio_truncated": 0.9574,
+      "max_len_per_item": 160
+    }
+  },
+  "version": 1
+}

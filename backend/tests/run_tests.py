@@ -61,6 +61,10 @@ class TestRunner:
             ("tests/unit/test_url_filtering.py", "URL过滤单元测试"),
             ("tests/unit/test_dedup.py", "去重机制单元测试"),
             ("tests/unit/test_content_quality.py", "内容质量单元测试"),
+            ("tests/unit/test_macro_overview_api.py", "宏观概览API单元测试"),
+            ("tests/unit/test_stock_pool.py", "股票池脚本单元测试"),
+            ("tests/unit/test_stock_pool_api.py", "股票池API单元测试"),
+            ("tests/unit/test_fund_flow_fallback.py", "资金流回退健壮性单元测试"),
         ]
         
         integration_tests = [

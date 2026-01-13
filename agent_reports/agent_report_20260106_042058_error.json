@@ -1,0 +1,6 @@
+{
+  "error": "name 'cjk_count' is not defined",
+  "traceback": "Traceback (most recent call last):\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3542, in <module>\n    agent_main()\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3428, in agent_main\n    lines.append(_ensure_report_zh(macro.get('summary'), max_len=220))\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3345, in _ensure_report_zh\n    if cjk_count(s) >= min_cjk_report:\n       ^^^^^^^^^\nNameError: name 'cjk_count' is not defined\n",
+  "finished_at": "2026-01-06T04:20:58.545891+00:00",
+  "fallback": "error"
+}

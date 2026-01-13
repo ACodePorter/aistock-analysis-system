@@ -10,7 +10,7 @@ import unittest
 backend_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, backend_root)
 
-from app.data_source import get_stock_info
+from app.data.data_source import get_stock_info
 
 
 class TestStockInfo(unittest.TestCase):

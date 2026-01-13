@@ -1,0 +1,77 @@
+{
+  "timestamp": "20251012_122430",
+  "generated_at_utc": "2025-10-12T12:24:30.729856+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 3,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 7,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 7,
+    "parse_success_stock_retry": 4,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.15,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 4,
+    "force_no_response_format": false,
+    "azure_fail_count": 0,
+    "parse_mode_counts": {
+      "direct": 7,
+      "heuristic": 3,
+      "no-news": 6,
+      "retry": 4
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2017,
+      "avg": 835.95,
+      "total": 16719,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 54,
+      "sum_original_chars": 71480,
+      "sum_truncated_chars": 7752,
+      "avg_original_per_item": 1323.7,
+      "avg_truncated_per_item": 143.56,
+      "overall_ratio_truncated": 0.1084
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4896,
+    "macro_truncation_stats": {
+      "item_count": 85,
+      "original_chars": 39248,
+      "truncated_chars": 5263,
+      "avg_original_per_item": 461.74,
+      "avg_truncated_per_item": 61.92,
+      "ratio_truncated": 0.1341,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 51,
+      "empty_results": 468,
+      "requery_relax_time": 8,
+      "skip_domain": 2,
+      "requery_general": 16,
+      "requery_aug": 120,
+      "skip_duplicate": 12,
+      "requery_cn_sites": 230,
+      "db_fallback_try": 14,
+      "db_fallback_added": 5,
+      "extreme_fallback": 20,
+      "http_timeout": 1,
+      "skip_old_published": 40
+    }
+  },
+  "version": 1
+}

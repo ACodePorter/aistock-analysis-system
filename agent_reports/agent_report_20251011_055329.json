@@ -1,0 +1,1784 @@
+{
+  "started_at": "2025-10-11T05:35:14.829068+00:00",
+  "finished_at": "2025-10-11T05:53:29.896368+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "新特电气",
+      "symbol": "301120.SZ",
+      "pct_chg": 20.027,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.3333333333333333,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "减持风险",
+            "direction": "负面",
+            "weight": 1.0,
+            "evidence": "出现关键词: 减持"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.45,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": -0.25,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"股价异常大幅上涨（市场买盘）\",\n      \"direction\": \"正面\",\n      \"weight\": 0.35,\n      \"evidence\": \"公司股价连续三个交易日收盘价格涨幅偏离累计超过30%，并出现20%涨停板的报道，显示短期市场对该股有强烈买盘推动。\"\n    },\n    {\n      \"name\": \"控股股东及一致行动人减持并在异动期间卖出\",\n      \"direction\": \"负面\",\n      \"weight\": 0.",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": true,
+          "处罚": false
+        },
+        "news_titles": [
+          "新特电气发布股价异动公告",
+          "新特电气：股票异动期间 控股股东、实控人及其一致行动人存在卖出公司股票行为",
+          "A股公告精选 | 金岭矿业(000655.SZ)前三季度净利润同比增长47%",
+          "20CM涨停新特电气：控股股东、实际控制人及其一致行动人在股票异动期间存在卖出公司股票的行为",
+          "400亿芯片股发布业绩预告|创业板盘后公告集锦",
+          "同比最高增287% 1900亿稀土龙头发布三季报预告|盘后公告集锦",
+          "20CM漲停新特電氣：控股股東、實際控制人及其一致行動人在股票 ...",
+          "新特电气20CM涨停背后：控股股东在股票异动期间卖出公司股票",
+          "滬、深港通SH/SZ-HK Stock Connect - 中國市場新聞 - AASTOCKS.com",
+          "新特电气股票三个交易日涨幅偏离超30% - 财经- 证券之星"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 5492,
+          "truncated_chars": 1439,
+          "avg_original_per_item": 549.2,
+          "avg_truncated_per_item": 143.9,
+          "ratio_truncated": 0.262,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2287
+      }
+    },
+    {
+      "name": "新莱应材",
+      "symbol": "300260.SZ",
+      "pct_chg": 20.004,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.48,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "行业热度与题材推升",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "光刻机指数一年涨130%，多篇报道指出光刻机赛道走热、展会公开亮相与ETF、板块共振，行业情绪显著提升。"
+          },
+          {
+            "name": "公司在产业链的可见性与题材关联",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "多篇报道与龙虎榜将新莱应材列为光刻机/泛半导体链相关标的，披露公司涉及液冷服务器、光刻机等多项半导体相关概念，提升市场关注度。"
+          },
+          {
+            "name": "资金面与短期买盘活跃",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "龙虎榜显示流入与机构或游资买入，盘面上半导体产业ETF和相关个股多次拉升，短期资金推动明显。"
+          },
+          {
+            "name": "外部技术垄断与国产化不确定性",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "ASML在高端光刻市场占据主导，报道指出国产化率仍低（约2.5%），高端设备长期受制于国际厂商，业绩兑现存在不确定性。"
+          }
+        ],
+        "score": 65,
+        "need_macro": true,
+        "macro_keywords": [
+          "半导体产业",
+          "国产化",
+          "光刻机",
+          "资本市场"
+        ],
+        "risk_flags": [
+          "展会亮相与媒体报道不等于订单/营收增长",
+          "高端光刻机被ASML等外资厂商垄断，国产化进程缓慢",
+          "短期由题材和游资驱动导致股价高波动",
+          "业绩与订单兑现存在时间差，信息不对称风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证题材热度是否由真实买盘支撑及短期流动性变化",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资参与度可提示中长期资金认可度",
+            "suggest_window": "1-10个交易日"
+          },
+          {
+            "metric": "订单/合同公告",
+            "reason": "直接关联未来营收与业绩兑现力度",
+            "suggest_window": "30-90天"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "反映公司产能与交付能力，判断技术与量产进展",
+            "suggest_window": "30-90天"
+          },
+          {
+            "metric": "ASP与季度营收",
+            "reason": "观察产品价格与营收结构，验证商业化路径",
+            "suggest_window": "1-2个季度"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "基于多篇报道与龙虎榜资金流向，新莱应材作为被市场关联于光刻机/泛半导体链的标的，短期受行业热度、展会亮相和资金推动利好明显；但高端设备被ASML垄断、国产化率低以及展会信息不等于订单仍构成中长期不确定性。建议短期关注成交量、北向资金、订单与出货数据以验证业绩兑现。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1429,
+          "truncated_chars": 1373,
+          "avg_original_per_item": 142.9,
+          "avg_truncated_per_item": 137.3,
+          "ratio_truncated": 0.9608,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2168,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "金春股份",
+      "symbol": "300877.SZ",
+      "pct_chg": 20.0,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.25,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股份回购进展",
+            "direction": "正面",
+            "weight": 0.38,
+            "evidence": "截至2025-09-30已回购400,000股，占总股本0.33%，成交金额约9,429,737元，回购以集中竞价方式实施，体现对公司价值的认可与支持。"
+          },
+          {
+            "name": "回购规模与资金承诺",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "公司此前回购方案拟以不低于1000万元且不超过2000万元资金回购，已使用约942.97万元，整体回购规模对股本稀释影响有限但显示公司现金可用性。"
+          },
+          {
+            "name": "ESG评级稳定性",
+            "direction": "正面",
+            "weight": 0.14,
+            "evidence": "华证指数最新ESG评级为B，与上一期相同，行业排名从68升至67，表明ESG表现保持稳定但未显著改善。"
+          },
+          {
+            "name": "独立董事辞职",
+            "direction": "负面",
+            "weight": 0.18,
+            "evidence": "独立董事袁帅因个人原因辞职，董事会成员变动可能导致治理关注，短期存在市场对公司治理稳定性的疑虑。"
+          },
+          {
+            "name": "即将披露三季报",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公司将于2025-10-25披露第三季度报告，业绩和现金流数据将对回购合理性及后续政策提供进一步指引。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "董事会治理变动（独立董事辞职）",
+          "回购规模相对市值有限，提振幅度有限",
+          "回购成交价区间宽（15.22-27.07元），存在价格波动风险",
+          "ESG评级中下游，长期可持续性仍需提升"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察回购实施期及后续成交量放大以确认回购对流动性和股价支撑的实际效果",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资动向可放大或抵消回购带来的股价影响，反映机构对公司基本面的认可度",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "公司回购均价与回购进度",
+            "reason": "跟踪后续回购执行价格与累计数量，评估管理层回购力度与市值回购性价比",
+            "suggest_window": "1-8周"
+          },
+          {
+            "metric": "三季度主营业务产销率/订单变动",
+            "reason": "业绩与经营数据将验证回购是否基于稳健经营与现金流支持",
+            "suggest_window": "披露周期（至10月25日）"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "短期偏积极：公司已回购40万股（0.33%），且回购计划资金充足，表明管理层对公司估值有信心；ESG评级稳定但处中下游水平。需关注独立董事辞职带来的治理关注及即将披露的三季报以验证回购与经营面的匹配性。建议跟踪成交量、回购均价进度、北向资金与三季报关键经营数据。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1215,
+          "truncated_chars": 1215,
+          "avg_original_per_item": 121.5,
+          "avg_truncated_per_item": 121.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2234,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "中环环保",
+      "symbol": "300692.SZ",
+      "pct_chg": 19.977,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.45,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"控股权变更引入刘杨/北京鼎垣\",\n      \"direction\": \"正面\",\n      \"weight\": 0.28,\n      \"evidence\": \"公告显示张伯中将所持16.6171%股权转让给北京鼎垣等，实际控制人拟变更为刘杨。\"\n    },\n    {\n      \"name\": \"跨界资本入主（生物医药背景）可能带来资金/资源\",\n      \"direction\": \"正面\",\n      \"weight\": 0.20,\n      \"evidence\": \"报道指出，入主方刘杨为赛赋医药创始人，生物医药资本跨界控股环保公司，可能带来资本和资源支持。\"\n    },\n    {\n      \"name\": \"原实控人放弃表决权，治理结构变化\",\n      \"direction\": \"正面\",\n      \"weight\": 0.18,\n      \"evidence\": \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "中环环保控制权变更 北京鼎垣将成控股股东",
+          "对价5.98亿元！生物医药“新贵”跨界入主中环环保 他为何“相中”环保产业？",
+          "创新药大佬跨界入主，中环环保20CM涨停！股价创近三年新高",
+          "中环环保实际控制人将变更为刘杨 10月10日起复牌",
+          "中环环保：控股股东拟变更为北京鼎垣 股票及可转债10月10日复牌",
+          "中环环保：筹划公司控制权变更事项 股票停牌",
+          "中环环保涨11%后公告停牌 实控人筹划控制权变更",
+          "中环环保：筹划控制权变更事项 29日起停牌",
+          "对价5.98亿元！生物医药“新贵”跨界入主中环环保 - 新浪财经",
+          "中環環保(300692.SZ)實際控制人將變更爲劉楊10月10日起復牌"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1481,
+          "truncated_chars": 1441,
+          "avg_original_per_item": 148.1,
+          "avg_truncated_per_item": 144.1,
+          "ratio_truncated": 0.973,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2192
+      }
+    },
+    {
+      "name": "冠中生态",
+      "symbol": "300948.SZ",
+      "pct_chg": 13.43,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.4,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "raw_empty",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "冠中生态发布股价异动公告",
+          "冠中生态(300948.SZ)：拟收购杭州精算家51%股权",
+          "资本新锐靳春平主导冠中生态“控制权转让+AI收购”连环局",
+          "冠中生态将易主！深蓝财鲸以持股15.5%比例成为控股股东",
+          "冠中生态：深蓝财鲸或将取得公司控制权 9月29日起复牌",
+          "上市四年的冠中生态易主，近3亿元收购资金从何来？",
+          "冠中生态业绩承压拟超3亿易主 同步推2.86亿关联收购打造双主业",
+          "青岛冠中生态拟收购AI财税公司股权，业绩对赌能否锁定高成长性？",
+          "上市四年的冠中生态易主，近3亿元收购资金从何来？ - 证券时报",
+          "冠中生态业绩承压拟超3亿易主同步推2.86亿关联收购打造双主业"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1526,
+          "truncated_chars": 1349,
+          "avg_original_per_item": 152.6,
+          "avg_truncated_per_item": 134.9,
+          "ratio_truncated": 0.884,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2361
+      }
+    },
+    {
+      "name": "N奥美森",
+      "symbol": "920080.SH",
+      "pct_chg": 349.818,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.55,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "新股首日强势表现与市场关注度",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "北交所新股N奥美森（920080）上市首日开盘上涨337.70%，并有报道显示盘中或收盘涨幅超300%，显示市场关注度与短期交易热度极高。"
+          },
+          {
+            "name": "机构研究报告给予正面定位",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "开源证券研报称奥美森为“智能装备隐形冠军”，并指出公司在空调核心装备、新能源与环保等多领域渗透，给出行业成长逻辑支撑。"
+          },
+          {
+            "name": "被纳入融资融券标的/可充抵保证金名单",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "监管文件《关于调整融资融券标的证券及可充抵保证金证券的通知20251010》列示N奥美森，意味着后续杠杆交易和机构参与度可能提升，改善流动性。"
+          },
+          {
+            "name": "高波动性与投机性溢价风险",
+            "direction": "负面",
+            "weight": 0.18,
+            "evidence": "超高首日涨幅伴随显著短期波动，存在估值快速回调与短线投机行为的风险，尤其是在北交所新股流动性与锁定期因素作用下。"
+          },
+          {
+            "name": "基本面成长性但需验证的经营数据",
+            "direction": "不确定",
+            "weight": 0.16,
+            "evidence": "公司被定义为智能装备跨行业渗透，但新闻中关于订单、营收成长、毛利率等可验证经营指标披露有限，长期可持续性需通过后续业绩观察。"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "监管政策",
+          "融资融券",
+          "新股上市",
+          "智能装备"
+        ],
+        "risk_flags": [
+          "首日极端波动/高投机性",
+          "估值溢价且短期回调风险",
+          "信息披露与基本面需后续验证",
+          "北交所流动性与锁定期集中抛售风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "快速放量或缩量可以验证市场热度是否持续以及主力资金介入力度",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "融资融券余额/融资买入额",
+            "reason": "被列入标的后杠杆资金参与度变化会影响价格波动与支撑力度",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "订单/产销率/设备稼动率",
+            "reason": "公司所属智能装备业务的真实需求端与产能利用率决定中长期基本面兑现程度",
+            "suggest_window": "1-4季度"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "基于多条新闻，N奥美森短期市场情绪正面：首日涨幅巨大、机构研报正面、被纳入融资融券名单均利好流动性与关注度。但同时存在高投机性和估值回调风险，且对公司长期基本面的验证需依赖后续订单与财务数据披露。建议关注成交量、融资余额及订单/产销等可验证指标。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1829,
+          "truncated_chars": 1130,
+          "avg_original_per_item": 182.9,
+          "avg_truncated_per_item": 113.0,
+          "ratio_truncated": 0.6178,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2073,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "*ST新元",
+      "symbol": "300472.SZ",
+      "pct_chg": 19.958,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "减持风险",
+            "direction": "负面",
+            "weight": 1.0,
+            "evidence": "出现关键词: 减持"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": -0.8,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"连续三年经常性利润为负且审计报告存续经营不确定性\",\n      \"direction\": \"负面\",\n      \"weight\": 0.35,\n      \"evidence\": \"公司最近连续三个会计年度扣除非经常性损益前后净利润均为负值，且最近一个会计年度审计报告显示公司持续经营能力存在不确定性\"\n    },\n    {\n      \"name\": \"股票被实施其他风险警示（*ST 状态相关）\",\n      \"direction\": \"负面",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": true,
+          "处罚": false
+        },
+        "news_titles": [
+          "*St新元 5.02 (-5.28%)_股票行情_新浪财经_新浪网",
+          "ST新元(300472)关于公司股票被实施其他风险警示相关事项的进展公告",
+          "*ST新元 6.84 (-1.72%)_个股资讯_新浪财经_新浪网 - sina",
+          "*ST新元(300472.SZ)：收到法院延長預重整期限決定書 - 富途资讯",
+          "*St新元 5.30 (-6.36%)_公司公告_新浪财经_新浪网",
+          "ST新元：股东张玉生计划减持不超过0.08%公司股份 - 财经",
+          "*St新元 (300472)_公司公告_*St新元：关于公司预重整事项的进展公告新浪财经_新浪网",
+          "ST新元: 关于公司股票被实施其他风险警示相关事项的进展公告",
+          "*St新元 (300472)_公司公告_*St新元：关于公司收到法院延长预重整期限决定书的公告新浪财经_新浪网",
+          "[诉讼]*ST新元(300472):子公司银行贷款逾期暨重大诉讼的进展公告"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 842,
+          "truncated_chars": 842,
+          "avg_original_per_item": 84.2,
+          "avg_truncated_per_item": 84.2,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1956
+      }
+    },
+    {
+      "name": "捷强装备",
+      "symbol": "300875.SZ",
+      "pct_chg": 13.063,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.4,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.4,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"战略协同与产品扩展\",\n      \"direction\": \"正面\",\n      \"weight\": 0.3,\n     ",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "捷强装备：拟收购山东碳寻新材料有限公司51%股权 标的公司主要产品为碳纳米管导电浆料",
+          "A股公告精选 | 金岭矿业(000655.SZ)前三季度净利润同比增长47%",
+          "捷强装备：收购山东碳寻51%股权事项已完成交割 - 证券时报",
+          "捷强装备：收购山东碳寻51%股权事项已完成交割 - 新浪财经",
+          "捷强装备完成对山东碳寻51%股权的收购 - 财经- 证券之星",
+          "捷强装备：收购山东碳寻51%股权完成 - 新浪财经",
+          "捷強裝備(300875) 新聞動態 - Moomoo",
+          "捷强装备完成对山东碳寻51%股权的收购 - 腾讯网",
+          "捷強裝備:收購山東碳尋51%股權事項已完成交割 - 富途资讯",
+          "捷强装备：拟收购山东碳寻新材料有限公司51%股权 - 国际金融报"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1311,
+          "truncated_chars": 1231,
+          "avg_original_per_item": 131.1,
+          "avg_truncated_per_item": 123.1,
+          "ratio_truncated": 0.939,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2085
+      }
+    },
+    {
+      "name": "初灵信息",
+      "symbol": "300250.SZ",
+      "pct_chg": 12.944,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.32,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "回购股份用途变更并拟注销",
+            "direction": "正面",
+            "weight": 0.33,
+            "evidence": "董事会通过将318,000股回购股份用途由可在回购完成后出售变更为用于注销并相应减少注册资本，利于减少股本、提高每股收益与支持股价。"
+          },
+          {
+            "name": "使用不超过2亿元闲置资金购买中低风险理财",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "公司拟在不影响日常经营且确保资金安全的前提下，用不超2亿元闲置自有资金购买R1/R2/R3等中低风险理财产品，显示现金管理但也意味着部分资金对外置放。"
+          },
+          {
+            "name": "股价异常波动与连续涨停",
+            "direction": "负面",
+            "weight": 0.24,
+            "evidence": "公司股价出现连续涨停及交易异常波动（多日涨幅偏离值累计超30%），短期投机行为与监管关注风险上升。"
+          },
+          {
+            "name": "持股关联事件影响有限（间接持股摩尔线程占比很小）",
+            "direction": "不确定",
+            "weight": 0.05,
+            "evidence": "公司披露间接持有摩尔线程约0.0229%，占比微小，对公司基本面及估值影响有限。"
+          },
+          {
+            "name": "短期市场情绪与交易动能",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "在多条关于回购、注销及资金运用的利好类公告集中披露后，市场出现连续涨停和热度，短期推动股价上行。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [
+          "公司治理",
+          "现金管理",
+          "市场波动"
+        ],
+        "risk_flags": [
+          "股票连续涨停并被认定为价格异常波动，存在监管关注与短期回调风险",
+          "回购股份用途变更需经股东大会及后续注销程序，存在不确定性与操作时点风险",
+          "闲置资金投入理财虽为低风险但仍存在收益与流动性约束"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "监测是否有持续大宗成交或主力撤离以判断资金面与短期价格稳定性",
+            "suggest_window": "1-10日"
+          },
+          {
+            "metric": "股东大会表决结果及回购注销实施公告",
+            "reason": "回购股份最终能否完成注销将直接影响股本变化与每股收益",
+            "suggest_window": "1-2月"
+          },
+          {
+            "metric": "北向资金净流入/净流出",
+            "reason": "北向资金动向可反映境外资金对该股的热度与风险偏好变化",
+            "suggest_window": "1-20日"
+          },
+          {
+            "metric": "公司可用现金及短期理财规模披露",
+            "reason": "关注闲置资金运用后公司的流动性与短期风险承受能力",
+            "suggest_window": "1-3月"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "公司拟将部分回购股份注销并拟以不超2亿元闲置资金购买中低风险理财，显示出回购并缩股的利好和稳健的现金管理，但股价已出现连续涨停及交易异常波动，短期存在监管与回调风险；整体偏短期利好，需关注股东大会进展、成交量与资金流向。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1518,
+          "truncated_chars": 1376,
+          "avg_original_per_item": 151.8,
+          "avg_truncated_per_item": 137.6,
+          "ratio_truncated": 0.9065,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2147,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "北方长龙",
+      "symbol": "301357.SZ",
+      "pct_chg": 13.06,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.18,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "融资买入力度",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "9月30日获融资买入3717.30万元，表明短期内散户/杠杆资金参与提升，资金面对股价形成支撑。"
+          },
+          {
+            "name": "股价强势与换手",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "多条报道显示股价出现大幅上涨（日涨13.06%、16.56%等）且换手率高，短期动能明显。"
+          },
+          {
+            "name": "机构席位净卖出",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "龙虎榜显示机构席位净卖出-1074.05万元及-1229.81万元，机构短期偏离场或兑现获利。"
+          },
+          {
+            "name": "并购/增资事项终止",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "公司公告终止发行股份及支付现金购买资产并增资事项，可能影响公司中长期扩张预期与估值溢价。"
+          },
+          {
+            "name": "筹码集中",
+            "direction": "正面",
+            "weight": 0.1,
+            "evidence": "报道提到筹码连续集中，历史上筹码集中阶段常伴随后续股价波动与上行概率提升（但伴随回撤风险）。"
+          }
+        ],
+        "score": 62,
+        "need_macro": true,
+        "macro_keywords": [
+          "军工/国防",
+          "资金面",
+          "并购重组",
+          "市场情绪"
+        ],
+        "risk_flags": [
+          "机构持续净卖出可能引发回调",
+          "并购/增资终止导致业绩预期调整",
+          "高换手和大幅上涨伴随高波动性",
+          "筹码集中带来短期抛压或放大波动"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证涨势是否由有效成交量支撑以判断可持续性",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "融资余额/融资买入净额",
+            "reason": "监测杠杆资金是否持续流入或快速回撤，影响短期资金面",
+            "suggest_window": "5-20个交易日"
+          },
+          {
+            "metric": "机构席位净买入/卖出",
+            "reason": "追踪机构资金态度变化，判断是否为短期抛售或结构性撤资",
+            "suggest_window": "1-10个交易日"
+          },
+          {
+            "metric": "换手率/筹码集中度",
+            "reason": "评估筹码再分布与潜在大户建仓或分流风险",
+            "suggest_window": "5-30个交易日"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "短期情绪偏正面：融资买入力度和股价快速上涨显示短期买盘活跃与动能，但机构席位净卖出与公司终止并购增资为重要负面因素，可能限制中长期上涨空间。建议短线关注成交量、融资余额与机构席位流向以验证涨势可持续性；中长期需关注并购终止对业绩与战略的后续影响。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1143,
+          "truncated_chars": 1143,
+          "avg_original_per_item": 114.3,
+          "avg_truncated_per_item": 114.3,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1993,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "德尔未来",
+      "symbol": "002631.SZ",
+      "pct_chg": 10.076,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "德尔未来股东王沫质押1200万股用于融资",
+          "德尔未来涨停，成交额1.46亿元，主力资金净流出78.60万元",
+          "股市必读：德尔未来9月30日涨停收盘，收盘价5.31元",
+          "德尔未来2025年第一次临时股东大会多项议案获通过 - 新浪财经",
+          "德尔未来股价涨9.94% 总市值42.34亿元 - 乐居财经",
+          "电投产融[000958] - 证券时报",
+          "62只股上午收盘涨停(附股) - 证券时报",
+          "专利 - ZAKER新闻",
+          "必读-股票频道 - 证券之星",
+          "股市必读：路畅科技（002813）9月22日主力资金净流入1335.33万元"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1270,
+          "truncated_chars": 1204,
+          "avg_original_per_item": 127.0,
+          "avg_truncated_per_item": 120.4,
+          "ratio_truncated": 0.948,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2101
+      }
+    },
+    {
+      "name": "利和兴",
+      "symbol": "301013.SZ",
+      "pct_chg": 11.669,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足（无公司层面报道）",
+            "direction": "不确定",
+            "weight": 0.9,
+            "evidence": "提供的新闻条目均为含“利和”人名、运动员或地名的日文媒体片段，未见与上市公司“利和兴”或其经营、财务、重大事项相关的报道或公告。"
+          },
+          {
+            "name": "同名噪声/舆论干扰",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "多条结果为体育选手、刊物或地方新闻，存在同名（利和）干扰，难以区分是否与目标公司有关，可能误导基于关键词的监测。"
+          },
+          {
+            "name": "潜在需跟踪的公司级触发项缺失",
+            "direction": "不确定",
+            "weight": 0.02,
+            "evidence": "当前信息未包含业绩、订单、产品、并购、政策或行业消息，短期内无明确利多或利空触发点可判定。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "信息不足导致判断不确定",
+          "同名/异义检索噪声可能误导监测和量化信号"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检测是否有异常交易或关注度突然上升，验证是否有未被抓取的公司级消息",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "判断外资对标的的短期资金动向，验证是否有跨境资金关注",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "公司公告/业绩预告",
+            "reason": "直接驱动股价的公司层面信息，一旦出现可迅速重估情绪与估值",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "业务端变化可反映基本面走向，适用于判断后续业绩和库存压力",
+            "suggest_window": "1季度"
+          }
+        ],
+        "confidence": 0.2,
+        "summary": "基于提供的新闻列表，未发现与A股上市公司“利和兴”相关的公司或行业信息。现阶段信息不足以形成明确的基本面或量化投资判断，建议保持中性，继续通过成交量、北向资金、公司公告及订单/产销率等指标进行短期监测以捕捉真实触发点。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1108,
+          "truncated_chars": 1108,
+          "avg_original_per_item": 110.8,
+          "avg_truncated_per_item": 110.8,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2158,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "津投城开",
+      "symbol": "600322.SH",
+      "pct_chg": 10.204,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.6,
+            "evidence": "提供的新闻条目均为日本地方新闻、文化活动及政治报道，未包含与“津投城开”公司业务、财务或项目相关的信息。"
+          },
+          {
+            "name": "新闻相关性低",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "新闻内容涉及地方选举、节庆、学校与市政活动，主题与房地产/投融资或城投类公司无直接关联。"
+          },
+          {
+            "name": "需关注政策/选举影响",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "多条新闻提到选举与政党高层访谈，若后续出现与地方财政、城市更新或基建相关政策，可能对城投类公司产生影响。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "政策",
+          "选举"
+        ],
+        "risk_flags": [
+          "信息披露不足",
+          "新闻与公司关联性低",
+          "政治/选举不确定性可能影响地方项目审批"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "若公司相关消息出现，成交量可迅速反映市场情绪和资金关注度",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向能反映对A股标的的兴趣与风险偏好",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "合同订单/土地出让/项目签约",
+            "reason": "城投类公司业绩依赖政府项目与土地成交，新增合同可证实业务变化",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.25,
+        "summary": "基于提供的新闻样本，未发现与津投城开直接相关的信息，倾向中性评价；需进一步获取公司/行业层面的政策、项目或财务披露以做出明确判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1085,
+          "truncated_chars": 1085,
+          "avg_original_per_item": 108.5,
+          "avg_truncated_per_item": 108.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1975,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "新澳股份",
+      "symbol": "603889.SH",
+      "pct_chg": 10.071,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "提价预期",
+            "direction": "正面",
+            "weight": 1.0,
+            "evidence": "出现关键词: 涨价"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.4,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.52,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"ESG评级",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": true,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "【ESG动态】新澳股份（603889.SH）获华证指数ESG最新评级AA，行业排名第1",
+          "龙虎榜|新澳股份涨停，机构席位净买入-7783.36万元 - 新浪财经",
+          "10月10日新澳股份（603889）涨停分析：治理优化、澳毛涨价 - 股票",
+          "新澳股份2025年第二次临时股东会决议- CFi.CN 中财网",
+          "10月10日上民红利（000153）指数涨1.41%，成份股新澳股份 ... - 股票",
+          "香奈儿“相中”的公司强势涨停！羊毛价格飙涨引爆市场 - 21财经",
+          "纺织制造- 财报，业绩电话会，研报，新闻- Reportify",
+          "市场- 股票频道- 东方财富网",
+          "上证指数(SSEC) 实时行情，今日最新指数，走势图 - 英为财情",
+          "SSE Equities Introduction - SHANGHAI STOCK EXCHANGE"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1231,
+          "truncated_chars": 1231,
+          "avg_original_per_item": 123.1,
+          "avg_truncated_per_item": 123.1,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2256
+      }
+    },
+    {
+      "name": "澄星股份",
+      "symbol": "600078.SH",
+      "pct_chg": 10.067,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.25,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股票异常波动与监管触发",
+            "direction": "负面",
+            "weight": 0.27,
+            "evidence": "公司公告称9月30日、10月9日、10月10日连续三个交易日日收盘价格涨幅偏离值累计达到20%以上，触及交易所异常波动情形。"
+          },
+          {
+            "name": "公司自查披露与生产经营正常",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "公司自查并向控股股东及实际控制人核实，公告披露日前不存在应披露而未披露的重大信息，并称生产经营活动正常。"
+          },
+          {
+            "name": "公司治理与激励、回购推动",
+            "direction": "正面",
+            "weight": 0.32,
+            "evidence": "交易所披露有关股份回购实施结果及公司发布限制性股票激励计划首次授予结果，媒体解读为治理优化与激励计划有助于中长期股价支持。"
+          },
+          {
+            "name": "市场交易活跃度与短期资金推动",
+            "direction": "正面",
+            "weight": 0.14,
+            "evidence": "10月10日涨停，全天换手率3.00%，成交额约1.62亿元，龙虎榜显示部分营业部净买入，短期资金推动明显。"
+          },
+          {
+            "name": "应收账款质押等财务事项",
+            "direction": "负面",
+            "weight": 0.09,
+            "evidence": "此前披露存在应收账款质押事项（2025-09-29公告），提示可能的财务或流动性相关关注点。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "股票交易异常波动（触及交易所核查机制）",
+          "短期高波动性与交易风险",
+          "财务事项（应收账款质押）需跟踪",
+          "激励/回购未必立即转化为基本面改善"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/成交额",
+            "reason": "验证涨停及持续性资金流入是否由真实交易支撑或仅短期炒作",
+            "suggest_window": "5-20个交易日"
+          },
+          {
+            "metric": "龙虎榜席位资金净买入/卖出",
+            "reason": "判断主力席位是否持续布局或回避，识别主导资金方向",
+            "suggest_window": "5个交易日"
+          },
+          {
+            "metric": "换手率与股价连续涨跌幅",
+            "reason": "评估流动性与短期波动风险，观察涨幅是否可持续",
+            "suggest_window": "10个交易日"
+          },
+          {
+            "metric": "公司披露的回购实施进度与激励兑现情况",
+            "reason": "跟踪治理改善与回购对股本/每股收益的实际影响",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.65,
+        "summary": "澄星股份因连续三个交易日涨幅偏离被认定为异常波动，但公司公告称无未披露重大信息且生产经营正常；同时披露回购与限制性股票激励等治理动作，短期由资金驱动的波动明显，具备正面治理信号但存在监管关注与财务事项需要跟踪，短线风险偏高。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1237,
+          "truncated_chars": 1220,
+          "avg_original_per_item": 123.7,
+          "avg_truncated_per_item": 122.0,
+          "ratio_truncated": 0.9863,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2006,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "宝泰隆",
+      "symbol": "601011.SH",
+      "pct_chg": 10.101,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "提供的新闻均为娱乐、体育与艺人相关报道，未提及宝泰隆（公司业务、财报、订单、产能或客户）或其关联产业链信息，无法据此判断公司基本面或短期事件影响。"
+          },
+          {
+            "name": "媒体相关性低",
+            "direction": "不确定",
+            "weight": 0.0,
+            "evidence": "新闻主题集中在艺术家活动与赛事报道，与宝泰隆经营或行业无直接关联。"
+          },
+          {
+            "name": "需补充财报/公告/行业新闻",
+            "direction": "不确定",
+            "weight": 0.0,
+            "evidence": "缺乏公司公告、季报、订单变动或行业数据，建议获取公司披露或行业媒体以完成评估。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "信息不足",
+          "新闻不相关",
+          "数据缺失导致误判风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "若后续出现与公司相关的消息，应观察成交量以验证市场是否消化信息",
+            "suggest_window": "日内-1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可快速反映机构对公司或行业偏好变化",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "对于制造/工业类公司，产销率直接影响营收与库存水平",
+            "suggest_window": "1季度"
+          }
+        ],
+        "confidence": 0.2,
+        "summary": "当前提供的新闻均为娱乐和体育类内容，未包含关于宝泰隆的任何业务、财务或行业信息。基于现有材料无法得出有意义的情绪或投资结论，建议获取公司公告、财报或行业相关报道后再行评估。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1092,
+          "truncated_chars": 1092,
+          "avg_original_per_item": 109.2,
+          "avg_truncated_per_item": 109.2,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2041,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "大众公用",
+      "symbol": "600635.SH",
+      "pct_chg": 10.062,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": -0.35,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "股价短期大幅上涨/波动",
+            "direction": "负面",
+            "weight": 0.38,
+            "evidence": "2025年9月29日、9月30日、10月9日、10月10日连续四个交易日累计上涨33.74%，存在交易风险。"
+          },
+          {
+            "name": "市场情绪过热 / 非理性炒作迹象",
+            "direction": "负面",
+            "weight": 0.28,
+            "evidence": "公告提示可能存在市场情绪过热和非理性炒作的情形，交易风险大幅提升，短期大幅下跌的风险。"
+          },
+          {
+            "name": "交易所/公司对异常波动的披露",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "公司发布股价异动公告并提请风险提示，符合沪市交易规则对异常波动的相关规定。"
+          },
+          {
+            "name": "公司基本面未发生重大变化",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公司公告称基本面未发生重大变化、经营活动正常，未披露重大未披露事项。"
+          },
+          {
+            "name": "机构/外资短期介入（沪股通净买入）",
+            "direction": "正面",
+            "weight": 0.09,
+            "evidence": "报道提及9月29日当日沪股通净买入约1.10亿元，短期有北向资金参与推动价格。"
+          }
+        ],
+        "score": 35,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "短期股价波动剧烈",
+          "市场情绪过热/非理性炒作",
+          "可能短期大幅下跌",
+          "交易异常波动公告/监管关注"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "确认价格上涨是否由放量推动，判断流动性与接盘强度",
+            "suggest_window": "1-10 个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "报道显示沪股通短期净买入，持续流入可能延续上涨或验证外资是否接力",
+            "suggest_window": "5-20 个交易日"
+          },
+          {
+            "metric": "换手率 / 连续涨停次数(封板次数)",
+            "reason": "检测是否为短期投机行为（如9天5板）及资金接力强度",
+            "suggest_window": "1-15 个交易日"
+          }
+        ],
+        "confidence": 0.8,
+        "summary": "大众公用股价在短期内出现连续大幅上涨（四个交易日累计+33.74%），公司公告称基本面未变、经营正常，但提示存在市场情绪过热与非理性炒作，交易风险和短期大幅下跌风险显著上升。建议关注成交量、北向资金流向及换手/封板情况以判断上涨可持续性。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1120,
+          "truncated_chars": 1120,
+          "avg_original_per_item": 112.0,
+          "avg_truncated_per_item": 112.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2081,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "同惠电子",
+      "symbol": "920509.SH",
+      "pct_chg": 13.607,
+      "news_count": 4,
+      "report": {
+        "sentiment_score": 0.12,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股价短期强势与高换手",
+            "direction": "正面",
+            "weight": 0.4,
+            "evidence": "10月10日盘中上涨20.7%，股价36.1元，换手率10.01%，成交额2.71亿元，显示短期资金热度与买盘推动"
+          },
+          {
+            "name": "估值水平偏高",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "动态市盈率98.72倍，暗示当前股价对盈利预期要求较高，回撤风险上升"
+          },
+          {
+            "name": "对外投资（100%控股东莞同轩）",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "公告显示新增对外投资，被投资方为东莞市同轩电子科技有限公司，投资占比100%，但未披露金额与用途，影响需看后续整合与业绩贡献"
+          },
+          {
+            "name": "流动性与市值结构",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "总市值57.87亿元、流通市值30.31亿元，较高换手率表明二级市场流动性较好，便于价格发现"
+          }
+        ],
+        "score": 58,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "高估值风险（动态PE≈98.7）",
+          "短期高波动与换手率集中（可能存在投机性资金）",
+          "对外投资事项细节缺失，存在整合/资金需求风险",
+          "小盘股流动性在极端行情下可能放大跌幅"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量（成交额/成交量）",
+            "reason": "验证本次上涨是否由持续资金流入支撑或只是短期爆量",
+            "suggest_window": "1-2周"
+          },
+          {
+            "metric": "换手率",
+            "reason": "高换手率若持续说明换手驱动行情；若快速回落可能预示短期回调",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入/净流出",
+            "reason": "外资动向可印证趋势的延续性与机构参与度",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "公司业绩/营收与对外投资披露进展",
+            "reason": "判断高估值是否有基本面支撑及对外投资对未来盈利的影响",
+            "suggest_window": "1季度"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "同惠电子出现显著短期强势并伴随大额成交与高换手，表明市场资金关注度上升；但公司动态市盈率接近100倍且对外全资投资细节不明，增加基本面兑现与整合不确定性。总体偏积极但谨慎，需关注成交量延续性、外资动向及投资事项后续披露。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 500,
+          "truncated_chars": 500,
+          "avg_original_per_item": 125.0,
+          "avg_truncated_per_item": 125.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1255,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "卡倍亿",
+      "symbol": "300863.SZ",
+      "pct_chg": 12.123,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.35,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "高速铜缆产品业务推进",
+            "direction": "正面",
+            "weight": 0.33,
+            "evidence": "公司公告称正在积极开拓高速铜缆产品业务，目前进展顺利，表明产品线扩展及技术商业化进展良好。"
+          },
+          {
+            "name": "潜在大客户开拓（安费诺/安波福等）",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "投资者互动中被询问是否向安费诺供货，公司同时提到安波福为长期战略客户，若成单将带来规模化订单但当前未完全确认。"
+          },
+          {
+            "name": "注册资本增资（增幅约51%）",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "工商信息显示注册资本由约1.24亿增至约1.88亿，提供扩产或研发资金，但同时可能带来股本摊薄和治理变化。"
+          },
+          {
+            "name": "董监高拟减持股份",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "公告或媒体披露董事、高级管理人员拟减持股份，可能带来市场信心冲击和短期抛压。"
+          },
+          {
+            "name": "市场关注与股价波动",
+            "direction": "正面",
+            "weight": 0.12,
+            "evidence": "媒体与行情显示短期股价强烈反应（示例+12.39%），显示消息刺激市场关注但也伴随波动风险。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "管理层拟减持",
+          "增资摊薄风险",
+          "客户确认/转化风险",
+          "短期股价波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证市场对消息的追捧与资金持续度，判断是否为短期题材炒作",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资参与度可判断资金面与行情可持续性",
+            "suggest_window": "2-8周"
+          },
+          {
+            "metric": "订单/客户合同确认（与安费诺/安波福）",
+            "reason": "直接验证业务转化为收入与未来业绩增长的确定性",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "衡量高速铜缆产品的商业化及规模化进展，反映营收兑现能力",
+            "suggest_window": "1-2季度"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "卡倍亿宣布高速铜缆业务推进顺利，并披露与安波福等战略客户关系，显示产品与客户拓展具潜在利好；同时公司近期增资和董监高拟减持带来不确定性与短期抛压。总体偏积极但需以后续订单、客户供货确认、出货与资金流向数据为关键验证点。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 768,
+          "truncated_chars": 760,
+          "avg_original_per_item": 109.71,
+          "avg_truncated_per_item": 108.57,
+          "ratio_truncated": 0.9896,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1679,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "卓郎智能",
+      "symbol": "600545.SH",
+      "pct_chg": 10.175,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.48,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股份回购进展公告",
+            "direction": "正面",
+            "weight": 0.45,
+            "evidence": "上海证券交易所披露 2025-10-10 关于600545 卓郎智能 的股份回购进展公告，表明公司正在实施回购计划，具有提振股价与管理层信心的作用。"
+          },
+          {
+            "name": "智能制造业务与技术能力",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "新闻提及公司涉及智能装备的研发、设计、制造和销售，提供智能制造全流程解决方案，显示业务属性与行业赛道匹配度较高。"
+          },
+          {
+            "name": "信息流与市场关注度",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "除回购公告与片段性业务描述外，公开信息量有限，市场共识与持续关注度不明确。"
+          },
+          {
+            "name": "业绩持续性与行业竞争风险",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "未见明确的近期业绩或订单证明，智能制造行业存在竞争与订单波动风险，回购能短期支撑但不能替代基本面。"
+          }
+        ],
+        "score": 72,
+        "need_macro": false,
+        "macro_keywords": [
+          "智能制造",
+          "股份回购"
+        ],
+        "risk_flags": [
+          "回购规模与资金来源未详",
+          "短期内业绩与订单披露不足以验证基本面改善",
+          "信息披露更新频率低，市场预期不确定",
+          "行业竞争与订单波动可能影响盈利"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "回购公告后是否伴随放量可验证市场对回购的认可与短期资金活跃度",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可反映市场对公司基本面与回购行动的跨境认可度",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "公司回购完成比例/累计回购金额",
+            "reason": "实质性回购进展是回购利好兑现的关键指标",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "验证智能制造业务的收入持续性与基本面改善",
+            "suggest_window": "1个月-3个月"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "基于上海证券交易所披露的回购进展公告与公司在智能制造领域的业务描述，短期情绪偏正面：回购有助于提振股价与管理层信心，且公司业务契合智能制造赛道。但公开信息有限，需关注回购资金来源与完成进度、后续业绩/订单披露以验证基本面，存在行业竞争与订单波动风险。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 349,
+          "truncated_chars": 349,
+          "avg_original_per_item": 116.33,
+          "avg_truncated_per_item": 116.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 940,
+        "parse_mode": "retry"
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 55,
+    "risk_index": 40,
+    "industry_heat": [
+      {
+        "industry": "新能源",
+        "heat": 45,
+        "drivers": [
+          "光伏",
+          "锂"
+        ]
+      },
+      {
+        "industry": "半导体",
+        "heat": 30,
+        "drivers": [
+          "芯片",
+          "半导体"
+        ]
+      },
+      {
+        "industry": "人工智能",
+        "heat": 30,
+        "drivers": [
+          "AI",
+          "人工智能"
+        ]
+      },
+      {
+        "industry": "出海",
+        "heat": 30,
+        "drivers": [
+          "出口",
+          "外需"
+        ]
+      },
+      {
+        "industry": "消费复苏",
+        "heat": 15,
+        "drivers": [
+          "消费",
+          "出行"
+        ]
+      },
+      {
+        "industry": "基建",
+        "heat": 15,
+        "drivers": [
+          "基建",
+          "铁路"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "启发式：政策信号未充分解析",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [
+      "新能源",
+      "半导体",
+      "人工智能"
+    ],
+    "macro_factors": [
+      {
+        "name": "新能源",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "半导体",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "人工智能",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "出海",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "消费复苏",
+        "impact": "中性",
+        "confidence": 0.4
+      }
+    ],
+    "actionable_insights": [],
+    "suggest_global_watch": [],
+    "extra_keywords": [],
+    "summary": "主题 新能源 相关信息增量；主题 半导体 相关信息增量；主题 人工智能 相关信息增量",
+    "llm_fallback": true,
+    "raw": "{\n  \"market_sentiment_index\": 62,\n  \"risk_index\": 68,\n  \"industry_heat\": [\n    {\n      \"industry\": \"半导体/光刻机与芯片设备\",\n      \"heat\": 95,\n      \"drivers\": [\n        \"A股光刻机指数大涨、一年涨130%\",\n        \"深圳市政策+50亿元产业基金支持\",\n        \"国产光刻机技术突破与市场期待（SMEE展示EUV相关内容）\",\n        \"下游智能汽车电子、机器人等需求拉动\"\n      ]\n    },\n    {\n      \"industry\": \"稀土/有色金属\",\n      \"heat\": 82,\n      \"drivers\": [\n        \"北方稀土业绩大幅预增（利润同比数百%）\",\n        \"全球与国内对稀土上游供给和价格的关注\"\n      ]\n    },\n    {\n      \"industry\": \"环保工程/环保服务\",\n      \"heat\": 78,\n      \"drivers\": [\n        \"中环环保控制权变更、股价大幅上涨\",\n        \"环保资产迎来跨界资本（生物医药资本入主）\"\n      ]\n    },\n    {\n      \"industry\": \"新能源/光伏\",\n      \"heat\": 72,\n      \"drivers\": [\n        \"光伏龙头专利战与技术演进（N型、TOPCon等）\",\n        \"阳光电源赴港上市预期与行业长期需求\"\n      ]\n    },\n    {\n      \"industry\": \"人工智能/软件并购（AI财税、AI展会）\",\n      \"heat\": 70,\n      \"drivers\": [\n",
+    "error": "macro_llm_empty",
+    "theme_hits": {
+      "半导体": 2,
+      "新能源": 3,
+      "人工智能": 2,
+      "消费复苏": 1,
+      "基建": 1,
+      "出海": 2,
+      "地产链": 0
+    },
+    "macro_truncation_stats": {
+      "item_count": 209,
+      "original_chars": 31030,
+      "truncated_chars": 26233,
+      "avg_original_per_item": 148.47,
+      "avg_truncated_per_item": 125.52,
+      "ratio_truncated": 0.8454,
+      "max_len_per_item": 220
+    },
+    "macro_prompt_token_est": 23385,
+    "parse_mode": "heuristic"
+  },
+  "macro_extra": [],
+  "macro_keywords_used": [
+    "半导体产业",
+    "国产化",
+    "光刻机",
+    "资本市场",
+    "监管政策",
+    "融资融券",
+    "新股上市",
+    "智能装备",
+    "军工/国防",
+    "资金面",
+    "并购重组",
+    "市场情绪",
+    "政策",
+    "选举"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 11,
+      "neutral": 6,
+      "negative": 3
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        6
+      ],
+      [
+        "减持风险",
+        2
+      ],
+      [
+        "行业热度与题材推升",
+        1
+      ],
+      [
+        "公司在产业链的可见性与题材关联",
+        1
+      ],
+      [
+        "资金面与短期买盘活跃",
+        1
+      ],
+      [
+        "外部技术垄断与国产化不确定性",
+        1
+      ],
+      [
+        "股份回购进展",
+        1
+      ],
+      [
+        "回购规模与资金承诺",
+        1
+      ],
+      [
+        "ESG评级稳定性",
+        1
+      ],
+      [
+        "独立董事辞职",
+        1
+      ],
+      [
+        "即将披露三季报",
+        1
+      ],
+      [
+        "新股首日强势表现与市场关注度",
+        1
+      ],
+      [
+        "机构研究报告给予正面定位",
+        1
+      ],
+      [
+        "被纳入融资融券标的/可充抵保证金名单",
+        1
+      ],
+      [
+        "高波动性与投机性溢价风险",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 26,
+      "负面": 16,
+      "不确定": 21
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": null
+  },
+  "diagnostics": {
+    "fallback_stock_count": 7,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 13,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 6,
+    "parse_success_stock_retry": 7,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.35,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 3,
+    "force_no_response_format": false,
+    "azure_fail_count": 0,
+    "parse_mode_counts": {
+      "heuristic": 7,
+      "direct": 6,
+      "retry": 7
+    },
+    "stock_prompt_token_summary": {
+      "min": 940,
+      "max": 2361,
+      "avg": 1999.4,
+      "total": 39988,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 184,
+      "sum_original_chars": 27546,
+      "sum_truncated_chars": 22208,
+      "avg_original_per_item": 149.71,
+      "avg_truncated_per_item": 120.7,
+      "overall_ratio_truncated": 0.8062
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 23385,
+    "macro_truncation_stats": {
+      "item_count": 209,
+      "original_chars": 31030,
+      "truncated_chars": 26233,
+      "avg_original_per_item": 148.47,
+      "avg_truncated_per_item": 125.52,
+      "ratio_truncated": 0.8454,
+      "max_len_per_item": 220
+    },
+    "searx_filter_metrics": {
+      "skip_domain": 27,
+      "requery_aug": 61,
+      "empty_results": 158,
+      "requery_relax_time": 13,
+      "requery_general": 22,
+      "skip_duplicate": 15,
+      "requery_cn_sites": 54,
+      "http_timeout": 1,
+      "extreme_fallback": 6
+    }
+  }
+}

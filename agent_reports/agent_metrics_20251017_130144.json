@@ -1,0 +1,81 @@
+{
+  "timestamp": "20251017_130144",
+  "generated_at_utc": "2025-10-17T13:01:44.637429+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 4,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 6,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 12,
+    "parse_success_stock_retry": 2,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.2,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 500 Server Error: Internal Server Error for url: https://ai-qiutianyong-3233.openai.azure.com/openai/responses?api-versi"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 5,
+    "force_no_response_format": true,
+    "azure_fail_count": 1,
+    "parse_mode_counts": {
+      "direct": 12,
+      "heuristic": 4,
+      "no-news": 2,
+      "retry": 2
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1754,
+      "avg": 1016.1,
+      "total": 20322,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 56,
+      "sum_original_chars": 107341,
+      "sum_truncated_chars": 8998,
+      "avg_original_per_item": 1916.8,
+      "avg_truncated_per_item": 160.68,
+      "overall_ratio_truncated": 0.0838
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4444,
+    "macro_truncation_stats": {
+      "item_count": 150,
+      "original_chars": 60770,
+      "truncated_chars": 4730,
+      "avg_original_per_item": 405.13,
+      "avg_truncated_per_item": 31.53,
+      "ratio_truncated": 0.0778,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 66,
+      "empty_results": 436,
+      "requery_relax_time": 8,
+      "requery_general": 15,
+      "requery_aug": 105,
+      "requery_cn_sites": 210,
+      "db_fallback_try": 14,
+      "db_fallback_added": 9,
+      "extreme_fallback": 18,
+      "backend_enriched_fallback_added": 20,
+      "skip_duplicate": 1,
+      "skip_domain": 2,
+      "skip_old_published": 10
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,1842 @@
+{
+  "started_at": "2026-01-04T15:11:07.841979+00:00",
+  "finished_at": "2026-01-04T15:36:59.118470+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "挖金客",
+      "symbol": "301380.SZ",
+      "pct_chg": 20.0,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": -0.15,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "控股股东协议转让5%股份",
+            "direction": "负面",
+            "weight": 0.3,
+            "evidence": "陈坤女士拟以31.67元/股协议转让其直接持有的公司5%股份（公告披露）"
+          },
+          {
+            "name": "引入外部投资人（北京开盛）旨在认可公司内在价值",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "公告称为引入认可公司内在价值及未来发展前景的投资人，陈坤与北京开盛签署股份转让协议"
+          },
+          {
+            "name": "明确转让价格为31.67元/股，提供估值锚",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "协议转让价格明确为31.67元/股，转让价款合计约1.6057亿元"
+          },
+          {
+            "name": "事项不触及要约收购且不导致控股权变更",
+            "direction": "正面",
+            "weight": 0.17,
+            "evidence": "公告明确本次转让不触及要约收购、不构成关联交易且不会导致控股股东、实际控制人变更"
+          },
+          {
+            "name": "套现规模与流通市值/市场预期的不确定性",
+            "direction": "不确定",
+            "weight": 0.13,
+            "evidence": "转让价款约1.6057亿元，另有报道提及另一位股东套现约0.4亿元，短期对股价与市场情绪影响存在不确定性"
+          }
+        ],
+        "score": 54,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "控股股东减持/协议转让",
+          "短期市场情绪与股价承压风险",
+          "流通股增加导致成交量与换手率波动",
+          "可能的估值重定价风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "监测协议转让公告后市场是否放量卖出或被吸收，判断压力是否持续",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "北向资金对大股东减持/引入机构投资者敏感，可反映外资态度",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "股价相对转让价溢价/折价",
+            "reason": "比较市场价与31.67元/股的偏离度以评估估值接受度",
+            "suggest_window": "1-10日"
+          }
+        ],
+        "confidence": 0.78,
+        "summary": "控股股东陈坤拟以31.67元/股协议转让5%股份给北京开盛，总价约1.606亿元；该行为短期对股价有一定压力（股东套现信号），但引入被称认可公司价值的投资人且不触及要约收购、不会改变控制权，降低了系统性不确定性。总体影响偏中性偏负，需关注公告后成交量、北向资金流向及市场对31.67元估值锚的反应。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1040,
+          "truncated_chars": 1040,
+          "avg_original_per_item": 104.0,
+          "avg_truncated_per_item": 104.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1950,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "久之洋",
+      "symbol": "300516.SZ",
+      "pct_chg": 20.0,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": -0.1,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "专注现有核心业务（红外热像仪、激光传感器、光学元件、星体跟踪器）",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "公司表示目前专注于红外热像仪、激光传感器、光学元件及膜系镀制、星体跟踪器等核心业务"
+          },
+          {
+            "name": "未涉足6G与太赫兹相关技术及产品",
+            "direction": "负面",
+            "weight": 0.24,
+            "evidence": "公司尚未涉足6G相关的技术；开展过太赫兹成像技术的探索研究，目前暂无太赫兹相关产品"
+          },
+          {
+            "name": "未与主流新能源车厂建立合作/产品未广泛应用于新能源车领域",
+            "direction": "负面",
+            "weight": 0.18,
+            "evidence": "公司未与长安、北汽、浙江世宝、小鹏等新能源汽车厂商建立合作，产品在无人驾驶方面主要体现为红外"
+          },
+          {
+            "name": "近期股价异动及高波动性",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "公司发布股价异动公告，连续多个交易日收盘价格涨幅偏离值累计超过30%"
+          },
+          {
+            "name": "可见信息有限（客户、订单、业绩与未来布局细节不足）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "公开互动回复主要为业务范围说明，缺乏订单、客户名单与营收指引等细节"
+          }
+        ],
+        "score": 55,
+        "need_macro": false,
+        "macro_keywords": [
+          "红外成像",
+          "激光传感",
+          "汽车电子"
+        ],
+        "risk_flags": [
+          "未涉足6G/太赫兹可能失去新技术溢价与市场关注",
+          "未与大型新能源车企建立合作，短期内难以获得整车端规模放量",
+          "近期股价异常波动，短期风险偏高",
+          "公开信息中缺乏订单与业绩指引，业绩可见性较低"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证市场对公司业务澄清后的资金关注与情绪变化",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "判断机构外资对公司基本面和行业定位的态度",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "客户订单/新签约公告",
+            "reason": "直接反映公司产品在下游（无人驾驶/安防/航天等）的落地与放量",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产品出货量/产销率",
+            "reason": "衡量公司现有核心产品的放量与库存消化情况",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "公司在互动平台明确聚焦红外热像、激光传感、光学件与星体跟踪器等既有业务，且未涉足6G/太赫兹及未与主要新能源车厂形成合作。对注重新兴技术或整车渠道放量的投资者而言属于负面消息；对注重现有细分领域稳健经营者则体现出聚焦性。短期需关注股价波动、订单与出货数据以验证业绩可见性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 649,
+          "truncated_chars": 649,
+          "avg_original_per_item": 92.71,
+          "avg_truncated_per_item": 92.71,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1472,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "中科江南",
+      "symbol": "301153.SZ",
+      "pct_chg": 20.0,
+      "news_count": 4,
+      "report": {
+        "sentiment_score": -0.75,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "前三季度净利大幅下滑",
+            "direction": "负面",
+            "weight": 0.45,
+            "evidence": "公司公布前三季度净利润677.62万元，同比下降96.39%"
+          },
+          {
+            "name": "股东减持造成抛压",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "股东衆志軟科、科鼎好友合计减持1.88%股份"
+          },
+          {
+            "name": "主营方向与市场规模（财税信息化）",
+            "direction": "不确定",
+            "weight": 0.12,
+            "evidence": "公司专注于财政信息化、基于支付电子化技术的整体解决方案，行业需求存在但新闻未披露订单/增长情况"
+          },
+          {
+            "name": "短期市场关注度与流动性风险",
+            "direction": "不确定",
+            "weight": 0.13,
+            "evidence": "新闻中以多只港股行情为背景，未见对中科江南的正面市场推动信息，存在成交量和关注度不确定性"
+          },
+          {
+            "name": "信息披露/可得数据不足",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公开新闻覆盖业绩与减持，但缺乏订单、营收构成、毛利率、现金流等细节"
+          }
+        ],
+        "score": 28,
+        "need_macro": false,
+        "macro_keywords": [
+          "财政信息化",
+          "市场流动性"
+        ],
+        "risk_flags": [
+          "净利润大幅下滑（96.39%）",
+          "主要股东减持（合计1.88%）",
+          "短期市场关注度和成交量不确定",
+          "关键信息（订单、现金流、毛利率）披露不足"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证市场对公司消息的反应与短期流动性变化，判断抛压与支撑力度",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "股东增减持记录",
+            "reason": "持续减持或大股东变动会持续影响股价和市场信心",
+            "suggest_window": "1周-3个月"
+          },
+          {
+            "metric": "订单/合同额（新签及在手订单）",
+            "reason": "判断营收和利润能否恢复的最直接公司层面领先指标",
+            "suggest_window": "1个月-2季度"
+          },
+          {
+            "metric": "应收账款/现金流",
+            "reason": "评估公司营运资金状况与盈利质量，排查一次性因素",
+            "suggest_window": "1个月-2季度"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "基于新闻，中科江南公布前三季度净利润同比下降96.39%，且两股东合计减持1.88%，短期利空明显。公司所属财政信息化领域具备长期需求，但当前缺乏订单、毛利率和现金流等关键披露，短期需关注成交量、股东减持后续动向及订单回补情况。整体情绪偏负面，建议短期谨慎观望并跟踪上述可验证指标。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 421,
+          "truncated_chars": 405,
+          "avg_original_per_item": 105.25,
+          "avg_truncated_per_item": 101.25,
+          "ratio_truncated": 0.962,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1135,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "蓝色光标",
+      "symbol": "300058.SZ",
+      "pct_chg": 20.0,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.5,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "港交所二次递表/推进境外上市",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "公司于2025-12-30向香港联交所更新了发行申请并刊登更新文件，二次递表材料由华泰国际、国泰君安国际等承销商参与。"
+          },
+          {
+            "name": "行业地位与业务竞争力",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "根据弗若斯特沙利文，按2024年收入蓝色光标跻身全球前十大营销传播公司，且为中国最大的营销服务提供商和出海跨境营销服务提供商。"
+          },
+          {
+            "name": "市场短期资金与情绪驱动",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "AI/智谱概念板块上涨，蓝色光标曾出现20%涨停并吸引主力资金流入，短期市场对该类标的存在追捧效应。"
+          },
+          {
+            "name": "监管与披露不确定性",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "公司披露的申请材料为草拟版本，按港交所和香港证监会要求编制，所载资料可能适时变动，存在审批与信息变更风险。"
+          },
+          {
+            "name": "财务细节与未来业绩透明度不足",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公告提及更新了部分公司信息和财务数据，但公开披露的具体财务细节有限，短期难以充分评估估值与盈利可持续性。"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "境外上市",
+          "监管",
+          "营销传播行业",
+          "资本市场"
+        ],
+        "risk_flags": [
+          "港交所/香港证监会审批不确定性",
+          "披露信息为草稿，财务数据可能变动",
+          "短期股价受投机资金驱动波动大",
+          "跨境监管与合规要求差异导致延迟或调整",
+          "若募资/定价不理想存在稀释或融资风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察市场对递表与更新公告的持续关注度与筹码变化，验证短期资金活跃程度",
+            "suggest_window": "1-10日"
+          },
+          {
+            "metric": "北向资金净流入/流出",
+            "reason": "衡量外资对蓝色光标及相关营销/AI板块的配置倾向，反映跨境资金动向",
+            "suggest_window": "5-30日"
+          },
+          {
+            "metric": "公司后续披露的季度营收与毛利率",
+            "reason": "验证经营面与行业地位能否转化为收入与盈利增长，判断基本面支撑力度",
+            "suggest_window": "1-2季度"
+          },
+          {
+            "metric": "港交所/香港证监会反馈与审批进度",
+            "reason": "直接决定上市推进节奏与文件是否需重大修订，是关键事件驱动因素",
+            "suggest_window": "30-90日"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "蓝色光标向港交所更新递表材料并刊登草拟文件，加速境外上市进程；公司在营销传播领域具备显著行业地位，且短期股价受AI/概念资金推动表现强劲。利好点包括境外上市进展与行业领先地位；但需警惕披露为草稿且审批与财务细节存在不确定性，短期股价可能被投机资金放大波动。建议关注成交量、北向资金流向、公司后续业绩披露及港交所/证监会反馈。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 5647,
+          "truncated_chars": 749,
+          "avg_original_per_item": 1129.4,
+          "avg_truncated_per_item": 149.8,
+          "ratio_truncated": 0.1326,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1455,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "万事利",
+      "symbol": "301066.SZ",
+      "pct_chg": 19.988,
+      "news_count": 9,
+      "report": {
+        "sentiment_score": 0.45,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "价格异动与高成交额",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "12月31日盘中直线拉升触及涨停，报19.69元，成交额超4亿元；同日盘中触及涨停板的多条报道。"
+          },
+          {
+            "name": "机构与主力资金流入",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "龙虎榜披露12月31日机构净买入3724.13万元；周评显示本周主力资金合计净流入529.03万元。"
+          },
+          {
+            "name": "题材与销售端利好（品牌/联名）",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "公司通过投资者互动确认马年春晚合作，联名产品已在线上线下销售，可能带来短期销售增量和题材关注。"
+          },
+          {
+            "name": "行业情绪/板块回落",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "报道指出其所属行业纺织制造目前下跌，板块环境承压，可能限制延续性估值提升。"
+          },
+          {
+            "name": "高波动与题材驱动风险（游资/短线）",
+            "direction": "负面",
+            "weight": 0.08,
+            "evidence": "出现快速涨停与龙虎榜异动，存在游资介入、题材驱动及高波动风险，短期价格可能非基本面驱动。"
+          }
+        ],
+        "score": 62,
+        "need_macro": true,
+        "macro_keywords": [
+          "汇率",
+          "纺织制造",
+          "资金面"
+        ],
+        "risk_flags": [
+          "短期高波动/涨停异动",
+          "游资介入与题材炒作风险",
+          "行业整体回落可能限制持续性上涨",
+          "信息披露或交易异动后追涨风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交额/成交量",
+            "reason": "本次涨停伴随成交额超4亿元，后续成交量变化可验证资金热度与持续性",
+            "suggest_window": "1日-1周"
+          },
+          {
+            "metric": "机构/龙虎榜净买入",
+            "reason": "龙虎榜披露机构净买入3724.13万元，连续机构买入力度可验证主力参与的稳定性",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "主力资金净流入（周度）",
+            "reason": "周评显示主力本周净流入529.03万元，持续的资金流向支持价格延续",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "产品销售/订单（联名产品销量）",
+            "reason": "公司宣称春晚联名产品已上线，实际销售/订单数据将影响中短期业绩预期",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.8,
+        "summary": "短期看多偏向积极：股价出现快速涨停且成交活跃、机构在龙虎榜出现明显净买入力度，且公司披露春晚联名带来题材与潜在销售利好。但纺织板块整体回落、存在游资与题材驱动的高波动风险，需关注后续成交量、机构持续买入力度及联名产品实际销量以判断延续性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 9,
+          "original_chars": 780,
+          "truncated_chars": 780,
+          "avg_original_per_item": 86.67,
+          "avg_truncated_per_item": 86.67,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1752,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "立方控股",
+      "symbol": "920130.SH",
+      "pct_chg": 24.935,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: 立方控股 | 参考链接: 立方公式怎么算 - 百度知道 (https://zhidao.baidu.com/question/151688699.html)；立方的计算公式是什么？怎么算立方？_百度知道 (https://zhidao.baidu.com/question/1778109677820139620.html)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: 立方控股 | 参考链接: 立方公式怎么算 - 百度知道 (https://zhidao.baidu.com/question/151688699.html)；立方的计算公式是什么？怎么算立方？_百度知道 (https://zhidao.baidu.com/question/1778109677820139620.html)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "N新广益",
+      "symbol": "301687.SZ",
+      "pct_chg": 225.217,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: N新广益 | 参考链接: 数学集合中，N,N*,Z,Q,R,C分别是什么意思？_百度知道 (https://zhidao.baidu.com/question/583914882.html)；计算机中的换行符、回车符、\\n、\\r、\\n\\r 怎么区分啊？_百度知道 (https://zhidao.baidu.com/question/386412786.html)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: N新广益 | 参考链接: 数学集合中，N,N*,Z,Q,R,C分别是什么意思？_百度知道 (https://zhidao.baidu.com/question/583914882.html)；计算机中的换行符、回车符、\\n、\\r、\\n\\r 怎么区分啊？_百度知道 (https://zhidao.baidu.com/question/386412786.html)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "N蘅东光",
+      "symbol": "920045.SH",
+      "pct_chg": 878.158,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: N蘅东光 | 参考链接: 数学集合中，N,N*,Z,Q,R,C分别是什么意思？_百度知道 (https://zhidao.baidu.com/question/583914882.html)；计算机中的换行符、回车符、\\n、\\r、\\n\\r 怎么区分啊？_百度知道 (https://zhidao.baidu.com/question/386412786.html)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: N蘅东光 | 参考链接: 数学集合中，N,N*,Z,Q,R,C分别是什么意思？_百度知道 (https://zhidao.baidu.com/question/583914882.html)；计算机中的换行符、回车符、\\n、\\r、\\n\\r 怎么区分啊？_百度知道 (https://zhidao.baidu.com/question/386412786.html)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "乾照光电",
+      "symbol": "300102.SZ",
+      "pct_chg": 15.75,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.45,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "海外订单形成",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "公司在互动平台表示目前海外市场已形成订单销售（东方财富、格隆汇报道）"
+          },
+          {
+            "name": "砷化镓太阳能电池产能与市场地位",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "公司为国内领先的砷化镓太阳能电池产品供应商，出货量稳居国内市场第一并储备规模化生产产能（格隆汇）"
+          },
+          {
+            "name": "子公司高新技术企业认定/税收优惠",
+            "direction": "正面",
+            "weight": 0.12,
+            "evidence": "公司子公司获高新技术企业认定，将享税收优惠（公司公告/东方财富股吧）"
+          },
+          {
+            "name": "高估值与商业化执行风险",
+            "direction": "负面",
+            "weight": 0.22,
+            "evidence": "研报提示短期看订单兑现，中长期看技术商业化，需警惕高估值下的风险（深度研报摘要）"
+          },
+          {
+            "name": "短期股价与市场关注度波动",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "近几日股价大幅波动（报道显示涨幅约15.75%），信息显示市场关注度与资金流动性显著"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "海外市场",
+          "光伏/太阳能",
+          "砷化镓半导体"
+        ],
+        "risk_flags": [
+          "订单兑现与交付节奏风险",
+          "技术商业化进展不及预期",
+          "高估值导致短期回调风险",
+          "海外拓展涉及汇率与市场准入风险",
+          "业绩季节性或产销波动"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "订单量/出货量",
+            "reason": "验证海外订单是否持续转化为实际出货与收入",
+            "suggest_window": "1M-3M"
+          },
+          {
+            "metric": "产能利用率/设备稼动率",
+            "reason": "判断规模化产能对出货与毛利的支撑程度",
+            "suggest_window": "1M-3M"
+          },
+          {
+            "metric": "成交量",
+            "reason": "监测市场情绪与短期价格驱动",
+            "suggest_window": "1W-1M"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "观察外资对公司及行业的配置倾向",
+            "suggest_window": "1W-1M"
+          },
+          {
+            "metric": "产品ASP（平均售价）",
+            "reason": "衡量毛利率与价格战/竞争压力的变化",
+            "suggest_window": "3M"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "公司展现海外订单和砷化镓太阳能电池规模化产能优势，且获得高新认定带来税收利好，属于基本面改善与市场关注并存的正面新闻。但需注意订单兑现、技术商业化和高估值导致的短期波动与海外拓展风险。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 901,
+          "truncated_chars": 901,
+          "avg_original_per_item": 90.1,
+          "avg_truncated_per_item": 90.1,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1857,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "飞沃科技",
+      "symbol": "301232.SZ",
+      "pct_chg": 17.906,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: 飞沃科技 | 行业: 暂无 / 暂无 | 简介: 暂无相关新闻与公开详细资料，无法基于现有信息准确描述公司的主营业务与经营情况。 | 参考链接: 武汉飞沃科技有限公司_百度百科 (https://baike.baidu.com/item/%E6%AD%A6%E6%B1%89%E9%A3%9E%E6%B2%83%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/20985427)；武汉飞沃科技有限公司 (http://www.fwtech.com.cn/)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: 飞沃科技 | 行业: 暂无 / 暂无 | 简介: 暂无相关新闻与公开详细资料，无法基于现有信息准确描述公司的主营业务与经营情况。 | 参考链接: 武汉飞沃科技有限公司_百度百科 (https://baike.baidu.com/item/%E6%AD%A6%E6%B1%89%E9%A3%9E%E6%B2%83%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/20985427)；武汉飞沃科技有限公司 (http://www.fwtech.com.cn/)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "信维通信",
+      "symbol": "300136.SZ",
+      "pct_chg": 16.981,
+      "news_count": 4,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "新闻事件概览",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "标题预览: 信維通信：公司在墨西哥的佈局一切正常 | 信維通信 (300136.SZ) | 信維通信(300136.SZ)擬推第四期股權激勵計劃 授予價9.15元/股"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式解析：基于标题/摘要关键词。 事件: 新闻事件概览.",
+        "raw": "{\n  \"sentiment_score\": 0.5,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"墨西哥布局运营稳定\",\n      \"direction\": \"正面\",\n      \"weight\": 0.3,\n      \"evidence\": \"公司在互动平台表示公司在墨西哥的布局一切正常，表明海外业务推进未见重大进展阻滞。\"\n    },\n    {\n      \"name\": \"拟推第四期股",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "回购": false,
+          "回購": false,
+          "回购股份": false,
+          "回購股份": false,
+          "购回": false,
+          "購回": false,
+          "累计回购": false,
+          "累計回購": false,
+          "增持": false,
+          "增持计划": false,
+          "增持計劃": false,
+          "拟增持": false,
+          "擬增持": false,
+          "减持": false,
+          "減持": false,
+          "拟减持": false,
+          "擬減持": false,
+          "清仓": false,
+          "套现": false,
+          "套現": false,
+          "资金流入": false,
+          "資金流入": false,
+          "主力": false,
+          "淨流入": false,
+          "净流入": false,
+          "大幅流入": false,
+          "资金净流入": false,
+          "資金淨流入": false,
+          "订单": false,
+          "訂單": false,
+          "中标": false,
+          "中標": false,
+          "新签": false,
+          "新簽": false,
+          "签约": false,
+          "簽約": false,
+          "合同": false,
+          "合約": false,
+          "送样": false,
+          "送樣": false,
+          "验证": false,
+          "驗證": false,
+          "试产": false,
+          "試產": false,
+          "量产": false,
+          "量產": false,
+          "交付": false,
+          "砷化镓": false,
+          "砷化鎵": false,
+          "卫星": false,
+          "衛星": false,
+          "在轨": false,
+          "在軌": false,
+          "适合长期": false,
+          "適合長期": false,
+          "技术突破": false,
+          "技術突破": false,
+          "预亏": false,
+          "預虧": false,
+          "下滑": false,
+          "亏损": false,
+          "虧損": false,
+          "不及预期": false,
+          "不及預期": false,
+          "处罚": false,
+          "處罰": false,
+          "调查": false,
+          "調查": false,
+          "立案": false,
+          "监管": false,
+          "監管": false,
+          "诉讼": false,
+          "訴訟": false,
+          "仲裁": false,
+          "纠纷": false,
+          "糾紛": false
+        },
+        "news_titles": [
+          "信維通信：公司在墨西哥的佈局一切正常",
+          "信維通信 (300136.SZ)",
+          "信維通信(300136.SZ)擬推第四期股權激勵計劃 授予價9.15元/股",
+          "信維通信(300136.SZ)擬10股派1元 於6月14日除權除息"
+        ],
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 298,
+          "truncated_chars": 298,
+          "avg_original_per_item": 74.5,
+          "avg_truncated_per_item": 74.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1037
+      }
+    },
+    {
+      "name": "富吉瑞",
+      "symbol": "688272.SH",
+      "pct_chg": 14.396,
+      "news_count": 8,
+      "report": {
+        "sentiment_score": -0.35,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "闲置募集资金用于补充流动资金",
+            "direction": "负面",
+            "weight": 0.35,
+            "evidence": "公司公告：使用不超2000万元的闲置募集资金暂时补充流动资金（格隆汇、雪球，2025-12-15）。此类短期资金占用常反映现金流或营运周转压力。"
+          },
+          {
+            "name": "主力资金净流出（短期资金面）",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "多条行情新闻显示短期主力资金净卖出：12月15日主力净卖出683.73万元，12月30日主力净卖出309.16万元，反映短期资金面偏弱。"
+          },
+          {
+            "name": "终止限制性股票激励计划",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "报道指出：富吉瑞终止2022年限制性股票激励计划（东财财富号，近期），可能影响激励与人才留存预期，属于公司治理/激励层面不利消息。"
+          },
+          {
+            "name": "主营业务（红外热成像）基本面属性",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公司主营红外热成像产品与系统，有技术属性与行业需求潜力（新闻多次提及公司主营），但本轮新闻未披露业绩或订单放量证据，正负面均未充分体现。"
+          },
+          {
+            "name": "信息披露与短期可验证数据不足",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公开新闻以公告与资金流为主，缺乏详尽业绩、订单或盈利预测相关披露，需更多数据确认趋势。"
+          }
+        ],
+        "score": 45,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "短期资金面承压（闲置募集资金被动使用）",
+          "主力资金持续净卖出导致股价承压",
+          "管理层激励计划变动可能影响人才稳定与长期激励效应",
+          "信息披露/业绩可见度不足，短期判断不确定性较高"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察股价与成交量配合判断主力是否持续出货或市值重估",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "主力资金净流入/净流出",
+            "reason": "新闻已报道数次净卖出，后续资金流向直接影响短期价量表现",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "闲置募集资金使用变动（额度/期限/用途）",
+            "reason": "若继续占用或扩大额度，可能反映经营性现金流压力",
+            "suggest_window": "即时报告及1月"
+          },
+          {
+            "metric": "员工持股/激励计划更新（限售股解禁/新计划）",
+            "reason": "激励计划终止后是否有替代安排将影响中长期人才与业绩激励",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "季度营收与毛利",
+            "reason": "主营红外产品的销售/毛利变化可验证基本面支撑力度",
+            "suggest_window": "1季度"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "基于近期公告与行情新闻，短期偏负面：公司使用不超2000万元闲置募集资金补流动资金及连续多日主力净卖出，且终止限制性股票激励计划增加不确定性。主营为红外热成像具有行业潜力，但缺乏业绩与订单披露以支持正面判断。建议关注资金流、成交量、后续资金使用与激励计划变动以验证趋势。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 8,
+          "original_chars": 717,
+          "truncated_chars": 717,
+          "avg_original_per_item": 89.62,
+          "avg_truncated_per_item": 89.62,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1632,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "C强一",
+      "symbol": "688809.SH",
+      "pct_chg": 13.623,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 0.65,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "科创板成功上市（IPO完成）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "公告与多家媒体报道确认公司于2025-12-30在上交所科创板上市，发行3238.9882万股。"
+          },
+          {
+            "name": "首日开盘大幅上涨",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "多条新闻报道首日开盘上涨212.14%，开盘价显示市场短期强烈追捧。"
+          },
+          {
+            "name": "所属行业：半导体",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "招股说明书与媒体提及公司为半导体相关企业，行业长期有增长空间但存在周期性与地缘政策敏感性。"
+          },
+          {
+            "name": "发行规模与流通股集中",
+            "direction": "正面",
+            "weight": 0.17,
+            "evidence": "本次发行约3239万股，相对科创板新股可能属于较有限流通盘，利于短期价格弹性与波动。"
+          },
+          {
+            "name": "短期估值与投机性风险",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "首日大幅上涨伴随短期泡沫与高波动风险，公开信息中未提供充分的财务业绩持续验证。"
+          }
+        ],
+        "score": 72,
+        "need_macro": true,
+        "macro_keywords": [
+          "半导体",
+          "科创板",
+          "IPO市场"
+        ],
+        "risk_flags": [
+          "短期高波动性/投机性资金主导",
+          "首日高开带来估值泡沫风险",
+          "基本面（订单/营收）短期可验证性不足",
+          "流通盘集中可能导致价格剧烈波动"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "判断涨势是否由持续需求支撑或仅为首日投机流动性驱动",
+            "suggest_window": "1-10 个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "观察外资参与度以评估长期资金认可度与流动性变化",
+            "suggest_window": "1-4 周"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "验证公司业务端需求与业绩兑现能力，支撑估值合理性",
+            "suggest_window": "1-3 个月"
+          }
+        ],
+        "confidence": 0.65,
+        "summary": "强一股份在科创板成功上市并首日开盘大涨212%，短期市场情绪极为正面且流动性集中，但因首日高开存在估值与投机风险。建议重点监测成交量、北向资金和公司订单/产销情况以验证基本面支撑。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 542,
+          "truncated_chars": 542,
+          "avg_original_per_item": 90.33,
+          "avg_truncated_per_item": 90.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1381,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "航天环宇",
+      "symbol": "688523.SH",
+      "pct_chg": 14.555,
+      "news_count": 4,
+      "report": {
+        "sentiment_score": -0.25,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "公司回购计划",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "公告拟回购0.5亿-1亿元、回购价不超过30元/股，用于员工持股或..."
+          },
+          {
+            "name": "主力资金净流出",
+            "direction": "负面",
+            "weight": 0.3,
+            "evidence": "2025-12-11 主力净卖出1.38亿元；本周主力资金合计净流出7819.12万元，短期资金呈流出态势"
+          },
+          {
+            "name": "股价异常波动与监管触发",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "2025-12-25/26/29 连续三日收盘价格涨幅偏离累计超过30%，已发布股价异动公告"
+          },
+          {
+            "name": "高换手率与价格波动",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "2025-12-11 换手率17.84%，成交量和成交额放大，且股价一度触及近一年高点后回落，显示投机与流动性驱动"
+          },
+          {
+            "name": "基本面/业绩披露信息不足",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "新闻以回购与交易数据为主，缺乏近期订单、营收、毛利率等经营性关键指标披露"
+          }
+        ],
+        "score": 42,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "短期资金持续净流出风险",
+          "异常交易导致监管关注或临时停牌风险",
+          "高换手率伴随剧烈波动，短线投机性强",
+          "回购规模有限，对估值与护盘作用有限",
+          "信息披露不足，基本面确认延迟风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "确认是否持续放大以验证投机/流动性驱动",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "主力资金净流入/净流出",
+            "reason": "追踪资金方向以判断是否止住净流出",
+            "suggest_window": "日频/1周"
+          },
+          {
+            "metric": "回购执行进度与实际回购金额",
+            "reason": "回购是否实际执行及规模影响流动性与市值支撑",
+            "suggest_window": "1个月-3个月"
+          },
+          {
+            "metric": "换手率/换手天数",
+            "reason": "评估投机热度与短期流动性风险",
+            "suggest_window": "1周"
+          }
+        ],
+        "confidence": 0.68,
+        "summary": "结合公告回购（正面信号）与随后数次显著资金流出和价格异常波动（负面与风险信号），短期情绪偏弱且波动性高。建议关注回购的实际执行、主力资金流向与成交量变化以判断后续方向；目前评级偏谨慎。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 405,
+          "truncated_chars": 405,
+          "avg_original_per_item": 101.25,
+          "avg_truncated_per_item": 101.25,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1083,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "太力科技",
+      "symbol": "301595.SZ",
+      "pct_chg": 14.469,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.45,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "技术与产品验证",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "公司自2008年向航天员中心提供航天产品与技术支持，相关产品累计29次进入太空，显示产品已获得实战检验与客户认可。"
+          },
+          {
+            "name": "研发投入与长期竞争力",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "公司表示将持续加大航天领域核心技术研发投入，有利于长期技术壁垒与高端产品路线的巩固。"
+          },
+          {
+            "name": "短期财务压力与资本开支",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "持续增加研发投入与航天项目的研发/认证周期可能在短期内挤压利润率和现金流（新闻中提及加大投入，但未给出资金来源或规模）。"
+          },
+          {
+            "name": "客户集中与项目可持续性",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "公司长期为航天员中心提供产品，客户关系稳固但存在对少数大型国家项目依赖的集中度风险，新闻未披露航天业务营收占比或订单可见性。"
+          },
+          {
+            "name": "信息完整性限制",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻内容截断且未披露具体营收、订单、研发投入规模与时间表，导致对影响的量化判断受限。"
+          }
+        ],
+        "score": 65,
+        "need_macro": true,
+        "macro_keywords": [
+          "航天",
+          "国防",
+          "高端制造"
+        ],
+        "risk_flags": [
+          "客户集中度高（对国家航天项目依赖）",
+          "研发投入上升导致短期利润/现金流压力",
+          "航天项目审批与预算波动风险",
+          "订单/营收披露不足导致可见性差"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "航天业务营收/占比",
+            "reason": "直接反映航天项目对公司收入贡献与经营杠杆",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "研发投入（绝对额与占比）",
+            "reason": "监测投入规模与资金来源，判断对短期利润与现金流的影响",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "订单/合同金额与背书",
+            "reason": "航天项目通常为大额长期合同，订单节奏决定业绩可见性",
+            "suggest_window": "季度/半年"
+          },
+          {
+            "metric": "毛利率（整体与航天业务分项）",
+            "reason": "衡量研发与产品结构变化对盈利能力的影响",
+            "suggest_window": "季度"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "新闻显示太力科技在航天领域具备长期合作与实战验证（29次入太空），并计划持续加大核心技术研发投入，利好长期技术壁垒和高端产品化；但短期可能承受研发与认证费用带来的利润与现金流压力，且对国家级航天项目的客户/订单集中度和项目节奏存在可见性风险。由于新闻信息不完整，需关注公司披露的研发支出规模、航天业务营收占比与订单/contracts 情况以验证预期。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 103,
+          "truncated_chars": 103,
+          "avg_original_per_item": 103.0,
+          "avg_truncated_per_item": 103.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 717,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "国博电子",
+      "symbol": "688375.SH",
+      "pct_chg": 12.046,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "减持风险",
+            "direction": "负面",
+            "weight": 0.55,
+            "evidence": "标题命中(公司直接): 国博电子(688375.SH)：中电科国微已减持1.01%公司股份 | 国博电子：股东中电科国微11月27日至12月3日减持260.8万股公司股份"
+          },
+          {
+            "name": "资金面改善",
+            "direction": "正面",
+            "weight": 0.45,
+            "evidence": "标题命中(公司直接): 国博电子（688375）12月11日主力资金净卖出903.78万元"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式解析：基于标题/摘要关键词。 事件: 减持风险, 资金面改善.",
+        "raw": "{\n  \"sentiment_score\": -0.25,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"大股东减持（2025-12-15至12-25）\",\n      \"direction\": \"负面\",\n      \"weight\": 0.35,\n      \"evidence\": \"中电科国微在2025年12月15日至12月25日期间减持602.2215万股，占总股本1.01%，持股比例由15.00%降至13.99%。\"\n    },\n    {\n      \"name\": \"此前累计减持趋势\",\n      \"direction\": \"负面\",\n      \"weight\": 0.20,\n      \"evidence\": \"股东中电科国微在2025年11月27日至12月3日期间",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "回购": false,
+          "回購": false,
+          "回购股份": false,
+          "回購股份": false,
+          "购回": false,
+          "購回": false,
+          "累计回购": false,
+          "累計回購": false,
+          "增持": false,
+          "增持计划": false,
+          "增持計劃": false,
+          "拟增持": false,
+          "擬增持": false,
+          "减持": true,
+          "減持": false,
+          "拟减持": false,
+          "擬減持": false,
+          "清仓": false,
+          "套现": false,
+          "套現": false,
+          "资金流入": false,
+          "資金流入": false,
+          "主力": true,
+          "淨流入": false,
+          "净流入": false,
+          "大幅流入": false,
+          "资金净流入": false,
+          "資金淨流入": false,
+          "订单": false,
+          "訂單": false,
+          "中标": false,
+          "中標": false,
+          "新签": false,
+          "新簽": false,
+          "签约": false,
+          "簽約": false,
+          "合同": false,
+          "合約": false,
+          "送样": false,
+          "送樣": false,
+          "验证": false,
+          "驗證": false,
+          "试产": false,
+          "試產": false,
+          "量产": false,
+          "量產": false,
+          "交付": false,
+          "砷化镓": false,
+          "砷化鎵": false,
+          "卫星": false,
+          "衛星": false,
+          "在轨": false,
+          "在軌": false,
+          "适合长期": false,
+          "適合長期": false,
+          "技术突破": false,
+          "技術突破": false,
+          "预亏": false,
+          "預虧": false,
+          "下滑": false,
+          "亏损": false,
+          "虧損": false,
+          "不及预期": false,
+          "不及預期": false,
+          "处罚": false,
+          "處罰": false,
+          "调查": false,
+          "調查": false,
+          "立案": false,
+          "监管": false,
+          "監管": false,
+          "诉讼": false,
+          "訴訟": false,
+          "仲裁": false,
+          "纠纷": false,
+          "糾紛": false
+        },
+        "news_titles": [
+          "国博电子(688375.SH)：中电科国微已减持1.01%公司股份",
+          "国博电子：股东中电科国微11月27日至12月3日减持260.8万股公司股份",
+          "国博电子董事长梅滨退休辞职",
+          "国博电子（688375）12月11日主力资金净卖出903.78万元",
+          "国博电子（688375）披露召开2025年第二次临时股东会通知，12月15日股价上涨0.66%"
+        ],
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 609,
+          "truncated_chars": 609,
+          "avg_original_per_item": 121.8,
+          "avg_truncated_per_item": 121.8,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1326
+      }
+    },
+    {
+      "name": "天铭科技",
+      "symbol": "920270.SH",
+      "pct_chg": 29.96,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: 天铭科技 | 参考链接: 如何评价华硕新发布的2025款天选Air？ - 知乎 (https://www.zhihu.com/question/1908684654141223597)；第一天一分钱，第二天比前一天多一倍，一个月后有多少钱？ (https://www.zhihu.com/question/10849215277)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: 天铭科技 | 参考链接: 如何评价华硕新发布的2025款天选Air？ - 知乎 (https://www.zhihu.com/question/1908684654141223597)；第一天一分钱，第二天比前一天多一倍，一个月后有多少钱？ (https://www.zhihu.com/question/10849215277)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "延江股份",
+      "symbol": "300658.SZ",
+      "pct_chg": 11.68,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: 延江股份 | 行业: 暂无 / 暂无 | 简介: 暂无 | 参考链接: 如何看待网传清华大学姚班 2025 届延毕 20 人？ - 知乎 (https://www.zhihu.com/question/1907034124394422305)；研究生退学和延毕对导师影响为啥微乎其微呢？ - 知乎 (https://www.zhihu.com/question/15452527277)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: 延江股份 | 行业: 暂无 / 暂无 | 简介: 暂无 | 参考链接: 如何看待网传清华大学姚班 2025 届延毕 20 人？ - 知乎 (https://www.zhihu.com/question/1907034124394422305)；研究生退学和延毕对导师影响为啥微乎其微呢？ - 知乎 (https://www.zhihu.com/question/15452527277)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "金橙子",
+      "symbol": "688291.SH",
+      "pct_chg": 11.599,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.25,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "董事長提議回購股份",
+            "direction": "正面",
+            "weight": 0.36,
+            "evidence": "董事長呂文傑提議斥不低1500萬元且不超3000萬元回購股份，管理层回购通常被视为对公司估值的信心支持。"
+          },
+          {
+            "name": "擬出售參股公司股權變現",
+            "direction": "正面",
+            "weight": 0.26,
+            "evidence": "公司擬以7500萬元出售參股公司卡門哈斯部分股權，若落實可改善現金流或資產負債表。"
+          },
+          {
+            "name": "近期股價與成交量短期承压",
+            "direction": "负面",
+            "weight": 0.18,
+            "evidence": "近三個交易日收盤由20.50降至18.52，成交量由210萬回落至52萬，短期價格與成交量均呈下降趨勢。"
+          },
+          {
+            "name": "管理层表态与公司治理信号",
+            "direction": "正面",
+            "weight": 0.1,
+            "evidence": "由董事長親自提議回購，顯示管理層直接表態支持股價，有利於投資者信心。"
+          },
+          {
+            "name": "信息不足（需更多披露）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "新聞披露缺乏回購具體價格範圍、實施時間表、出售股權的具體估值影響及資金用途，需後續公告確認。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "回購規模相對總市值/流通盤未知，對股價支撐有限",
+          "資產處置是否為一次性收益或有處置損益及稅務影響不明",
+          "短期成交量與股價下跌，市場情緒偏弱",
+          "公告細節不足（回購實施條件、時間、已完成進度）"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "確認回購公告後是否伴隨成交量放大以驗證資金回流與市場接納度",
+            "suggest_window": "日内至1周"
+          },
+          {
+            "metric": "北向資金淨流入",
+            "reason": "外資動向可反映機構對回購與資產處置的判斷，影響中長期資金面",
+            "suggest_window": "1周至1月"
+          },
+          {
+            "metric": "回購實施進度與已回購數量",
+            "reason": "實際回購數量與價格對估值與每股指標有直接影響",
+            "suggest_window": "公告發布後持續追蹤至3月"
+          },
+          {
+            "metric": "出售股權的入帳金額與現金流變化",
+            "reason": "確認7500萬元處置款何時入賬及其對資產負債表和現金流的影響",
+            "suggest_window": "月內至1季度"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "綜合新聞，管理層提出回購（1500萬-3000萬）與擬出售參股股權（7500萬）為正面信號，表明有現金變現與支持股價的意圖；但短期股價與成交量呈下行，且公告缺乏回購實施細節與處置入賬時間，需追蹤成交量、外資流向、回購落實進度及處置款入賬情況以驗證影響。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 323,
+          "truncated_chars": 300,
+          "avg_original_per_item": 107.67,
+          "avg_truncated_per_item": 100.0,
+          "ratio_truncated": 0.9288,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 976,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "爱乐达",
+      "symbol": "300696.SZ",
+      "pct_chg": 11.612,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司基础资料",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "公司: 爱乐达 | 行业: 暂无 / 暂无 | 简介: 暂无相关新闻与披露信息，无法基于现有资料准确描述公司的业务范围与经营情况。 | 参考链接: 如何评价电影《爱乐之城》（La La Land）？ - 知乎 (https://www.zhihu.com/question/50258333)；为什么很多交响乐团名字都有「爱乐」？ - 知乎 (https://www.zhihu.com/question/20490860)"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，已补充公司基础资料线索用于辅助理解：公司: 爱乐达 | 行业: 暂无 / 暂无 | 简介: 暂无相关新闻与披露信息，无法基于现有资料准确描述公司的业务范围与经营情况。 | 参考链接: 如何评价电影《爱乐之城》（La La Land）？ - 知乎 (https://www.zhihu.com/question/50258333)；为什么很多交响乐团名字都有「爱乐」？ - 知乎 (https://www.zhihu.com/question/20490860)",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 55,
+    "risk_index": 40,
+    "industry_heat": [
+      {
+        "industry": "人工智能",
+        "heat": 45,
+        "drivers": [
+          "AI",
+          "人工智能"
+        ]
+      },
+      {
+        "industry": "半导体",
+        "heat": 30,
+        "drivers": [
+          "芯片",
+          "半导体"
+        ]
+      },
+      {
+        "industry": "新能源",
+        "heat": 15,
+        "drivers": [
+          "光伏",
+          "锂"
+        ]
+      },
+      {
+        "industry": "消费复苏",
+        "heat": 15,
+        "drivers": [
+          "消费",
+          "出行"
+        ]
+      },
+      {
+        "industry": "基建",
+        "heat": 15,
+        "drivers": [
+          "基建",
+          "铁路"
+        ]
+      },
+      {
+        "industry": "出海",
+        "heat": 15,
+        "drivers": [
+          "出口",
+          "外需"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "启发式：政策信号未充分解析",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [
+      "人工智能",
+      "半导体",
+      "新能源"
+    ],
+    "macro_factors": [
+      {
+        "name": "人工智能",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "半导体",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "新能源",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "消费复苏",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "基建",
+        "impact": "中性",
+        "confidence": 0.4
+      }
+    ],
+    "actionable_insights": [],
+    "suggest_global_watch": [],
+    "extra_keywords": [],
+    "summary": "主题 人工智能 相关信息增量；主题 半导体 相关信息增量；主题 新能源 相关信息增量",
+    "llm_fallback": true,
+    "raw": "{\n  \"market_sentiment_index\": 56,\n  \"risk_index\": 38,\n  \"industry_heat\": [\n    {\n      \"industry\": \"资本市场/股权转让\",\n      \"heat\": 75,\n      \"drivers\": [\n        \"",
+    "error": "macro_llm_empty",
+    "theme_hits": {
+      "半导体": 2,
+      "新能源": 1,
+      "人工智能": 3,
+      "消费复苏": 1,
+      "基建": 1,
+      "出海": 1,
+      "地产链": 0
+    },
+    "macro_truncation_stats": {
+      "item_count": 106,
+      "original_chars": 8947,
+      "truncated_chars": 3953,
+      "avg_original_per_item": 84.41,
+      "avg_truncated_per_item": 37.29,
+      "ratio_truncated": 0.4418,
+      "max_len_per_item": 160
+    },
+    "macro_prompt_token_est": 4179,
+    "parse_mode": "heuristic"
+  },
+  "macro_extra": [],
+  "macro_keywords_used": [
+    "境外上市",
+    "监管",
+    "营销传播行业",
+    "资本市场",
+    "汇率",
+    "纺织制造",
+    "资金面",
+    "海外市场",
+    "光伏/太阳能",
+    "砷化镓半导体",
+    "半导体",
+    "科创板",
+    "IPO市场",
+    "航天",
+    "国防"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 7,
+      "neutral": 8,
+      "negative": 5
+    },
+    "top_factor_frequency": [
+      [
+        "公司基础资料",
+        7
+      ],
+      [
+        "信息不足",
+        7
+      ],
+      [
+        "控股股东协议转让5%股份",
+        1
+      ],
+      [
+        "引入外部投资人（北京开盛）旨在认可公司内在价值",
+        1
+      ],
+      [
+        "明确转让价格为31.67元/股，提供估值锚",
+        1
+      ],
+      [
+        "事项不触及要约收购且不导致控股权变更",
+        1
+      ],
+      [
+        "套现规模与流通市值/市场预期的不确定性",
+        1
+      ],
+      [
+        "专注现有核心业务（红外热像仪、激光传感器、光学元件、星体跟踪器）",
+        1
+      ],
+      [
+        "未涉足6G与太赫兹相关技术及产品",
+        1
+      ],
+      [
+        "未与主流新能源车厂建立合作/产品未广泛应用于新能源车领域",
+        1
+      ],
+      [
+        "近期股价异动及高波动性",
+        1
+      ],
+      [
+        "可见信息有限（客户、订单、业绩与未来布局细节不足）",
+        1
+      ],
+      [
+        "前三季度净利大幅下滑",
+        1
+      ],
+      [
+        "股东减持造成抛压",
+        1
+      ],
+      [
+        "主营方向与市场规模（财税信息化）",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 23,
+      "负面": 18,
+      "不确定": 30
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": "HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Read timed out. (read timeout=60)"
+  },
+  "diagnostics": {
+    "fallback_stock_count": 2,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 3,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 10,
+    "parse_success_stock_retry": 1,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.1,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Read timed out. (read timeout=60)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 2,
+    "force_no_response_format": false,
+    "azure_fail_count": 2,
+    "parse_mode_counts": {
+      "direct": 10,
+      "no-news": 7,
+      "heuristic": 2,
+      "retry": 1
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1950,
+      "avg": 888.65,
+      "total": 17773,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 76,
+      "sum_original_chars": 12435,
+      "sum_truncated_chars": 7498,
+      "avg_original_per_item": 163.62,
+      "avg_truncated_per_item": 98.66,
+      "overall_ratio_truncated": 0.603
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4179,
+    "macro_truncation_stats": {
+      "item_count": 106,
+      "original_chars": 8947,
+      "truncated_chars": 3953,
+      "avg_original_per_item": 84.41,
+      "avg_truncated_per_item": 37.29,
+      "ratio_truncated": 0.4418,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 10,
+      "skip_domain": 2273,
+      "requery_relax_time": 30,
+      "requery_general": 25,
+      "skip_low_cjk": 211,
+      "requery_aug": 125,
+      "skip_not_match_terms": 644,
+      "skip_blocked_title": 67,
+      "requery_cn_sites": 240,
+      "empty_results": 391,
+      "skip_duplicate": 17,
+      "requery_low_quality": 21,
+      "extreme_fallback": 22,
+      "requery_llm_rewrite": 53,
+      "requery_rewrite_sites": 150,
+      "fallback_relaxed_domain": 12,
+      "db_fallback_try": 10,
+      "skip_short_title": 1,
+      "skip_generic": 3
+    }
+  }
+}

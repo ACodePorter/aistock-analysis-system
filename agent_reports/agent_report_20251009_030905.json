@@ -1,0 +1,2051 @@
+{
+  "started_at": "2025-10-09T02:57:56.120372+00:00",
+  "finished_at": "2025-10-09T03:09:05.097938+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "灵鸽科技",
+      "symbol": "920284.SH",
+      "pct_chg": 29.123,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"提供的新闻标题与链接列表未包含关于灵鸽科技（公司业务、财务、订单、客户、产品或高管变动）的任何具体信息或可量化数据。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": true,\n  \"macro_keywords\": [\n    \"贸易管制\",\n    \"运输成本\",\n    \"地缘政治\"\n  ],\n  \"risk_flags\": [\n    \"新闻样本未提及目标公司：信息披露不足，无法进行公司层面判断\",\n    \"存在宏观/政策类新闻（如美对中管制、运输费调整），可能对行业或供应链产生间接影响\",\n    \"新闻来源多为头条汇总，相关性与时效性不确定\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"metric\": \"成交量\",\n      \"reason\": \"若后续有公司相关消息或行业冲击，成交量能迅速反映市场关注度与资金流向\",\n      \"suggest_window\":",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting value: line 28 column 24 (char 606)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2025年4月27日中文報紙頭條",
+          "2023年8月7日中文報紙頭條",
+          "2021年9月8日中文報紙頭條",
+          "2021年9月7日中文報紙頭條",
+          "2021年8月31日中文報紙頭條",
+          "美对中管制重大升级 连坐穿透封堵中资全球子公司｜王国臣｜新闻大破解 - 禁闻网",
+          "新闻中心 | TDK中国"
+        ],
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 928,
+          "truncated_chars": 928,
+          "avg_original_per_item": 132.57,
+          "avg_truncated_per_item": 132.57,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1738
+      }
+    },
+    {
+      "name": "C云汉",
+      "symbol": "301563.SZ",
+      "pct_chg": 27.08,
+      "news_count": 9,
+      "report": {
+        "sentiment_score": 0.65,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "首日市场需求强劲（股价与成交）",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "上市首日上涨332.59%，成交额14.29亿元，全天换手率81.95%，振幅24.52%。"
+          },
+          {
+            "name": "高换手与大振幅带来短期波动性",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "换手率81.95%、振幅24.52%，首日极高活跃度通常伴随短期剧烈回调风险。"
+          },
+          {
+            "name": "营业部席位净买入显示做多动力",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "龙虎榜显示营业部席位合计净买入1.14亿元，上榜前五大买卖营业部合计成交1.71亿元（买入1.42亿元、卖出0.2836亿元）。"
+          },
+          {
+            "name": "基本面与行业景气支撑",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "公司被报道上半年利润增长超40%；WSTS预测2025年全球半导体市场同比增长约11%，电子元器件分销有望受益。"
+          },
+          {
+            "name": "首日超幅上涨可能带来投机性估值溢出",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "首日涨幅332.59%属异常上涨，若成交主要由短线资金驱动，存短期回调或波动加剧的风险。"
+          }
+        ],
+        "score": 70,
+        "need_macro": true,
+        "macro_keywords": [
+          "半导体",
+          "电子元器件分销",
+          "供应链国产化"
+        ],
+        "risk_flags": [
+          "首日极端涨幅与高换手率，短期回调风险大",
+          "交易集中在营业部席位，存在场内投机接力风险",
+          "短期估值弹性受限，流动性风险随抛压放大",
+          "需验证基本面支撑为持续增长而非一次性因素"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/换手率",
+            "reason": "验证首日活跃是否延续或快速回落，判断资金接力与价格稳定性",
+            "suggest_window": "1-5 个交易日"
+          },
+          {
+            "metric": "龙虎榜/营业部净买入净卖出",
+            "reason": "跟踪营业部席位是否持续净买入或转为净卖出，判断主力态度",
+            "suggest_window": "1-3 个交易日"
+          },
+          {
+            "metric": "北向资金净流入/流出",
+            "reason": "判断外资或长期机构是否参与以决定中长期资金面支持力度",
+            "suggest_window": "1-10 个交易日"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "C云汉上市首日出现极高交易热度与显著上涨（+332.59%、成交14.29亿元、换手81.95%），龙虎榜营业部合计净买入1.14亿元，显示短期做多动力；公司基本面对行业景气有支撑（上半年利润增长>40%、半导体市场预期向好）。但首日超幅上涨伴随高换手与振幅，存在明显的短期投机与回调风险，建议重点监测成交量延续性、龙虎榜席位动向与北向资金流向以判断后续价量结构。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 9,
+          "original_chars": 1147,
+          "truncated_chars": 1147,
+          "avg_original_per_item": 127.44,
+          "avg_truncated_per_item": 127.44,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 2035,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "常辅股份",
+      "symbol": "920396.SH",
+      "pct_chg": 21.858,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未提供任何关于常辅股份的新闻或公告内容，无法提取相关基本面或事件驱动信息。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "新闻信息不足，无法进行确定性判断"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "短期价格和情绪变化需通过成交量确认资金跟进情况",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资动向可快速反映对个股或板块的情绪变化",
+            "suggest_window": "日频/周频"
+          },
+          {
+            "metric": "产销率/订单量",
+            "reason": "若后续披露业绩或订单相关信息，产销率能直接反映经营改善程度",
+            "suggest_window": "月度/季度"
+          }
+        ],
+        "confidence": 0.2,
+        "summary": "未收到关于常辅股份的新闻或公告，信息不足以做出正负向判断。建议关注成交量、北向资金及公司后续披露的产销/订单数据以获取可验证信号。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 511,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "海科新源",
+      "symbol": "301292.SZ",
+      "pct_chg": 20.019,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "仅有一条关于海科新源IPO的片段，提到募集资金将增强品牌优势；其余多为与公司无关的报纸头条，缺乏公司最新业绩、订单、产能、财务披露等关键可验证信息。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "政策",
+          "地缘政治",
+          "资本市场"
+        ],
+        "risk_flags": [
+          "信息披露不足：新闻为片段摘要，缺少公司最新财务与经营数据",
+          "募资落地风险：募集资金能否按计划用于提升品牌/产能存在不确定性",
+          "宏观/政策风险：地产限购、地缘政治与全球资本市场波动可能影响市场情绪与估值"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "衡量市场对股票短期关注度与资金参与程度，验证信息是否引发交易活跃",
+            "suggest_window": "日内-1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可反映对板块/公司估值的偏好及风险偏好变化",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "募集资金使用/募投进度",
+            "reason": "直接验证新闻中“募集资金将增强品牌优势”是否得到执行与转化",
+            "suggest_window": "1个月-6个月"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "基于提供新闻，关于海科新源的可用信息极为有限，仅有一条IPO/募集资金的片段性报道，表述偏向正面但缺乏可验证经营与财务细节。总体判断中性，建议关注成交量、北向资金与募集资金使用进度以检验利好兑现，并警惕信息披露与宏观政策带来的不确定性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 918,
+          "truncated_chars": 918,
+          "avg_original_per_item": 131.14,
+          "avg_truncated_per_item": 131.14,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1783,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "冠中生态",
+      "symbol": "300948.SZ",
+      "pct_chg": 20.025,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.4,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": -0.62,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"年度预亏公告（2024净亏损3.2万–4.7万元，扣非后亏损4.0万–5.5万元）\",\n      \"direction\": \"负面\",\n      \"weight\": 0.52,\n      \"evidence\": \"智通财经报道：冠中生态预计归属于上市公司股东的净亏损3200万元–4700万元；扣除非经常性损益后的净亏损4000万元–5500万元。\"\n    },\n    {\n      \"name\": \"盈利质量与扣非后",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 12 column 15 (char 305)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2025年10月9日中文報紙頭條",
+          "2025年10月7日中文報紙頭條",
+          "2025年10月2日中文報紙頭條",
+          "2025年9月15日中文報紙頭條",
+          "2025年8月13日中文報紙頭條",
+          "冠中生态(300948.SZ)发预亏，预计年度净亏损3200万元–4700万元 提供者 智通财经"
+        ],
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 920,
+          "truncated_chars": 920,
+          "avg_original_per_item": 153.33,
+          "avg_truncated_per_item": 153.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1701
+      }
+    },
+    {
+      "name": "灿芯股份",
+      "symbol": "688691.SH",
+      "pct_chg": 20.004,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.1,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.9,\n      \"evidence\": \"未提供任何关于灿芯股份的最新新闻、公告或事件文本，无法提取有意义的正/负面信号。\"\n    },\n    {\n      \"name\": \"基本面/财务数据缺失\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.05,\n      \"evidence\": \"无可用最新财报、营收、毛利或订单等经营数据用于判断基本面变化。\"\n    },\n    {\n      \"name\": \"市场情绪与资金流向未知\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.05,\n      \"evidence\": \"无成交量、北向资金、龙虎榜或机构动向等短期市场数据，无法判断资金面影响。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"信息不足导致判断不确定性高\",\n    \"短期股价受消息/资金面影响波动风险",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 29 column 5 (char 615)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [],
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 511
+      }
+    },
+    {
+      "name": "博苑股份",
+      "symbol": "301617.SZ",
+      "pct_chg": 20.006,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.45,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"产品线与技术覆盖（有机/无机碘化物、贵金属催化剂、发光材料等）\",\n      \"direction\": \"正面\",\n      \"weight\": 0.30,\n      \"evidence\": \"招股书披露公司主营有机碘化物、无机碘化物、贵金属催化剂、发光材料、六甲基二硅氮烷等产品，属于精细化学品细分领域。\"\n    },\n    {\n      \"name\": \"“产品+回收”资源综合利用模式\",\n      \"direction\": \"正面\",\n      \"weight\": 0.25,\n      \"evidence\": \"报道指出博苑股份以“",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 15 column 19 (char 367)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "中国各地庆祝中共百年党庆 / 相关新闻",
+          "2020年8月31日中文報紙頭條",
+          "A股申购 | 博苑股份(301617.SZ)开启申购 专业从事精细化学品研发及资源综合利用 提供者 智通财经",
+          "博苑股份深耕精细化工稳增长，“产品+回收”模式符合国家战略，产业链延伸助腾飞 提供者 时代周报",
+          "《 高市早苗 投书 美国 哈德逊研究所智库!抗中保台! 中国 模拟博爱特区!斩首演练! 台积电 创新高!》【年代向钱看】2025.10.03@ChenTalkS"
+        ],
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 565,
+          "truncated_chars": 565,
+          "avg_original_per_item": 113.0,
+          "avg_truncated_per_item": 113.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1413
+      }
+    },
+    {
+      "name": "国光电气",
+      "symbol": "688776.SH",
+      "pct_chg": 20.0,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "减持风险",
+            "direction": "负面",
+            "weight": 1.0,
+            "evidence": "出现关键词: 减持"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": -0.25,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"股东拟减持合计规模\",\n      \"direction\": \"负面\",\n      \"weight\": 0.32,\n      \"evidence\": \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 9 column 19 (char 176)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": true,
+          "处罚": false
+        },
+        "news_titles": [
+          "維基新聞專題：被忽視的群體 兩岸三地殘障人士",
+          "2022年4月28日中文報紙頭條",
+          "林保华：如何解戈耳狄俄斯之结? 美国为台积电大伤脑筋 - 禁闻网",
+          "2021年9月30日中文報紙頭條",
+          "2021年5月5日中文報紙頭條",
+          "2019年6月4日東南亞報紙頭條",
+          "国光电气：三名股东拟合计减持不超 3.85% 公司股份"
+        ],
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 913,
+          "truncated_chars": 913,
+          "avg_original_per_item": 130.43,
+          "avg_truncated_per_item": 130.43,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1810
+      }
+    },
+    {
+      "name": "华虹公司",
+      "symbol": "688347.SH",
+      "pct_chg": 19.998,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting property name enclosed in double quotes: line 2 column 1 (char 2)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "华虹公司，在夹缝中生存 - 知乎",
+          "我去华工看了看她 - 禁闻网",
+          "2025年5月10日中文報紙頭條",
+          "2024年9月3日中文報紙頭條",
+          "2024年8月22日中文報紙頭條",
+          "2024年7月26日中文報紙頭條",
+          "2024年1月3日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 921,
+          "truncated_chars": 921,
+          "avg_original_per_item": 131.57,
+          "avg_truncated_per_item": 131.57,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1721
+      }
+    },
+    {
+      "name": "中洲特材",
+      "symbol": "300963.SZ",
+      "pct_chg": 19.989,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"提供的多条新聞均為各地報紙頭條摘要，未包含任何關於中洲特材（公司經營、業績、訂單、產能、政策利好/利空等）的具體信息，無法對公司基本面或短期股價作出判斷。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": true,\n  \"macro_keywords\": [\n    \"利率\",\n    \"能源價格\",\n    \"美元走勢\"\n  ],\n  \"risk_flags\": [\n    \"公司層面信息缺乏，研究判斷高度不確",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 20 column 5 (char 378)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2024年10月24日中文報紙頭條",
+          "2024年9月21日中文報紙頭條",
+          "2024年9月16日中文報紙頭條",
+          "2024年7月17日中文報紙頭條",
+          "2024年5月16日中文報紙頭條",
+          "🔫李克强最强抗议习近平！惊爆密谈对话和文稿😱惊悚至极！传赵薇下药把香妃送大佬，事发后酿灭门案⚡️☠️ 深圳新书城毒气熏天🌫️📚 民众愤怒🔥炸裂西港！外籍员工怒砸"
+        ],
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 839,
+          "truncated_chars": 839,
+          "avg_original_per_item": 139.83,
+          "avg_truncated_per_item": 139.83,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1683
+      }
+    },
+    {
+      "name": "哈焊华通",
+      "symbol": "301137.SZ",
+      "pct_chg": 19.99,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司相关信息缺失",
+            "direction": "不确定",
+            "weight": 0.6,
+            "evidence": "提供的新闻内容未提及哈焊华通业务、业绩、订单或公告，无法获得公司层面直接信息。"
+          },
+          {
+            "name": "地缘政治与贸易摩擦",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "新闻包含印尼减少KF-21分摊金、中欧反补贴调查、国际政治摩擦等条目，显示外部地缘与贸易摩擦不确定性上升，可能影响产业链与出口。"
+          },
+          {
+            "name": "行业需求与订单波动风险",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻整体为宏观/政治类报道，未提供行业订单或需求信息，但地缘与贸易因素可能传导至制造业订单与出货节奏。"
+          },
+          {
+            "name": "市场情绪与舆论波动",
+            "direction": "负面",
+            "weight": 0.05,
+            "evidence": "包含耸人听闻的媒体标题与敏感国际话题，短期可能引发市场情绪波动与投机性交易。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "贸易政策",
+          "地缘政治",
+          "反补贴调查"
+        ],
+        "risk_flags": [
+          "公司层面信息披露不足，无法进行针对性判断",
+          "中欧反补贴/贸易摩擦可能影响出口与供应链订单",
+          "地缘政治紧张导致需求或原材料供应波动",
+          "媒体情绪化报道可能引发短期股价波动/谣言风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检验市场对相关新闻与情绪的即时反应，短期放量可能伴随价格波动",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可反映机构对公司及行业中长期判断",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "直接反映下游需求与公司营收兑现能力，受贸易摩擦与外需影响显著",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "库存水平",
+            "reason": "库存变化提示需求波动与去库存压力，影响短中期利润",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "设备稼动率",
+            "reason": "反映产能利用与生产恢复/收缩节奏，关联出货与毛利表现",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.3,
+        "summary": "基于提供新闻，未见任何关于哈焊华通的公司层面信息，因而对个股判断保持中性。新闻涉及多项地缘政治和贸易摩擦话题，提示宏观/外部风险需关注，建议重点监测成交量、北向资金、订单/产销率与库存等可验证短中期指标以获得实质性信号。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 218,
+          "truncated_chars": 218,
+          "avg_original_per_item": 109.0,
+          "avg_truncated_per_item": 109.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 853,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "嘉亨家化",
+      "symbol": "300955.SZ",
+      "pct_chg": 20.0,
+      "news_count": 9,
+      "report": {
+        "sentiment_score": -0.6,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "盈利能力恶化（归母净亏损扩大）",
+            "direction": "负面",
+            "weight": 0.35,
+            "evidence": "2025年一季度营业收入2.19亿元，同比增长7.46%；归属于上市公司股东的净亏损为1992.35万元，同比扩大584.24%，扣非后净亏损约1999.5万元。"
+          },
+          {
+            "name": "短期营收仍有小幅增长",
+            "direction": "正面",
+            "weight": 0.1,
+            "evidence": "2025年一季度营收同比增长7.46%，显示短期营业收入保持正增长。"
+          },
+          {
+            "name": "产能利用率低、化妆品业务下滑",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "2024年年报披露化妆品营收下滑，产能利用率不足40%，提示固定成本摊薄压力与产销效率低下。"
+          },
+          {
+            "name": "历史规模与经营基础（营收基数）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "2022年营收超10亿元，化妆品业务占比超五成，表明公司曾有较大规模，但随后出现营收和利润下滑，未来能否恢复不确定。"
+          },
+          {
+            "name": "股东/关联方减持或处置",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "媒体报道存在‘韓籍業主1288萬減持嘉亨灣’的相关信息，涉及股东或关联方减持/处置事项，可能传递利空或信心影响（需进一步核实减持对象与规模）。"
+          }
+        ],
+        "score": 35,
+        "need_macro": true,
+        "macro_keywords": [
+          "利率",
+          "消費需求",
+          "化妝品行業"
+        ],
+        "risk_flags": [
+          "持续亏损扩大（归母净亏损同比大幅上升）",
+          "产能利用率低（<40%），运营效率不足",
+          "化妆品业务营收下滑，需求端承压",
+          "股东/关联方减持或处置信息（信心与流动性风险）",
+          "现金流与盈利恢复存在不确定性"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "产销率/产能利用率",
+            "reason": "当前产能利用率不足40%，提升产销率是盈利修复关键",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "化妆品业务营收与ASP（单价）",
+            "reason": "化妆品营收下滑需监测订单、出货与平均售价变化以判断需求/价格压力",
+            "suggest_window": "月度/季度"
+          },
+          {
+            "metric": "库存水平",
+            "reason": "低周转或去库存会压缩收入与现金回收，影响短期财务压力",
+            "suggest_window": "月度"
+          },
+          {
+            "metric": "大股东/管理层持股变动（减持公告）",
+            "reason": "股东减持可能影响市场信心与股价表现",
+            "suggest_window": "事件驱动 / 即时"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "嘉亨家化2025年一季度营收小幅增长但归母净亏损大幅扩大，扣非后仍为亏损；结合2024年披露的化妆品营收下滑与产能利用率不足40%，显示公司存在运营效率与需求端压力；另有关于股东/关联方减持的报道需核实并关注可能的信心与流动性影响。整体短期偏负面，建议关注产销率、库存、化妆品订单与大股东持股变动等可验证指标，并结合宏观消费与利率环境判断恢复路径。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 9,
+          "original_chars": 1237,
+          "truncated_chars": 1237,
+          "avg_original_per_item": 137.44,
+          "avg_truncated_per_item": 137.44,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 2127,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "中亚股份",
+      "symbol": "300512.SZ",
+      "pct_chg": 19.975,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"公司相关新闻缺失（信息不足）\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.8,\n      \"evidence\": \"提供的新闻为宏观与区域性话题（越南国会、外交",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 9 column 19 (char 178)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2022年6月8日中文報紙頭條",
+          "华尔街激励亚股走扬 台日股市同创新高 | AI交易 | AMD | OpenAI | 大纪元"
+        ],
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 342,
+          "truncated_chars": 342,
+          "avg_original_per_item": 171.0,
+          "avg_truncated_per_item": 171.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 908
+      }
+    },
+    {
+      "name": "昀冢科技",
+      "symbol": "688260.SH",
+      "pct_chg": 15.834,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足（目标公司未被新闻直接提及）",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "提供的链接与新闻均为TDK产品与新闻中心页面，未提及昀冢科技，无法判定对昀冢科技的直接影响。"
+          },
+          {
+            "name": "行业相关技术/需求信号（AI 数据中心、电动汽车充电）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻涉及 '人工智能数据中心' 和 '电动汽车充电基础设施' 等主题，显示下游需求端有技术迭代/产品发布，但未指明昀冢科技的参与或订单。"
+          },
+          {
+            "name": "信息来源一致性与可验证性风险",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "信息来自厂商产品/新闻发布页，属于公开宣传，缺乏独立第三方数据或公司级财务/订单可验证证据，存在样本偏差与宣传性夸大风险。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "目标公司未被新闻提及或区分，存在误判风险",
+          "信息来源为TDK产品/新闻页，缺乏独立验证与公司层面数据",
+          "样本量不足导致结论不具备统计显著性",
+          "行业相关性推断可能被竞争对手/供应链差异所抵消"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "若昀冢科技随后发布相关消息或市场解读，成交量可验证市场对信息的短期反应",
+            "suggest_window": "1日-1周"
+          },
+          {
+            "metric": "北向资金净流入/机构持仓变动",
+            "reason": "监测机构对公司基本面或行业主题（AI/EV）偏好的调整，判断资金面是否跟进",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "若昀冢科技涉及相关产品，订单与产销率的提升可直接反映需求端兑现",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "库存/ASP变化",
+            "reason": "上游元器件或自有产品的库存与平均售价变化能揭示价格与供需压力",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.28,
+        "summary": "所给新闻均为TDK产品与新闻页面，涉及AI数据中心与电动汽车充电等行业词，但未提及昀冢科技或提供公司层面订单/财务数据。因信息不足，结论中性且不具投资指引价值。建议等待公司相关公告或可验证的订单/营收数据，再进行基本面/量化判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 383,
+          "truncated_chars": 383,
+          "avg_original_per_item": 127.67,
+          "avg_truncated_per_item": 127.67,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1017,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "海辰药业",
+      "symbol": "300584.SZ",
+      "pct_chg": 15.6,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足（无公司相关披露）",
+            "direction": "不确定",
+            "weight": 0.9,
+            "evidence": "提供的新闻条目未包含任何关于海辰药业的经营、财务、研发或监管信息，主要为非相关行业与国际政治/监管新闻。"
+          },
+          {
+            "name": "监管/政策事件的外溢影响",
+            "direction": "不确定",
+            "weight": 0.05,
+            "evidence": "新闻中出现加拿大对海康威视的禁令及FDA批准阿尔茨海默症新药，表明监管/审批事件对企业估值和行业情绪有潜在影响，但对海辰药业具体影响未明。"
+          },
+          {
+            "name": "行业创新/药品审批相关关注",
+            "direction": "不确定",
+            "weight": 0.05,
+            "evidence": "新闻提到FDA首次批准延缓阿尔茨海默症进展的新药，提示医药领域存在重大审批进展，但未提及海辰药业的产品或管线。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "监管政策",
+          "地缘政治",
+          "医药监管"
+        ],
+        "risk_flags": [
+          "信息披露不足导致判断不确定",
+          "监管/审批事件可能产生外溢风险或机遇但难以量化",
+          "行业新闻与公司相关性低，存在误判风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "药品审批/研发里程碑",
+            "reason": "监管审批事件（如FDA批准）对医药公司估值与短中期业绩有直接影响，需关注公司是否有相关在研项目或审批进展。",
+            "suggest_window": "3-12个月"
+          },
+          {
+            "metric": "季度营收/产销率",
+            "reason": "若公司产品与行业审批或市场需求相关，营收与产销率能快速反映基本面变化。",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "成交量与北向资金流向",
+            "reason": "市场对监管或行业新闻的情绪反应可通过成交量和北向资金流向体现，帮助判断短期资金面影响。",
+            "suggest_window": "日-周"
+          }
+        ],
+        "confidence": 0.15,
+        "summary": "新闻中未包含关于海辰药业的任何直接信息，综合判断为中性——无法基于现有材料做出正负面判断。需重点关注监管/审批动态和公司自有披露以进行进一步评价。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 257,
+          "truncated_chars": 257,
+          "avg_original_per_item": 128.5,
+          "avg_truncated_per_item": 128.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 847,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "西部超导",
+      "symbol": "688122.SH",
+      "pct_chg": 15.686,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足—公开新闻与公司相关性低\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"所给新闻标题与内容为国际/地区时事与一般社会新闻（如",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 9 column 19 (char 180)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2023年6月1日中文報紙頭條",
+          "2022年3月20日中文報紙頭條",
+          "2022年1月18日中文報紙頭條",
+          "2021年9月18日中文報紙頭條",
+          "🔥🚨爆张又侠与胡温震撼密会 习情急下总动员令？🙈北京越来越不遮遮掩掩了🇺🇸🏆赖清德爆重话！“川普若让习收兵 应得诺奖”🎸😡中共音乐节爆丑闻 女观众普遍控安检乱检"
+        ],
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 689,
+          "truncated_chars": 689,
+          "avg_original_per_item": 137.8,
+          "avg_truncated_per_item": 137.8,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1477
+      }
+    },
+    {
+      "name": "芯联集成",
+      "symbol": "688469.SH",
+      "pct_chg": 14.742,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.18,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "市场地位改善（跻身前十）",
+            "direction": "正面",
+            "weight": 0.27,
+            "evidence": "Supplyframe 报道指出芯联集成首次跻身全球前十，表明公司在本土代工阵营中地位上升。"
+          },
+          {
+            "name": "营收增长（2024H1）",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "Supplyframe 报道公司 2024 年上半年实现营业收入 28.80 亿元，同比增长 14.27%。"
+          },
+          {
+            "name": "盈利能力承压（持续亏损）",
+            "direction": "负面",
+            "weight": 0.22,
+            "evidence": "同一报道提及归属于母公司所有者的净利润为负值（文中显示为 -4.7...），表明仍存在盈利压力。"
+          },
+          {
+            "name": "并购/扩张动作",
+            "direction": "正面",
+            "weight": 0.17,
+            "evidence": "2024 本土半导体并购重组榜单中芯联集成出现多次，且涉及金额项中最小为 38.50 亿元，显示公司在并购重组上较为活跃，可能加速扩张。"
+          },
+          {
+            "name": "行业与地缘政治环境（政策支持与外部限制并存）",
+            "direction": "不确定",
+            "weight": 0.12,
+            "evidence": "多篇新闻显示中国将全面支持半导体产业（利好），但同时存在美方对部分内地企业出口限制（如福建晋华），带来外部不确定性与供应链风险。"
+          }
+        ],
+        "score": 62,
+        "need_macro": true,
+        "macro_keywords": [
+          "半导体",
+          "产业政策",
+          "地缘政治"
+        ],
+        "risk_flags": [
+          "持续亏损/盈利能力不足",
+          "相对较低的全球市占率（与台积电等差距大）",
+          "地缘政治与出口管制风险",
+          "并购整合与融资风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "产能利用率/设备稼动率",
+            "reason": "直接反映订单消化与出货能力，影响营收复苏与 ASP",
+            "suggest_window": "1-3月"
+          },
+          {
+            "metric": "订单量/产销率",
+            "reason": "判断需求强弱与短期营收变化的先行指标",
+            "suggest_window": "1-3月"
+          },
+          {
+            "metric": "并购交易完成进度与交易金额披露",
+            "reason": "并购若能落地将影响产能、负债与未来利润路径",
+            "suggest_window": "3-6月"
+          },
+          {
+            "metric": "北向资金净流入/成交量",
+            "reason": "市场对公司基本面与并购、业绩预期的情绪反映",
+            "suggest_window": "1-2月"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "综合新闻显示芯联集成在市场地位和营收上有积极进展（首次跻身前十、2024H1 营收同比增长），并购动作活跃，有望扩张产能。但仍面临持续亏损、相对较低的全球市占率与地缘政治/出口管制的不确定风险。短期需关注产能利用、订单与并购进展以验证基本面改善。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1073,
+          "truncated_chars": 1073,
+          "avg_original_per_item": 107.3,
+          "avg_truncated_per_item": 107.3,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 2150,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "美力科技",
+      "symbol": "300611.SZ",
+      "pct_chg": 14.248,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.6,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "2024年业绩大幅改善",
+            "direction": "正面",
+            "weight": 0.45,
+            "evidence": "公司披露2024年营业收入16.04亿元，同比增长16.52%；归母净利润1.07亿元，同比增162.15%；扣非后净利润约9770.27万元，表面盈利质量较好。"
+          },
+          {
+            "name": "营收增长但规模仍中等",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "营业收入仅同比增长16.52%，显示业务在扩张但尚未达到高速规模化，需关注未来收入增长可持续性。"
+          },
+          {
+            "name": "行业与投资情绪不确定（AI/科技投资放缓、能源与大宗波动）",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "新闻聚合中提到AI投资热潮恐放缓、OPEC+增产致油价下挫等宏观/行业消息，可能影响下游需求与资本开支节奏。"
+          },
+          {
+            "name": "宏观与汇率风险",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "报道提到亚银下修GDP、台币第三季贬值及美政府停摆等宏观变量，存在需求和成本端波动风险。"
+          },
+          {
+            "name": "信息披露与持续性不明",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公告主要披露年度业绩摘要，缺少分产品/分地区营收、毛利率构成及未来业绩指引，无法充分判断增长可持续性与盈利驱动是否可复制。"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "宏观经济",
+          "能源",
+          "AI/科技投资",
+          "医药生物"
+        ],
+        "risk_flags": [
+          "业绩可能含一次性或非持续性因素，需核实盈利构成",
+          "行业投资热度回落（AI/科技）可能压制下游需求",
+          "宏观增长下修与汇率波动带来需求与成本不确定性",
+          "信息披露不足，缺乏分业务/未来指引"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "订单量/新签合同",
+            "reason": "验证收入增长的可持续性与未来营收可见度",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产销率/设备稼动率",
+            "reason": "判断产能利用与短期供给匹配、毛利修复空间",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "ASP（平均售价）与毛利率",
+            "reason": "确认提价能力或成本端传导情况，影响盈利率",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "成交量（股价）与北向资金净流入",
+            "reason": "短期市场情绪与海外资金是否持续关注该股",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "库存水平",
+            "reason": "判断需求回落或渠道去库存压力，影响短期营收确认",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.65,
+        "summary": "美力科技公布2024年业绩显示营业收入同比增长16.5%，归母净利润大增162%，短期财务面利好。然营收规模增速有限、披露缺乏细项及宏观/行业（AI投资放缓、能源与汇率等）存在不确定性。建议重点关注订单、产销率、ASP与资金流向以验证盈利可持续性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 1009,
+          "truncated_chars": 1009,
+          "avg_original_per_item": 144.14,
+          "avg_truncated_per_item": 144.14,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1827,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "芯原股份",
+      "symbol": "688521.SH",
+      "pct_chg": 15.536,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": -0.42,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "2024年业绩亏损",
+            "direction": "负面",
+            "weight": 0.45,
+            "evidence": "公司2024年营业收入23.23亿元，同比下降0.66%；归属于母公司净亏损6.05亿元，扣非后净亏损6.44亿元，每股亏损1.21元。"
+          },
+          {
+            "name": "营收基本持平但无增长动力",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "营业总收入仅小幅下降0.66%，显示营收稳中偏弱且未能实现增长以覆盖亏损。"
+          },
+          {
+            "name": "国际出口管制与外资芯片回流（市场竞争）",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "美国对英伟达/AMD向中国销售先进芯片批准，但要求将相关收入15%上缴美国政府并颁发许可证，可能加速国际厂商在中国市场的动作，改变竞争格局与供需。"
+          },
+          {
+            "name": "行业/技术与合规风险（知识产权与国产项目失利）",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "新闻提及华为前技术总监窃取芯片机密及武汉弘芯千亿工程落幕，反映行业存在技术/合规与项目失败风险，增加监管与信任成本。"
+          },
+          {
+            "name": "出口管制放松可能的需求与生态侧影响",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "对外资高端芯片销售许可及相关安排，短期可能带来市场供给与下游需求变化，亦可能刺激国产生态协同或进一步竞争，影响不确定。"
+          }
+        ],
+        "score": 35,
+        "need_macro": true,
+        "macro_keywords": [
+          "中美贸易",
+          "出口管制",
+          "半导体产业链"
+        ],
+        "risk_flags": [
+          "持续亏损压力：2024年净亏损6.05亿元，现金流与盈利可持续性风险",
+          "竞争加剧：国际大厂获得对华销售许可可能侵蚀中低高端市场份额",
+          "政策与监管不确定性：出口管制、许可证条款及产业政策变化",
+          "技术与知识产权风险：涉密人员侵权与国产项目失利影响研发与信任"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检验市场对业绩与出口管制消息的即时反应、流动性与短期价格压力",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "观察外资对公司/板块风险偏好的变化，判断机构层面情绪",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "直接反映下游客户需求与出货能力，影响未来营收恢复速度",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "ASP（平均销售价格）",
+            "reason": "监测产品价格压力与毛利率趋势，判断竞品（含进口高端芯片）冲击",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "芯原股份披露2024年大幅亏损（归母净亏损6.05亿元），营收基本持平但无增长动力，短期财务状况与盈利可持续性为主要负面驱动；同时美国对英伟达/AMD向华销售安排可能改变国内竞争格局，存在不确定性。综上，短中期情绪偏负，需关注成交量、北向资金、订单与ASP等可验证数据以及中美贸易与出口管制政策演变。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 761,
+          "truncated_chars": 761,
+          "avg_original_per_item": 152.2,
+          "avg_truncated_per_item": 152.2,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1537,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "国盾量子",
+      "symbol": "688027.SH",
+      "pct_chg": 14.47,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "新闻与公司相关性缺失",
+            "direction": "不确定",
+            "weight": 0.7,
+            "evidence": "提供的多条为2021年各中文报纸头条汇总（wikinews 列表），文本未提及“国盾量子”或其业务、财务、产品、合同等任何具体信息或事件。"
+          },
+          {
+            "name": "短期市场信号缺失（交易/资金）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻内容不含成交量、股价变动、资金流向或投资者情绪等市场信号，无法判断短期市场反应。"
+          },
+          {
+            "name": "基本面信息不可得（业绩/订单/产品）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "缺乏营收、利润、订单、客户、技术进展、产能或合同等基本面披露，无法用于基本面研判。"
+          },
+          {
+            "name": "新闻时效性老旧",
+            "direction": "负面",
+            "weight": 0.05,
+            "evidence": "所有链接与条目均标注为2021年日期，相对当前时点时效性差，作为决策依据价值有限。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "信息不足导致判断误差",
+          "无公司或行业披露，可能忽略重要公告",
+          "新闻时效性差（均为2021年），存在滞后风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察机构和散户对事件或公告的市场反应强弱，验证消息驱动的短期流动性变化",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可反映跨境投资者对相关标的的兴趣与风险偏好，影响股价中长期走势",
+            "suggest_window": "1个月-1季度"
+          },
+          {
+            "metric": "公司订单/合同/公告频次",
+            "reason": "直接反映业务推进与收入可见度，是判断基本面改善的重要量化信号",
+            "suggest_window": "1季度-1年"
+          }
+        ],
+        "confidence": 0.2,
+        "summary": "提供的新闻为2021年多家中文报纸头条汇总页面，未提及国盾量子或其相关业务与财务信息；信息量和时效性均不足，无法形成正/负面判断，建议关注公司公告、成交量与资金流向等可验证信号以获得可操作结论。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 789,
+          "truncated_chars": 789,
+          "avg_original_per_item": 157.8,
+          "avg_truncated_per_item": 157.8,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1527,
+        "parse_mode": "direct"
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 60,
+    "risk_index": 65,
+    "industry_heat": [
+      {
+        "industry": "半导体（晶圆代工/封测/功率半导体）",
+        "heat": 88,
+        "drivers": [
+          "AI服务器与大模型推升对先进/成熟制程及封装需求",
+          "全球与中国双向投资（美国上岸/中国国产化政策）",
+          "投行上调龙头目标价（高盛对中芯、华虹）",
+          "技术与封装创新（银烧结、SiC、800V平台）"
+        ]
+      },
+      {
+        "industry": "人工智能与云基础设施",
+        "heat": 82,
+        "drivers": [
+          "NVIDIA/AMD/OpenAI等带动算力与数据中心投资",
+          "AI芯片跨国销售许可与收益安排（美方与厂商协议的进展）",
+          "服务器、存储与AI加速器出货增长"
+        ]
+      },
+      {
+        "industry": "绿色能源与功率电子（光伏/储能/电动）",
+        "heat": 63,
+        "drivers": [
+          "新能源汽车与储能扩产带动功率半导体需求",
+          "各国绿色转型政策与锂、铜等大宗商品价格波动",
+          "地缘与供给侧事件影响能源价格与投资节奏"
+        ]
+      },
+      {
+        "industry": "金融与资本市场（银行/券商/资金）",
+        "heat": 55,
+        "drivers": [
+          "央行大规模逆回购与专项政策性金融工具投放信号",
+          "全球股市受AI题材推动但受地缘政治与监管波动影响",
+          "本地房贷利率上行、资产重估和资金流向变化"
+        ]
+      },
+      {
+        "industry": "生物医药与创新药",
+        "heat": 54,
+        "drivers": [
+          "跨国药企布局、生科人才与生态圈建设（药企落户香港）",
+          "对创新药快速可及性的政策诉求与市场期待",
+          "并购与区域研发投入持续"
+        ]
+      },
+      {
+        "industry": "地产与房贷",
+        "heat": 45,
+        "drivers": [
+          "部分城市放宽购房/限购、供地节奏调整",
+          "房贷利率上行与市场需求偏向自住买家",
+          "地方促销、促销让利拉动短期成交"
+        ]
+      },
+      {
+        "industry": "国防/网络安全与监控",
+        "heat": 50,
+        "drivers": [
+          "加拿大、美国等对中国监控设备与企业的限制与禁购",
+          "地缘冲突与国安审查提升对相关厂商影响",
+          "军民融合与涉军技术审查常态化"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "全球呈现‘外部限制 + 国内支持’并存格局：美加等经济体对中国相关科技与安防企业持续实施出口/采购限制与监管（限制性）；同时，多国与中国内部推出或加速产业、基建与专项资金投放以稳增长、扶持半导体与能源等戰略行业（支持性）。总体为混合信号，短期市场受外部管制与地缘风险扰动，政策端仍倾向通过定向资金与项目支持缓和下行。",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [
+      "半导体设备与材料（晶圆代工、封装、功率器件材料）",
+      "AI基础设施（GPU/AI加速器、数据中心相关供应链）",
+      "功率半导体与电动/储能供应链（SiC、IGBT、封装）",
+      "绿色能源与锂/铜类大宗商品相关标的",
+      "国防与网络安全相关替代供应商",
+      "受政策支持的基建/专项项目承建与材料供应商",
+      "香港与区域不动产（关注销售节奏与利率变化）"
+    ],
+    "macro_factors": [
+      {
+        "name": "美欧对华技术与设备出口管制 / 国家安全限制",
+        "impact": "负面",
+        "confidence": 0.85
+      },
+      {
+        "name": "AI驱动的持续高需求（算力、服务器、存储）",
+        "impact": "正面",
+        "confidence": 0.88
+      },
+      {
+        "name": "国内货币与财政支持（央行逆回购、政策性金融工具5000亿）",
+        "impact": "正面",
+        "confidence": 0.75
+      },
+      {
+        "name": "地缘政治冲突与不确定性（乌克兰、中东、台海相关紧张）",
+        "impact": "负面",
+        "confidence": 0.8
+      },
+      {
+        "name": "全球商品与能源价格波动（油、铜、锂等）",
+        "impact": "中性",
+        "confidence": 0.65
+      },
+      {
+        "name": "房地产与房贷利率回升对内需影响",
+        "impact": "负面",
+        "confidence": 0.6
+      }
+    ],
+    "actionable_insights": [
+      {
+        "theme": "选择性增配半导体设备与封装材料相关标的",
+        "rationale": "AI与服务器需求持续拉动上游设备、材料与先进封装需求；国内外政策均推动半导体本土化与扩产，相关细分供应链有长期确定性增长。",
+        "watch_metrics": [
+          "厂商资本开支公告（capex）",
+          "设备订单/代工产能利用率",
+          "美方出口许可与清单变化",
+          "目标公司营收与毛利率趋势"
+        ]
+      },
+      {
+        "theme": "关注功率半导体与新能源链条机会",
+        "rationale": "电动汽车、储能与光伏扩产对SiC/IGBT及高压封装需求上升，封装技术创新可改善性能并形成护城河。",
+        "watch_metrics": [
+          "下游车厂/储能项目订单",
+          "封装良率与产能扩张计划",
+          "原材料（碳化硅）价格与供应情况"
+        ]
+      },
+      {
+        "theme": "短期内偏谨慎管理地缘政治/监管风险敞口",
+        "rationale": "出口管制、禁购与制裁不确定性高，可能导致个股/行业波动加剧；需通过仓位控制、对冲或行业轮动降低单一风险敞口。",
+        "watch_metrics": [
+          "主要国家对特定企业/产品的制裁名单与禁令",
+          "国际冲突与重大政治事件（会期、谈判、制裁公布）",
+          "外资流入/撤出数据"
+        ]
+      },
+      {
+        "theme": "关注政策性资金投向与基建/项目落地节奏",
+        "rationale": "专项政策工具与项目资本金将带动相关建材、工程机械和高端制造中游需求，能快速转化为订单与营收。",
+        "watch_metrics": [
+          "财政/发改项目库公布与地方落地进度",
+          "专项资金拨付与投向公告",
+          "工程类公司订单与开工数据"
+        ]
+      }
+    ],
+    "suggest_global_watch": [
+      "美国/欧盟对中国科技企业的出口管制、许可与财政激励公告",
+      "NVIDIA/AMD/OpenAI/英伟达与主要AI芯片厂商的销售许可、营收与供货节奏",
+      "各国半导体投资/补贴计划与大厂capex公告（美、台、韩、中）",
+      "中国央行与财政的流动性操作与专项政策资金拨付进度",
+      "地缘政治突发事件（乌克兰、中东、台海）与相关制裁动向",
+      "大宗商品（油、铜、锂）价格与供应链中断风险",
+      "香港/内地房贷利率与房地产销售数据"
+    ],
+    "extra_keywords": [
+      "AI",
+      "半导体",
+      "晶圆代工",
+      "封装",
+      "功率半导体",
+      "SiC",
+      "NVIDIA",
+      "AMD",
+      "OpenAI",
+      "出口管制",
+      "逆回购",
+      "政策性资金",
+      "国产化",
+      "地缘政治",
+      "资管流向",
+      "新能源",
+      "锂",
+      "数据中心"
+    ],
+    "summary": "新闻集合显示当前市场由AI与半导体题材主导，带动对晶圆代工、封测、功率器件与服务器算力相关产业链的强烈资金与关注；同时，外部对华技术/采购限制、加拿大等国的安全禁令及地缘政治紧张提升风险溢价。央行与发改等政策工具释放流动性并定向支持项目，短期有助稳增长与对冲下行。投资上以选择性增配半导体与功率半导体、关注封装创新与新能源链条为主，配合严格的政策与地缘风险监控与仓位管理。",
+    "macro_truncation_stats": {
+      "item_count": 146,
+      "original_chars": 20454,
+      "truncated_chars": 20454,
+      "avg_original_per_item": 140.1,
+      "avg_truncated_per_item": 140.1,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_prompt_token_est": 17166,
+    "parse_mode": "direct"
+  },
+  "macro_extra": [
+    {
+      "keyword": "AI",
+      "analysis": {
+        "market_sentiment_index": 55,
+        "risk_index": 40,
+        "industry_heat": [
+          {
+            "industry": "人工智能",
+            "heat": 45,
+            "drivers": [
+              "AI",
+              "人工智能"
+            ]
+          },
+          {
+            "industry": "消费复苏",
+            "heat": 15,
+            "drivers": [
+              "消费",
+              "出行"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "启发式：政策信号未充分解析",
+          "bias": "neutral"
+        },
+        "capital_flow_focus": [
+          "人工智能",
+          "消费复苏"
+        ],
+        "macro_factors": [
+          {
+            "name": "人工智能",
+            "impact": "中性",
+            "confidence": 0.4
+          },
+          {
+            "name": "消费复苏",
+            "impact": "中性",
+            "confidence": 0.4
+          }
+        ],
+        "actionable_insights": [],
+        "suggest_global_watch": [],
+        "extra_keywords": [],
+        "summary": "主题 人工智能 相关信息增量；主题 消费复苏 相关信息增量",
+        "llm_fallback": true,
+        "raw": "{\n  \"market_sentiment_index",
+        "error": "macro_llm_empty",
+        "theme_hits": {
+          "半导体": 0,
+          "新能源": 0,
+          "人工智能": 3,
+          "消费复苏": 1,
+          "基建": 0,
+          "出海": 0,
+          "地产链": 0
+        },
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 538,
+          "truncated_chars": 538,
+          "avg_original_per_item": 107.6,
+          "avg_truncated_per_item": 107.6,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 848,
+        "parse_mode": "heuristic"
+      }
+    },
+    {
+      "keyword": "半导体",
+      "analysis": {
+        "market_sentiment_index": 72,
+        "risk_index": 48,
+        "industry_heat": [
+          {
+            "industry": "半导体（整体与集成电路）",
+            "heat": 95,
+            "drivers": [
+              "全球与中国政策支持与补贴",
+              "下游AI、5G、消费电子和汽车电子需求持续拉动",
+              "资本市场与产业链扩张投入"
+            ]
+          },
+          {
+            "industry": "晶圆厂与制造设备",
+            "heat": 92,
+            "drivers": [
+              "SEMI预测美国产能投资将超过主要地区",
+              "本地化生产与CHIPS类政策推动资本开支",
+              "设备与材料需求同步上升"
+            ]
+          },
+          {
+            "industry": "AI硬件 / GPU与替代方案",
+            "heat": 90,
+            "drivers": [
+              "大型AI模型带动GPU与加速器需求爆发",
+              "OpenAI採用超微（AMD）表明对NVIDIA依赖有被替代趋势",
+              "云服务商与AI公司持续采购高性能算力"
+            ]
+          },
+          {
+            "industry": "功率半导体（含SiC）",
+            "heat": 88,
+            "drivers": [
+              "新能源汽车、光伏与储能渗透率提升",
+              "碳化硅（SiC）等材料需求快速增长",
+              "封装与热管理技术升级（如银烧结）成为性能瓶颈的突破点"
+            ]
+          },
+          {
+            "industry": "封装与测试（包含新型封装工艺）",
+            "heat": 82,
+            "drivers": [
+              "封装成为提高功率与可靠性的关键环节",
+              "工艺创新（银烧结、800V平台等）推动替代与升级需求",
+              "下游应用对小型化、高功率密度封装要求上升"
+            ]
+          },
+          {
+            "industry": "可再生能源（光伏+储能）",
+            "heat": 76,
+            "drivers": [
+              "光伏与储能装机增长带动逆变器与功率器件需求",
+              "能源转型对电力电子与系统集成提出更高要求"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "总体偏向支持：美国推动本地化与大量晶圆厂投资，中国在集成电路与半导体链条上持续政策扶持，全球多地以补贴、税收与投资激励吸引产能。",
+          "bias": "supportive"
+        },
+        "capital_flow_focus": [
+          "美国晶圆厂与半导体制造设备厂商（WFE）",
+          "AI硬件与替代加速器（GPU/AMD/专用AI芯片）",
+          "功率半导体与SiC材料供应链",
+          "封装测试与新工艺技术（如银烧结）",
+          "集成电路设计（IDM/代工伙伴）",
+          "光伏与储能上下游厂商"
+        ],
+        "macro_factors": [
+          {
+            "name": "人工智能需求（大模型与数据中心扩张）",
+            "impact": "正面",
+            "confidence": 0.9
+          },
+          {
+            "name": "产业与财政政策（补贴、本地化推动）",
+            "impact": "正面",
+            "confidence": 0.8
+          },
+          {
+            "name": "地缘政治與供應鏈去全球化/管控風險",
+            "impact": "负面",
+            "confidence": 0.7
+          },
+          {
+            "name": "新能源汽车與可再生能源滲透",
+            "impact": "正面",
+            "confidence": 0.75
+          },
+          {
+            "name": "资本市场与企业资本支出意愿",
+            "impact": "正面",
+            "confidence": 0.65
+          },
+          {
+            "name": "自然灾害/极端天气（如台风等对产业集群影响）",
+            "impact": "负面",
+            "confidence": 0.3
+          }
+        ],
+        "actionable_insights": [
+          {
+            "theme": "优先关注美国产能扩张与设备供应链",
+            "rationale": "SEMI预测与政策推动将带来长期设备与材料需求增长，相关设备厂商与材料供应商将受益。",
+            "watch_metrics": [
+              "SEMI与各季度WFE（晶圆厂设备）支出数据",
+              "美国与地方政府补贴/补助发放进度",
+              "设备厂商订单账与出货量"
+            ]
+          },
+          {
+            "theme": "布局功率半导体与封装创新厂商（SiC、银烧结等）",
+            "rationale": "EV、光伏与储能带来对高压、高效功率器件与新封装工艺的刚性需求，工艺突破可带来高附加值增长。",
+            "watch_metrics": [
+              "SiC晶圆与器件产能扩建公告",
+              "封装新工艺量产与客户认证进度",
+              "新能源汽车与光伏逆变器采购量"
+            ]
+          },
+          {
+            "theme": "关注AI硬件替代者与多供给格局（AMD/专用加速器）",
+            "rationale": "大规模AI推算带动算力采购，OpenAI采用AMD示例表明市场竞争与异构计算机会增多。",
+            "watch_metrics": [
+              "云服务与AI公司采购/搭建数据中心公告",
+              "GPU与加速器厂商季度出货情况",
+              "主要AI公司供应商选择与长期采购协议"
+            ]
+          },
+          {
+            "theme": "防范地缘政治与贸易管制冲击",
+            "rationale": "本地化与去全球化会改变供应链格局，需评估供应集中度与替代路线风险。",
+            "watch_metrics": [
+              "中美出口管制/关税与投资审批变化",
+              "关键材料與设备的区域化产能比重",
+              "主要厂商的供应链多元化公告"
+            ]
+          },
+          {
+            "theme": "用宏观与行业数据校准增长节奏（短中期）",
+            "rationale": "行业高速增长与资本投入并存，需以销售、出货与订单为先导判断实际需求弹性。",
+            "watch_metrics": [
+              "中国与全球半导体/IC销售额季度数据",
+              "主要代工厂产能利用率与价格走向",
+              "资本开支（capex）与并购动态"
+            ]
+          }
+        ],
+        "suggest_global_watch": [
+          "SEMI全球投资与WFE报告、年度capex预测",
+          "美国CHIPS法案与补贴分配、实施进度",
+          "中美贸易与出口管制、供应链本地化政策动向",
+          "NVIDIA/AMD/英特尔/超微等AI硬件厂商的订单与产品路线",
+          "SiC、功率器件与高压封装产能与技术进展",
+          "PCIM Asia等技术展会与关键封装创新（如银烧结）公布"
+        ],
+        "extra_keywords": [
+          "半导体",
+          "集成电路",
+          "晶圆厂",
+          "WFE",
+          "SEMI",
+          "CHIPS",
+          "AI硬件",
+          "GPU",
+          "超微",
+          "NVIDIA",
+          "AMD",
+          "功率半导体",
+          "SiC",
+          "银烧结",
+          "封装测试",
+          "光伏",
+          "储能",
+          "新能源汽车",
+          "本地化生产",
+          "供应链去全球化"
+        ],
+        "summary": "新闻显示全球半导体市场处于高景气期：AI、大模型与能源转型同步推动芯片、功率器件与封装需求，SEMI预测与美中政策使晶圆厂与制造设备投资成为资本重点。短期机会集中在美国产能扩张、AI硬件替代与功率半导体/封装创新；需警惕地缘政治与供应链重构带来的中长期风险。",
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 664,
+          "truncated_chars": 664,
+          "avg_original_per_item": 132.8,
+          "avg_truncated_per_item": 132.8,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 917,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "keyword": "晶圆代工",
+      "analysis": {
+        "market_sentiment_index": 50,
+        "risk_index": 40,
+        "industry_heat": [
+          {
+            "industry": "人工智能",
+            "heat": 15,
+            "drivers": [
+              "AI",
+              "人工智能"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "启发式：政策信号未充分解析",
+          "bias": "neutral"
+        },
+        "capital_flow_focus": [
+          "人工智能"
+        ],
+        "macro_factors": [
+          {
+            "name": "人工智能",
+            "impact": "中性",
+            "confidence": 0.4
+          }
+        ],
+        "actionable_insights": [],
+        "suggest_global_watch": [],
+        "extra_keywords": [],
+        "summary": "主题 人工智能 相关信息增量",
+        "llm_fallback": true,
+        "raw": "{\n  \"market_sentiment_index\": 62,\n  \"risk_index\": 56,\n  \"industry_heat\": [\n    {\n      \"industry\": \"晶圓代工 / 半導體\",\n      \"heat\": 92,\n      \"drivers\": [\n        \"台積市占與價格回升報導\",\n        \"三星爭取165億美元代工大單\",\n        \"陸方2030年產能擴張對競爭格局影響\",\n        \"英特爾代工策略與供給重組訊號\"\n      ]\n    },\n    {\n      \"industry\": \"AI伺服器 / 人工智慧硬體\",\n      \"heat\": 82,\n",
+        "error": "macro_llm_empty",
+        "theme_hits": {
+          "半导体": 0,
+          "新能源": 0,
+          "人工智能": 1,
+          "消费复苏": 0,
+          "基建": 0,
+          "出海": 0,
+          "地产链": 0
+        },
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 806,
+          "truncated_chars": 806,
+          "avg_original_per_item": 161.2,
+          "avg_truncated_per_item": 161.2,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 981,
+        "parse_mode": "heuristic"
+      }
+    }
+  ],
+  "macro_keywords_used": [
+    "半导体",
+    "电子元器件分销",
+    "供应链国产化",
+    "政策",
+    "地缘政治",
+    "资本市场",
+    "贸易政策",
+    "反补贴调查",
+    "利率",
+    "消費需求",
+    "化妝品行業",
+    "监管政策",
+    "医药监管",
+    "产业政策",
+    "宏观经济"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 6,
+      "neutral": 10,
+      "negative": 4
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        10
+      ],
+      [
+        "首日市场需求强劲（股价与成交）",
+        1
+      ],
+      [
+        "高换手与大振幅带来短期波动性",
+        1
+      ],
+      [
+        "营业部席位净买入显示做多动力",
+        1
+      ],
+      [
+        "基本面与行业景气支撑",
+        1
+      ],
+      [
+        "首日超幅上涨可能带来投机性估值溢出",
+        1
+      ],
+      [
+        "减持风险",
+        1
+      ],
+      [
+        "公司相关信息缺失",
+        1
+      ],
+      [
+        "地缘政治与贸易摩擦",
+        1
+      ],
+      [
+        "行业需求与订单波动风险",
+        1
+      ],
+      [
+        "市场情绪与舆论波动",
+        1
+      ],
+      [
+        "盈利能力恶化（归母净亏损扩大）",
+        1
+      ],
+      [
+        "短期营收仍有小幅增长",
+        1
+      ],
+      [
+        "产能利用率低、化妆品业务下滑",
+        1
+      ],
+      [
+        "历史规模与经营基础（营收基数）",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 9,
+      "负面": 14,
+      "不确定": 27
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": null
+  },
+  "diagnostics": {
+    "fallback_stock_count": 9,
+    "fallback_macro_used": true,
+    "strict_json_enabled": false,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 11,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.45,
+    "warnings": [
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "heuristic": 9,
+      "direct": 11
+    },
+    "stock_prompt_token_summary": {
+      "min": 511,
+      "max": 2150,
+      "avg": 1458.8,
+      "total": 29176,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 104,
+      "sum_original_chars": 13909,
+      "sum_truncated_chars": 13909,
+      "avg_original_per_item": 133.74,
+      "avg_truncated_per_item": 133.74,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 17166,
+    "macro_truncation_stats": {
+      "item_count": 146,
+      "original_chars": 20454,
+      "truncated_chars": 20454,
+      "avg_original_per_item": 140.1,
+      "avg_truncated_per_item": 140.1,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_extra_parse_mode_counts": {
+      "heuristic": 2,
+      "direct": 1
+    },
+    "macro_extra_multi_json_success_count": 0
+  }
+}

@@ -1,0 +1,2224 @@
+{
+  "started_at": "2025-10-08T15:06:53.613690+00:00",
+  "finished_at": "2025-10-08T15:21:23.566720+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "N云汉",
+      "symbol": "301563.SZ",
+      "pct_chg": 332.593,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.72,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"首日市场接受度（股价大幅上涨）\",\n      \"direction\": \"正面\",\n      \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 8 column 7 (char 147)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "N云汉收盘涨332.59% 首日换手率81.95%",
+          "网站最新文章 - 第 12/24 页 -汉网-cnhan.com",
+          "N云汉上午收盘涨373.70% 半日成交11.54亿元",
+          "公子沈：陈之汉直播叫砍赖清德恐涉刑责 - 禁闻网",
+          "云汉芯城登陆创业板开盘涨363%：聚焦电子元器件研发，上半年净利增长四成",
+          "N云汉上市首日高开超344%",
+          "2025年8月15日中文報紙頭條",
+          "2025年7月11日中文報紙頭條",
+          "2025年7月2日中文報紙頭條",
+          "2024年7月9日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1313,
+          "truncated_chars": 1313,
+          "avg_original_per_item": 131.3,
+          "avg_truncated_per_item": 131.3,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 2148
+      }
+    },
+    {
+      "name": "N瑞立",
+      "symbol": "001285.SZ",
+      "pct_chg": 49.929,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 0.58,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "首日市场热度（股价与成交额）",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "首日开盘涨88.74%，收盘涨49.93%，全天成交量2738.49万股，成交额18.88亿元，换手率67.41%，显示强烈买盘与市场关注。"
+          },
+          {
+            "name": "交易活跃度与波动性",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "极高的日内涨幅与高换手率通常伴随短期波动与回调风险，盘中大幅波动提示投机性较强。"
+          },
+          {
+            "name": "基本面信息可得性",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "新闻仅披露上市交易数据，未提供公司营收、毛利、业务结构、行业地位与估值等基本面信息，难以判断长期价值支撑。"
+          },
+          {
+            "name": "短期回调与解禁/估值风险",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "首日大幅溢价易引发短期获利回吐；后续若存在限售股解禁或二级市场情绪转变，股价可能承压。"
+          },
+          {
+            "name": "市场关注度与研究覆盖提升",
+            "direction": "正面",
+            "weight": 0.08,
+            "evidence": "高换手与高成交额提升了券商研究与媒体关注，短期内有助于获得更多跟随资金与信息披露关注度。"
+          }
+        ],
+        "score": 65,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "高换手率与大幅波动：短期投机性强，回调风险高",
+          "基本面披露不足：无法判断长期业绩与合理估值",
+          "可能存在限售股/解禁风险（新闻未披露锁定/解禁时间）",
+          "首日溢价后估值修正风险",
+          "流动性集中于短期，大户或游资行为影响显著"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检验首日买盘能否延续，判断资金持续流入或是一次性炒作",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "换手率 / 流通股换手比例",
+            "reason": "监测筹码换手速度与短期投机活跃度，识别是否由少数大户推动",
+            "suggest_window": "1-10日"
+          },
+          {
+            "metric": "连续收盘涨跌（5日、20日）",
+            "reason": "评估短期回调幅度与趋势稳定性，判断是否需要重新评估估值安全边际",
+            "suggest_window": "5-30日"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "N瑞立首日上市表现强劲：开盘涨88.74%，收盘仍涨49.93%，成交额18.88亿元、换手率67.41%，显示短期市场关注与资金活跃。总体短线情绪偏正面，但因缺乏公司基本面信息、高换手与大幅波动带来明显投机与回调风险，需跟踪后续成交量、换手率与连续收盘表现以判断资金是否持续流入及估值可持续性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 842,
+          "truncated_chars": 842,
+          "avg_original_per_item": 140.33,
+          "avg_truncated_per_item": 140.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1711,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "当虹科技",
+      "symbol": "688039.SH",
+      "pct_chg": 20.0,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "提供的多条新闻为综合媒体头条，内容涉及政治、天气、社会案件与消费品推广，未提及当虹科技的业务、订单、财务、并购或高管变动等公司层面信息。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "地缘政治",
+          "政策",
+          "军事",
+          "行业监管"
+        ],
+        "risk_flags": [
+          "新闻为公共头条，未直接关联公司基本面或业绩",
+          "存在地缘政治/军事类话题，可能对相关行业情绪产生间接影响",
+          "缺乏公司级别的可核验数据（营收、订单、财报、公告）"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检测市场对无明确公司新闻时的情绪反应与资金流出入，判断是否出现异常抛售或炒作",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "主力与外资动向可揭示机构是否因宏观/地缘事件而调整对该股/板块的配置",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "若后续出现与公司业务相关的新闻，订单与产销率能较快反映基本面变化",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "库存水平",
+            "reason": "库存变动可验证需求端是否受宏观或突发事件影响，影响短中期营收节奏",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.2,
+        "summary": "所给新闻为多条媒体头条，主要涉及政治、社会与消费类话题，未包含针对当虹科技的公司层面信息。基于信息不足，当前情绪中性、判断能力受限。建议关注成交量、北向资金、订单/产销率及库存等可验证短期数据，以及与地缘政治与政策相关的后续披露。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 805,
+          "truncated_chars": 805,
+          "avg_original_per_item": 161.0,
+          "avg_truncated_per_item": 161.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1538,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "星徽股份",
+      "symbol": "300464.SZ",
+      "pct_chg": 20.0,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"提供的新闻为多家中文报纸2022-01-13的头条要闻汇总，内容未涉及星徽股份的经营、财务、政策或行业相关事件，无法据此得出公司层面判断。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"新闻与公司无直接关联\",\n    \"基于该新闻无法评估基本面或量化因子\",\n    \"后续消息或公告可能改变判断\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"metric\": \"成交量\",\n      \"reason\": \"若后续出现与公司相关消息，成交量会首当其冲反映市场情绪与资金关注度\",\n      \"suggest_window\": \"1日-1周\"\n    },\n    {\n      \"metric\": \"北向资金净流入\",\n      \"reason\": \"外资动向可短期影响A股估值与资金面，对中小市值个股尤为敏感\",\n     ",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting property name enclosed in double quotes: line 29 column 6 (char 632)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2022年1月13日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 155,
+          "truncated_chars": 155,
+          "avg_original_per_item": 155.0,
+          "avg_truncated_per_item": 155.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 713
+      }
+    },
+    {
+      "name": "冠中生态",
+      "symbol": "300948.SZ",
+      "pct_chg": 20.015,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": -0.7,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "公告的年度业绩预亏",
+            "direction": "负面",
+            "weight": 0.4,
+            "evidence": "公司披露2024年度预计归属于上市公司股东的净亏损3200万元–4700万元（业绩预亏）。"
+          },
+          {
+            "name": "扣非后仍然亏损，反映主营业务承压",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "扣除非经常性损益后预计净亏损4000万元–5500万元，显示扣非后主营业务仍为亏损。"
+          },
+          {
+            "name": "潜在现金流与融资压力",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "持续亏损通常导致经营现金消耗增加、短期偿债与再融资压力上升（由业绩预亏推断）。"
+          },
+          {
+            "name": "短期市场情绪与资金面冲击风险",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "业绩预告发布通常引发股价波动、成交量放大及北向资金/机构短期流出，影响短期估值与流动性。"
+          },
+          {
+            "name": "信息透明度与未来展望不确定性",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "公司仅披露业绩区间，未给出详细原因与改善措施，短期盈利修复路径与时间表不明确。"
+          }
+        ],
+        "score": 30,
+        "need_macro": true,
+        "macro_keywords": [
+          "宏观经济",
+          "行业周期",
+          "绿色经济"
+        ],
+        "risk_flags": [
+          "业绩持续亏损",
+          "经营现金流与再融资压力",
+          "短期股价与流动性波动",
+          "信息披露不足导致机构观望/减持"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检验市场对业绩预亏的即时反应与是否出现恐慌抛盘",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入/净流出",
+            "reason": "外资动向可放大公司股价波动并指示机构情绪",
+            "suggest_window": "1周–1个月"
+          },
+          {
+            "metric": "季度营收与扣非净利润（Q1/Q2）",
+            "reason": "后续季度业绩验证公告中亏损是否持续或改善",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "经营现金流/应收账款与应付账款变化",
+            "reason": "检测实际现金消耗、回款和供应链压力，判断流动性风险",
+            "suggest_window": "1个月–1季度"
+          },
+          {
+            "metric": "订单/产销率与库存水平",
+            "reason": "验证需求端是否下滑或库存积压，影响未来收入恢复速度",
+            "suggest_window": "1个月–1季度"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "冠中生态发布2024年业绩预亏（归母净亏损3,200万–4,700万元，扣非后亏损4,000万–5,500万元），表明主营业务仍然亏损并可能带来现金流与融资压力。短期内可能引发股价波动与资金出逃，需关注成交量、北向资金、后续季度扣非利润及经营现金流等指标以判断风险演化与是否存在盈利恢复迹象。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 906,
+          "truncated_chars": 906,
+          "avg_original_per_item": 151.0,
+          "avg_truncated_per_item": 151.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1692,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "国林科技",
+      "symbol": "300786.SZ",
+      "pct_chg": 20.0,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.45,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": -0.72,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"公司发布预亏且亏损较上年扩大\",\n      \"direction\": \"负面\",\n      \"weight\": 0.45,\n      \"evidence\": \"公司预计2024年度归属于上市公司股东的净亏损4,200万元–5,400万元，亏损扩大（来源：智通财经）\"\n    },\n    {\n      \"name\": \"扣除非经常性损益后仍显著亏损\",\n      \"direction\": \"负面\",\n      \"weight\": 0.25,\n      \"evidence\": \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 15 column 19 (char 346)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "国林科技(300786.SZ)发预亏，预计2024年度净亏损4200万元–5400万元，亏损扩大 提供者 智通财经",
+          "新闻中心 | TDK中国",
+          "2025年10月7日中文報紙頭條",
+          "2025年10月3日中文報紙頭條",
+          "2025年10月2日中文報紙頭條",
+          "世界旅游日，和克里米亚探险家平丘克聊聊",
+          "2025年9月26日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 1006,
+          "truncated_chars": 1006,
+          "avg_original_per_item": 143.71,
+          "avg_truncated_per_item": 143.71,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1867
+      }
+    },
+    {
+      "name": "新雷能",
+      "symbol": "300593.SZ",
+      "pct_chg": 20.0,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": ",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting value: line 2 column 22 (char 23)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "新闻｜FC东京官方网站",
+          "2025年10月8日中文報紙頭條",
+          "2025年10月3日中文報紙頭條",
+          "2025年9月28日中文報紙頭條",
+          "世界旅游日，和克里米亚探险家平丘克聊聊",
+          "2025年9月23日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 921,
+          "truncated_chars": 921,
+          "avg_original_per_item": 153.5,
+          "avg_truncated_per_item": 153.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1717
+      }
+    },
+    {
+      "name": "松原安全",
+      "symbol": "300893.SZ",
+      "pct_chg": 20.0,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.65,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"营业收入显著增长\",\n      \"direction\": \"正面\",\n      \"weight\": 0.3,\n      \"evidence\": \"2024年营业收入19.71亿元，同比增长53.94%（公司年报）\"\n    },\n    {\n      \"name\": \"归母净利润增长\",\n      \"direction\": \"正面\",\n      \"weight\": 0.25,\n      \"evidence\": \"归属于上市公司股东的净利润2.60亿元，同比增长31.65%（公司年报）\"\n    },\n    {\n      \"name\": \"盈利质量（扣非）较好\",\n      \"direction\": \"正面\",\n      \"weight\": 0.2,\n      \"evidence\": \"归属于上市公司股东的扣除非经常性损益的净利润2.50亿元，接近",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 21 column 19 (char 456)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "松原安全(300893.SZ)发布2024年度业绩，归母净利润2.6亿元，增长31.65% 提供者 智通财经",
+          "鐵路不地下化？ 徐世榮：臺南保留古都味 很驕傲",
+          "松原安全: 2024年年报点评：2024Q4经营整体稳健，自主被动安全龙头持续成长 - 行业研究报告 - 小牛行研"
+        ],
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 388,
+          "truncated_chars": 388,
+          "avg_original_per_item": 129.33,
+          "avg_truncated_per_item": 129.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1111
+      }
+    },
+    {
+      "name": "富临精工",
+      "symbol": "300432.SZ",
+      "pct_chg": 19.978,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.5,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "来自宁德时代的15亿元预付款",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "公告称控股子公司与宁德时代签订《预付款协议》，宁德时代向江西升华支付共计人民币15亿元的预付款，用于锁定产能。"
+          },
+          {
+            "name": "订单/产能锁定改善营收与现金流可见性",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "预付款性质为提前收款，可以提升公司短期现金流和未来产能排产、营收可见性，降低部分商业回款与订单不确定性。"
+          },
+          {
+            "name": "客户集中度/单一大客户依赖",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "大额预付款来自宁德时代——若未来订单变动或议价，会带来客户集中风险和议价压力。"
+          },
+          {
+            "name": "产能爬坡与交付风险",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "预付款锁定的是未来产能，实际能否按计划投产、达成质量与交付标准仍存在执行与时间表风险。"
+          },
+          {
+            "name": "磷酸铁锂产能紧张推动定价与利用率",
+            "direction": "正面",
+            "weight": 0.1,
+            "evidence": "报道指出“磷酸铁锂优质产能供应偏紧”，行业供需偏紧有利于富临精工高质量产能获得溢价与高利用率。"
+          }
+        ],
+        "score": 75,
+        "need_macro": true,
+        "macro_keywords": [
+          "动力电池",
+          "新能源车",
+          "供应链",
+          "锂电材料"
+        ],
+        "risk_flags": [
+          "客户集中度高（对宁德时代依赖）",
+          "产能爬坡与交付进度不确定",
+          "收入确认与合同条款、会计处理时点风险",
+          "原材料价格波动影响毛利率"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "新签订单与预付款到账进度",
+            "reason": "验证预付款是否对应确定订单与未来出货排期，判断短期营收可兑现性",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产能利用率/设备稼动率",
+            "reason": "评估公司能否按计划将锁定产能转化为实际产出和销量",
+            "suggest_window": "1-6个月"
+          },
+          {
+            "metric": "月度/季度出货量与产销率（磷酸铁锂相关产品）",
+            "reason": "观察供需紧张是否带来出货增长与价格端改善，影响收入与盈利",
+            "suggest_window": "1-3个季度"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "富临精工获得宁德时代15亿元预付款，短期显著改善现金流与产能排期可见性，并在磷酸铁锂供给偏紧背景下有利于产能利用率与定价；但需关注客户集中、产能爬坡与收入确认等执行与会计风险。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 116,
+          "truncated_chars": 116,
+          "avg_original_per_item": 116.0,
+          "avg_truncated_per_item": 116.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 671,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "派能科技",
+      "symbol": "688063.SH",
+      "pct_chg": 19.994,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.5,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "上市进展（辅导备案/拟赴科创板）",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "公司披露上市辅导备案信息，由中信建投任其辅导机构，并明确将赴科创板IPO（来源：财联社）」"
+          },
+          {
+            "name": "大股东支持（中兴通讯相关方持股37.21%）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "报道指出中兴通讯大股东持股37.21%，表明有战略或资本层面的支持，有利市场信心（来源：财联社标题信息）"
+          },
+          {
+            "name": "行业地位（锂离子电芯龙头）",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "新闻以“锂离子电芯龙头”描述派能科技，暗示在产品/技术或市场份额方面具备竞争优势（来源：新闻标题）"
+          },
+          {
+            "name": "信息不完整（财务指标与募资用途未披露）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "披露为辅导备案公告，报道未提供公司盈利能力、毛利、订单量、募资规模与用途等关键财务/经营细节，影响估值判断"
+          },
+          {
+            "name": "上市与市场波动风险（估值与科创板行情相关）",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "科创板板块波动、IPO定价与后续二级市场表现存在不确定性，可能对短期股价与融资效果产生负面影响"
+          }
+        ],
+        "score": 70,
+        "need_macro": true,
+        "macro_keywords": [
+          "资本市场",
+          "科创板",
+          "锂电池行业"
+        ],
+        "risk_flags": [
+          "上市时间表与定价不明确",
+          "募资规模与用途未披露，影响估值判断",
+          "对大股东或关联方依赖的治理/关联交易风险",
+          "科创板及锂电板块短期波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "发行及申购成交量",
+            "reason": "IPO受追捧程度与二级市场流动性，直接反映市场对公司定价和吸纳能力",
+            "suggest_window": "申购日至上市后1个月"
+          },
+          {
+            "metric": "北向资金净流入/流出",
+            "reason": "反映外资对A股和科创板标的的兴趣与风险偏好，影响板块估值",
+            "suggest_window": "周度至月度"
+          },
+          {
+            "metric": "订单量/出货量（产销数据）",
+            "reason": "锂电池企业营收与盈利的直接驱动，验证‘龙头’地位的实际业务支撑",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "产能利用率/设备稼动率",
+            "reason": "衡量公司扩产与交付能力，影响毛利率与扩张节奏",
+            "suggest_window": "月度至季度"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "新闻披露派能科技已完成上市辅导备案并由中信建投担任辅导机构，拟赴科创板IPO；标题称其为锂离子电芯龙头且有中兴通讯相关方持股37.21%。总体利好公司融资与市场认可，但目前缺乏财务、募资规模与时间表等关键信息，需关注发行后成交量、订单与产能利用等短期可验证指标以判定后续表现。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1255,
+          "truncated_chars": 1255,
+          "avg_original_per_item": 125.5,
+          "avg_truncated_per_item": 125.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 2208,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "江波龙",
+      "symbol": "301308.SZ",
+      "pct_chg": 19.999,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.45,\n  \"sentiment_label\": \"positive\",\n  \"factors\":",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting value: line 4 column 13 (char 74)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "江波龙首次登场 MWC25！存储黑科技与应用革新抢先看--快科技--科技改变未来",
+          "2025年8月15日中文報紙頭條",
+          "2025年8月8日中文報紙頭條",
+          "2025年7月23日中文報紙頭條",
+          "2025年7月20日中文報紙頭條",
+          "2025年6月30日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 882,
+          "truncated_chars": 882,
+          "avg_original_per_item": 147.0,
+          "avg_truncated_per_item": 147.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1657
+      }
+    },
+    {
+      "name": "品茗科技",
+      "symbol": "688109.SH",
+      "pct_chg": 18.604,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.08,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "筹划控制权变更",
+            "direction": "不确定",
+            "weight": 0.35,
+            "evidence": "公司公告称正在筹划重大事项，可能导致控制权变更（停牌并说明事项进展），存在不确定性及潜在重组或收购情形。"
+          },
+          {
+            "name": "短期停牌（程序性）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公司股票自9月18日起停牌，预计停牌时间不超过2个交易日，短期流动性受限但时长有限。"
+          },
+          {
+            "name": "净利润同比大幅增长",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "2024年年报显示归属于上市公司股东的净利润为3147.93万元，同比增长153.27%，盈利能力改善明显。"
+          },
+          {
+            "name": "营业收入微增",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "报告期内营业收入4.47亿元，同比增长2.69%，收入增长有限但为正向。"
+          },
+          {
+            "name": "信息披露/不确定性风险",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "关于重大事项和控制权变更的具体细节未披露，存在信息不对称和短期股价波动风险。"
+          }
+        ],
+        "score": 55,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "控制权变更不确定性：可能带来重大重组、定价或管理层替换风险",
+          "短期停牌导致流动性受限，复牌后股价波动加大",
+          "信息披露不完整，需等待后续公告确认细节",
+          "业绩增长主要体现在利润端，收入扩张有限，需关注可持续性"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "停牌复牌后短期成交量将反映市场对控制权变更消息的反应与流动性恢复情况",
+            "suggest_window": "复牌后5个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可反映机构对公司控制权变更和业绩改善的态度",
+            "suggest_window": "复牌后10个交易日"
+          },
+          {
+            "metric": "控股股东/实控人变动公告与股权结构披露",
+            "reason": "直接验证控制权变更的实质内容、交易对方以及是否涉及关联交易或重组对公司业务的影响",
+            "suggest_window": "1-5个交易日（后续公告期）"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "公司公告筹划可能导致控制权变更并短暂停牌（≤2日），同时2024年净利润同比大幅增长（+153%），营收小幅增长（+2.69%）。整体信息呈“业绩向好但存在控制权不确定性”的混合特征；短期需关注后续关于控制权变更的披露、复牌后的成交量与资金流向。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 352,
+          "truncated_chars": 352,
+          "avg_original_per_item": 117.33,
+          "avg_truncated_per_item": 117.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 964,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "华虹公司",
+      "symbol": "688347.SH",
+      "pct_chg": 15.717,
+      "news_count": 8,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": -0.2,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"财务表现（扣非净利润增长）\",\n      \"direction\": \"正面\",\n      \"weight\": 0.25,\n",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting property name enclosed in double quotes: line 9 column 1 (char 161)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "4层维度比对中国本土头部晶圆代工厂 - Supplyframe 四方维",
+          "2025年5月10日中文報紙頭條",
+          "2024年9月3日中文報紙頭條",
+          "2024年8月22日中文報紙頭條",
+          "2024年7月26日中文報紙頭條",
+          "2024年1月3日中文報紙頭條",
+          "华虹公司，在夹缝中生存 - 知乎",
+          "小红书网友｜我去华工看了看她 - 禁闻网"
+        ],
+        "news_truncation_stats": {
+          "item_count": 8,
+          "original_chars": 1014,
+          "truncated_chars": 1014,
+          "avg_original_per_item": 126.75,
+          "avg_truncated_per_item": 126.75,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1847
+      }
+    },
+    {
+      "name": "灿芯股份",
+      "symbol": "688691.SH",
+      "pct_chg": 15.406,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.1,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"未提供关于灿芯股份的相关新闻、公告或财务/业务数据，无法基于事件或基本面进行判断。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 15 column 3 (char 287)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [],
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 511
+      }
+    },
+    {
+      "name": "高凌信息",
+      "symbol": "688175.SH",
+      "pct_chg": 13.898,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"提供的多条新闻为宏观/政治/社会事件与第三方公司（如TDK）产品发布，未包含关于“高凌信息”公司本身的经营、财务",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 9 column 19 (char 168)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2025年5月3日中文報紙頭條",
+          "2025年4月15日中文報紙頭條",
+          "中國首宗跨性別「轉化治療」訴訟 原告獲醫院賠償",
+          "2024年11月14日中文報紙頭條",
+          "「反共鬥士」王靖渝詐騙中國異見人士內幕",
+          "新闻中心 | TDK中国"
+        ],
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 929,
+          "truncated_chars": 929,
+          "avg_original_per_item": 154.83,
+          "avg_truncated_per_item": 154.83,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1804
+      }
+    },
+    {
+      "name": "易点天下",
+      "symbol": "301171.SZ",
+      "pct_chg": 13.515,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"公司相关信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.5,\n      \"evidence\": \"提供的新闻为多版面头条汇总，未见针对易点天下（公司）之具体报道或公告，无法确认业绩、订单、",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 9 column 19 (char 172)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2025年7月2日中文報紙頭條",
+          "2024年8月2日中文報紙頭條",
+          "2024年4月17日中文報紙頭條",
+          "2022年新聞大事回顧 / 中文維基新聞17個周年",
+          "2022年2月10日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 777,
+          "truncated_chars": 777,
+          "avg_original_per_item": 155.4,
+          "avg_truncated_per_item": 155.4,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1567
+      }
+    },
+    {
+      "name": "线上线下",
+      "symbol": "300959.SZ",
+      "pct_chg": 15.084,
+      "news_count": 9,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.6,
+            "evidence": "提供的新闻多为头条索引、媒体栏目与报纸头条汇总，缺乏对具体上市公司、行业财务或订单等可量化信息，无法形成明确投资判断。"
+          },
+          {
+            "name": "教育与人才政策偏向长期利好",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "习近平给天津大学全体师生回信强调聚焦国家重大战略需求、提高人才培养质量，属于政策层面的长期供给侧人力资本利好，但对短期市场影响有限。"
+          },
+          {
+            "name": "地缘政治与国际冲突风险",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "多条头条包含以色列/哈马斯、国际安全相关报道，表明地缘政治仍存在不确定性，可能短期影响风险偏好与避险情绪。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "教育与人才政策",
+          "地缘政治",
+          "媒体舆情"
+        ],
+        "risk_flags": [
+          "信息量不足：无明确个股/行业业绩/订单/财务数据",
+          "地缘政治不确定性：国际冲突相关报道可能影响市场风险偏好",
+          "节假日/头条新闻偏向舆情摘要，短期成交量与流动性波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "新闻为头条/节假日与舆情汇总，需观察成交量确认市场关注度与流动性变化",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "在地缘政治与全球风险波动下，北向资金流向可反映外资情绪与A股相对吸引力",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "房地产/预售/交易量（如适用行业）",
+            "reason": "部分头条提及预售价下修与交易量低迷，若关注地产或相关板块，应跟踪订单与交易量以验证趋势",
+            "suggest_window": "7-30日"
+          }
+        ],
+        "confidence": 0.3,
+        "summary": "所给新闻为媒体与报刊头条汇总，缺乏对具体上市公司或行业的可量化信息。总体立场中性：政策层面（教育/人才培养）为长期正面因素，但短期市场无直接刺激；地缘政治新闻增加不确定性。建议在获取更具体的公司财报、订单、成交量或资金流向数据后再调整投资判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 9,
+          "original_chars": 1112,
+          "truncated_chars": 1112,
+          "avg_original_per_item": 123.56,
+          "avg_truncated_per_item": 123.56,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1945,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "*ST云创",
+      "symbol": "920305.SH",
+      "pct_chg": 13.105,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"新闻与公司关联性\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.6,\n      \"evidence\": \"提供的内容为2021年11月20日多家中文报纸头条汇总，文本中未提及*ST云创或其相关事件、财务或公告。\"\n    },\n    {\n      \"name\": \"信息时效性\",\n      \"direction\": \"负面\",\n      \"weight\": 0.25,\n      \"evidence\": \"新闻为2021年11月20日的头条汇总，属于历史通用头条，时效性和针对当前公司判断的参考价值低。\"\n    },\n    {\n      \"name\": \"可得性/透明度\",\n      \"direction\": \"负面\",\n      \"weight\": 0.15,\n      \"evidence\": \"缺少公司公告、财报、经营数据、业绩预告或行业细分信息，无法进行基本面或事件驱动判断。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"信息不足\",\n    \"新闻与公司无关\",\n    \"使用旧闻导致判断偏差\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 34 column 7 (char 704)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "2021年11月20日中文報紙頭條"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 167,
+          "truncated_chars": 167,
+          "avg_original_per_item": 167.0,
+          "avg_truncated_per_item": 167.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 723
+      }
+    },
+    {
+      "name": "德方纳米",
+      "symbol": "300769.SZ",
+      "pct_chg": 12.786,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "纳米材料技术/产能突破（行业利好）",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "新闻提到“香港纳米材料生产大突破”，显示纳米材料领域存在技术或产能进展，可能利好相关A股纳米材料公司。"
+          },
+          {
+            "name": "公司/机构治理与公关争议",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "头条包含“納米研發院公幹旅程等爭議 行政總裁認同有不足須改善”，暗示机构治理或公关存在问题，可能影响公司声誉与短期估值。"
+          },
+          {
+            "name": "外需与出口回升驱动的需求改善",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "新闻提及“港出口飙13.1% 连升五个月 市场需求回升”，表明外需回暖，可能支撑纳米材料下游需求与订单。"
+          },
+          {
+            "name": "全球半导体/技术竞争与供应链影响",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "多篇头条涉及英特尔/英伟达/芯片制程等全球技术新闻，可能改变上游设备/材料需求或竞争格局，影响程度需进一步验证。"
+          },
+          {
+            "name": "信息相关性与可验证性不足",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "提供的多为一般媒体头条，未直接、明确指向“德方纳米”公司本体或财务数据，存在公司相关信息不足的风险。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "纳米材料",
+          "出口/需求",
+          "监管与治理"
+        ],
+        "risk_flags": [
+          "公司治理/公关争议可能导致短期估值波动",
+          "新闻与目标公司相关性低，信息不足",
+          "行业技术竞争与替代风险",
+          "需求/出口波动带来的订单不确定性"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检测市场对相关新闻的即时反应及主力资金流入/出",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "海外/机构投资者对纳米材料板块与个股情绪的重要风向标",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "订单量 / 产销率",
+            "reason": "直接反映下游需求与公司产能利用率，验证出口与需求回升的传导效果",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "ASP（平均销售价格）",
+            "reason": "衡量产品定价能力与毛利压力，受技术突破与市场竞争影响",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "研发支出 / 专利申请数",
+            "reason": "评估公司在纳米材料技术迭代中的竞争力与长期护城河",
+            "suggest_window": "1年"
+          }
+        ],
+        "confidence": 0.45,
+        "summary": "当前新闻为行业与宏观层面为主，提及纳米材料生产突破与出口回升（利好行业），但同时出现纳米研发机构的公干争议并有公司高层承认不足（增加治理/公关风险）。信息并未明确指向德方纳米公司本体，故对个股判断信息不足，整体短期观感中性，建议关注成交量、北向资金、订单与产销率等可验证指标以获得进一步确认。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 858,
+          "truncated_chars": 858,
+          "avg_original_per_item": 143.0,
+          "avg_truncated_per_item": 143.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1611,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "固德威",
+      "symbol": "688390.SH",
+      "pct_chg": 12.681,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "提供的新闻为多条中文报纸头条与社会/宏观新闻（港股、租赁市场、政策、地缘、利率等主题），未涉及固德威公司、产品、订单、业绩或财报等任何具体信息。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "政策",
+          "利率",
+          "地缘政治",
+          "行业需求"
+        ],
+        "risk_flags": [
+          "公司层面信息缺失，无法形成有力判断",
+          "宏观/政策不确定性（利率、贸易/地缘风险）可能影响行业需求与估值",
+          "市场情绪与资金面波动（港股与北向资金）可能放大股价波动"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "短期内资金和交易活跃度能反映市场对个股的情绪变化及流动性状况，可验证新闻或事件是否引发交易反应。",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "北向资金流向常用于判断外资对中国新能源/光伏链相关公司的配置偏好与情绪。",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "订单/出货量",
+            "reason": "直接反映需求端变化，对未来营收与业绩有前瞻性指示意义。",
+            "suggest_window": "1个月-3个月"
+          },
+          {
+            "metric": "ASP（平均销售价格）",
+            "reason": "影响毛利率与盈利能力，价格波动将显著影响业绩预期。",
+            "suggest_window": "1个月-3个月"
+          },
+          {
+            "metric": "产销率/库存",
+            "reason": "展示供需平衡与交付能力，库存异常升高或产销率下降可能预示需求放缓或交付问题。",
+            "suggest_window": "1个月-3个月"
+          }
+        ],
+        "confidence": 0.2,
+        "summary": "未发现关于固德威的直接新闻，提供材料为宏观与地区性头条（政策、利率、房租、地缘等），因此对固德威维持中性评价。建议重点监控宏观政策与利率、行业需求变动及可验证的公司指标（成交量、北向资金、订单/出货、ASP、产销率/库存）。当前基于材料的判断置信度较低。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 777,
+          "truncated_chars": 777,
+          "avg_original_per_item": 155.4,
+          "avg_truncated_per_item": 155.4,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1511,
+        "parse_mode": "direct"
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 68,
+    "risk_index": 58,
+    "industry_heat": [
+      {
+        "industry": "资本市场 / 新股IPO",
+        "heat": 92,
+        "drivers": [
+          "N云汉创业板首日暴涨、换手率高达81.95%",
+          "多只新股上市首日交易活跃（N瑞立等）",
+          "大量媒体与报道放大新股交易与暗盘关注"
+        ]
+      },
+      {
+        "industry": "半导体与AI算力",
+        "heat": 82,
+        "drivers": [
+          "英伟达与AI相关话题持续成为头条",
+          "芯片代工厂比较与投资讨论（中芯、华虹等）",
+          "TDK等厂商推出面向AI/数据中心的器件"
+        ]
+      },
+      {
+        "industry": "动力电池 / 新能源车（含磷酸铁锂）",
+        "heat": 86,
+        "drivers": [
+          "宁德时代向上游预付款15亿元锁产能、LFP供给偏紧",
+          "造车新势力交付增长（鸿蒙智行等）及电池产业链焦点",
+          "原材料与制程政策、价格波动持续被关注"
+        ]
+      },
+      {
+        "industry": "消费与物流",
+        "heat": 62,
+        "drivers": [
+          "促消费、稳投资政策落地带动物流、消费性服务回暖",
+          "旅游、高峰期出行与酒店需求回升的报道频次增加"
+        ]
+      },
+      {
+        "industry": "生物医药 / 基因治疗",
+        "heat": 58,
+        "drivers": [
+          "基因治疗相关新闻汇总与CRO/CDMO能力介绍（派真生物）",
+          "行业长期增长预期与并购/外部资本关注"
+        ]
+      },
+      {
+        "industry": "安全与工业设备（松原安全等）",
+        "heat": 50,
+        "drivers": [
+          "松原安全发布业绩增长，行业兼具稳健与政策需求",
+          "安全类企业业绩披露呈现分化"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "总体偏向宽松与主动支持：国家发改委强调将适时加力实施宏观政策，央行相关评论显示还存在货币政策操作空间（如降准可能性），并有多地/专项政策如自贸港、促进消费和基建等落地；但外部环境和地缘政治仍带来不确定性。",
+      "bias": "supportive"
+    },
+    "capital_flow_focus": [
+      "新股/创业板与一级市场短期交易",
+      "半导体与AI算力相关龙头（含代工、封测、设备）",
+      "动力电池与磷酸铁锂产能",
+      "科技与数据中心硬件（TDK等元器件）",
+      "外资流入台股/中资优质标的",
+      "加密/预测市场（Polymarket 等）——投机性资金"
+    ],
+    "macro_factors": [
+      {
+        "name": "国内宏观政策（发改委/财政/地方刺激）",
+        "impact": "正面",
+        "confidence": 0.85
+      },
+      {
+        "name": "货币政策与央行工具（降准/流动性操作空间）",
+        "impact": "正面",
+        "confidence": 0.75
+      },
+      {
+        "name": "外部环境/地缘政治（美中关系、地区冲突、对外制裁与贸易摩擦）",
+        "impact": "负面",
+        "confidence": 0.8
+      },
+      {
+        "name": "全球利率与美联储政策",
+        "impact": "中性",
+        "confidence": 0.7
+      },
+      {
+        "name": "消费与物流回暖（内需）",
+        "impact": "正面",
+        "confidence": 0.7
+      },
+      {
+        "name": "原材料与上游供给（电池材料、半导体材料）",
+        "impact": "中性",
+        "confidence": 0.65
+      }
+    ],
+    "actionable_insights": [
+      {
+        "theme": "把握短期新股波动与量化套利机会",
+        "rationale": "创业板/新股首日大幅上涨并伴随高换手率，短期投机资金活跃但风险高，可通过严格止损、分散与量化策略参与高频波动收益。",
+        "watch_metrics": [
+          "新股首日换手率",
+          "半日/日成交额变化",
+          "暗盘/场外溢价与监管公告"
+        ]
+      },
+      {
+        "theme": "布局AI算力与半导体产业链中长期机会",
+        "rationale": "AI需求与英伟达话题驱动下，设备、材料、代工与元件厂商受益，中长期基本面受订单与资本开支支持。",
+        "watch_metrics": [
+          "大客户（NVIDIA/云厂）采购与合作公告",
+          "代工厂产能利用率与订单情况",
+          "半导体设备与上游材料价格"
+        ]
+      },
+      {
+        "theme": "优选动力电池与LFP上游标的",
+        "rationale": "宁德时代预付款锁定产能显示优质LFP产能紧张，相关上游与优质产能拥有定价与议价优势。",
+        "watch_metrics": [
+          "厂商预付款/产能协议公告",
+          "LFP/原材料价格与库存数据",
+          "下游整车交付与订单量"
+        ]
+      },
+      {
+        "theme": "关注政策导向下的消费与物流恢复受益股",
+        "rationale": "宏观政策侧重稳增长与促消费，物流与消费链条中处于恢复周期的公司有确定性改善空间。",
+        "watch_metrics": [
+          "物流业景气指数",
+          "零售/餐饮/旅游月度数据",
+          "地方与专项刺激政策落地情况"
+        ]
+      },
+      {
+        "theme": "防御性仓位以应对地缘或监管突发风险",
+        "rationale": "地缘政治与监管（对外资、行业出口管制）带来不可预期风险，适当持有防御性资产、优质蓝筹与现金缓冲。",
+        "watch_metrics": [
+          "外资流向与折溢价变化",
+          "监管政策/出口限制公告",
+          "国债利差与避险资产流入"
+        ]
+      }
+    ],
+    "suggest_global_watch": [
+      "美联储利率与货币政策动向",
+      "中美科技与贸易政策、半导体出口管制动态",
+      "宁德时代与主要电池厂的产能协议与上游原料供给",
+      "中国宏观政策与发改委、央行的后续表态与窗口操作",
+      "IPO排队与注册制相关监管变化",
+      "地缘政治热点（台海、委内瑞拉、以色列/中东局势）",
+      "外资对中港台市场的流入/撤出节奏"
+    ],
+    "extra_keywords": [
+      "IPO热",
+      "换手率",
+      "创业板",
+      "宁德时代",
+      "磷酸铁锂",
+      "英伟达",
+      "AI算力",
+      "降准概率",
+      "发改委加力",
+      "外资流入"
+    ],
+    "summary": "近期市场呈现明显的新股与科技主题热度：创业板新股首日暴涨、换手率高，叠加AI/半导体与动力电池链条的资本关注，短期情绪偏乐观；同时监管、地缘政治与若干公司业绩预亏提示风险存在。宏观层面政策偏向支持（发改委、央行工具空间），建议短期把握交易机会的同时保持防御配置并密切监控货币、产业链产能与外资流向。",
+    "macro_truncation_stats": {
+      "item_count": 149,
+      "original_chars": 21211,
+      "truncated_chars": 21211,
+      "avg_original_per_item": 142.36,
+      "avg_truncated_per_item": 142.36,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_prompt_token_est": 17419,
+    "parse_mode": "direct"
+  },
+  "macro_extra": [
+    {
+      "keyword": "IPO热",
+      "analysis": {
+        "market_sentiment_index": 72,
+        "risk_index": 48,
+        "industry_heat": [
+          {
+            "industry": "資本市場 / IPO",
+            "heat": 88,
+            "drivers": [
+              "港股IPO持續火熱、募集規模居全球前列",
+              "多家企業（如可勝技術）遞交香港IPO招股書",
+              "資本市場平台對新股需求強，承銷活動活躍"
+            ]
+          },
+          {
+            "industry": "綠色能源與儲能（光熱+熔鹽）",
+            "heat": 82,
+            "drivers": [
+              "可勝技術聚焦塔式光熱發電與熔鹽儲能擬赴港上市",
+              "報道多次提及綠色經濟，政策與資本關注度上升",
+              "能源轉型帶來的項目投資與技術商機"
+            ]
+          },
+          {
+            "industry": "科技 / 人工智慧",
+            "heat": 76,
+            "drivers": [
+              "媒體持續關注AI與科技研發園區建設",
+              "大型科技公司（小米、阿里等）與研發投入話題熱",
+              "國內推動科技創新與產業集聚政策"
+            ]
+          },
+          {
+            "industry": "加密金融與穩定幣",
+            "heat": 64,
+            "drivers": [
+              "多篇報道涉及加密金融與穩定幣議題",
+              "監管趨嚴與產品創新並存，市場關注度提高",
+              "對跨境支付與數位資產合規性的討論增加"
+            ]
+          },
+          {
+            "industry": "戰略材料 / 稀土",
+            "heat": 60,
+            "drivers": [
+              "稀土被媒體點名，屬戰略供應鏈重點",
+              "出口管制與貿易政策可能影響供需與價格",
+              "全球對關鍵材料的安全性重視提升行業關注"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "整體政策語調偏向支持性：中央表態支持港澳更好融入國家發展大局，有利於吸引資本和促進金融開放；同時存在出口管制與對某些技術/材料管控的約束，對特定產業形成選擇性風險。",
+          "bias": "supportive"
+        },
+        "capital_flow_focus": [
+          "香港IPO與新股承銷市場",
+          "綠色能源與儲能項目（光熱、熔鹽）",
+          "科技與人工智慧相關股",
+          "加密資產與穩定幣相關平台與合規化產品",
+          "稀土與關鍵戰略材料供應鏈"
+        ],
+        "macro_factors": [
+          {
+            "name": "香港資本市場吸引力與流動性",
+            "impact": "正面",
+            "confidence": 0.85
+          },
+          {
+            "name": "出口管制與對外技術限制",
+            "impact": "負面",
+            "confidence": 0.75
+          },
+          {
+            "name": "中央支持港澳融入國家發展的政策導向",
+            "impact": "正面",
+            "confidence": 0.7
+          },
+          {
+            "name": "全球流動性與資本市場熱度（IPO需求）",
+            "impact": "正面",
+            "confidence": 0.8
+          },
+          {
+            "name": "加密資產監管趨嚴",
+            "impact": "負面",
+            "confidence": 0.65
+          },
+          {
+            "name": "綠色經濟與低碳轉型政策支持",
+            "impact": "正面",
+            "confidence": 0.7
+          }
+        ],
+        "actionable_insights": [
+          {
+            "theme": "把握香港IPO與新股認購機會",
+            "rationale": "港股IPO持續活躍且募資規模居全球前列，短期存在高回報與承銷機會，但需注意新股定價與市場情緒波動。",
+            "watch_metrics": [
+              "香港IPO月度募資總額",
+              "新股超額認購倍數與首日表現",
+              "港交所新股申請與核准節奏"
+            ]
+          },
+          {
+            "theme": "關注綠色能源與儲能類標的",
+            "rationale": "光熱發電與熔鹽儲能等領域獲資本關注且有政策支持，相關企業上市可作為投資切入點。",
+            "watch_metrics": [
+              "相關企業IPO/融資進展（如可勝技術）",
+              "政府補貼與拍賣中標情況",
+              "項目開工率與裝機數據"
+            ]
+          },
+          {
+            "theme": "監控出口管制與稀土供應鏈風險",
+            "rationale": "出口管制與戰略材料話題可能導致相關產業供應中斷或價格上漲，短中期均有交易與避險需求。",
+            "watch_metrics": [
+              "出口管制政策更新與實施細則",
+              "稀土價格與出口量變化",
+              "下游企業庫存與採購週期"
+            ]
+          },
+          {
+            "theme": "評估加密與穩定幣的監管與合規風險",
+            "rationale": "加密金融和穩定幣市場受到監管趨嚴影響，機構布局需重視合規與風險管理。",
+            "watch_metrics": [
+              "穩定幣總市值與淨流入/流出",
+              "主要司法管轄區監管文件與執法動向",
+              "加密交易所與託管服務合規進展"
+            ]
+          }
+        ],
+        "suggest_global_watch": [
+          "美國與歐盟對中國高科技與雙用途設備的出口管制更新",
+          "全球及地區利率走向與美聯儲政策會議結果",
+          "香港資金流向與IPO認購情況",
+          "關鍵原材料（稀土、鋰、矽等）價格與供應鏈變動",
+          "主要司法區對穩定幣與加密資產監管的法規進展",
+          "中國中央針對港澳整合與金融開放的政策細則"
+        ],
+        "extra_keywords": [
+          "港股IPO",
+          "光热发电",
+          "熔盐储能",
+          "绿色经济",
+          "出口管制",
+          "稳定币",
+          "人工智慧",
+          "加密金融",
+          "稀土",
+          "科技研發園",
+          "小米",
+          "阿里巴巴",
+          "募资",
+          "可胜技术",
+          "中信建投国际"
+        ],
+        "summary": "新聞體現出資本市場（尤其香港IPO）與綠色能源領域熱度上升，政策層面中央支持港澳更好融入國家發展，有利於吸引資金與推動上市。科技與人工智慧持續受到關注，同時出口管制、稀土與加密資產監管構成顯著風險。投資策略宜重視港股IPO與新能源儲能機會，同步監控政策與供應鏈風險以做好風險管理。",
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 738,
+          "truncated_chars": 738,
+          "avg_original_per_item": 147.6,
+          "avg_truncated_per_item": 147.6,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 959,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "keyword": "换手率",
+      "analysis": {
+        "market_sentiment_index": 45,
+        "risk_index": 60,
+        "industry_heat": [
+          {
+            "industry": "環保與廚餘回收",
+            "heat": 75,
+            "drivers": [
+              "香港垃圾量減5%、回收率升至34%",
+              "街市設置指定回收桶、居民使用廚餘機獲獎勵",
+              "政府推動減廢但垃圾收費政策暫緩仍給予配套窗口期"
+            ]
+          },
+          {
+            "industry": "金融服務（香港）",
+            "heat": 68,
+            "drivers": [
+              "薪酬待遇高、吸引人才落戶香港、人才排名上升",
+              "政策與宣傳側重吸引金融人才與穩定市場"
+            ]
+          },
+          {
+            "industry": "能源（石油與天然氣）",
+            "heat": 60,
+            "drivers": [
+              "全球地緣政治（烏克蘭）與美國政策不確定性推動波動",
+              "新聞聚焦能源板塊，市場關注供給與價格走勢"
+            ]
+          },
+          {
+            "industry": "房地產／不動產市場",
+            "heat": 40,
+            "drivers": [
+              "換屋期限延長但市場無明顯反應",
+              "差估署私樓指數與CCL被提及，顯示交易與信心仍脆弱"
+            ]
+          },
+          {
+            "industry": "消費品（食品品牌）",
+            "heat": 42,
+            "drivers": [
+              "康師傅在中國市場遇壓力，消費品牌風險暴露",
+              "消費信心與品牌表現存在分化"
+            ]
+          },
+          {
+            "industry": "貿易與物流",
+            "heat": 58,
+            "drivers": [
+              "金磚11國就關稅問題表態、國際貿易體系面臨摩擦風險",
+              "關稅與貿易措施可能影響跨境供應鏈與物流需求"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "本地政策偏向支持性——香港在減廢、回收便利化及吸引金融人才上推出配套；央行亦有放寬措施企圖穩定市場。國際層面存在較多貿易與關稅議題，帶來外部不確定性。",
+          "bias": "supportive"
+        },
+        "capital_flow_focus": [
+          "香港金融板塊（人才與入市企穩）",
+          "環保與廚餘回收供應鏈與設備製造",
+          "油氣與大宗商品交易（避險與投機）",
+          "觀察性配置於房地產／不動產相關資產（高風險）",
+          "貿易與物流相關股（受關稅與供應鏈政策影響）",
+          "避險資產（因地緣政治與貿易摩擦）"
+        ],
+        "macro_factors": [
+          {
+            "name": "地緣政治與貿易摩擦（關稅/烏克蘭/美國政策）",
+            "impact": "负面",
+            "confidence": 0.9
+          },
+          {
+            "name": "本地政策支持：減廢與回收推動、吸引金融人才",
+            "impact": "正面",
+            "confidence": 0.8
+          },
+          {
+            "name": "央行放寬或新制調整（貨幣/監管寬鬆）",
+            "impact": "中性",
+            "confidence": 0.7
+          },
+          {
+            "name": "房地產市場需求疲弱與消費信心偏弱",
+            "impact": "负面",
+            "confidence": 0.8
+          },
+          {
+            "name": "能源價格與供給震盪風險",
+            "impact": "负面",
+            "confidence": 0.85
+          }
+        ],
+        "actionable_insights": [
+          {
+            "theme": "加碼環保與廚餘回收供應鏈",
+            "rationale": "政策推動、回收率提升與基層設施布建利好相關設備供應商與運營商",
+            "watch_metrics": [
+              "回收率變化（%）",
+              "地方政府補貼與招標訊息",
+              "廚餘機與回收桶採購量"
+            ]
+          },
+          {
+            "theme": "關注香港金融股與相關人力服務供應商",
+            "rationale": "高薪與人才流入可支持金融業中長期發展，但政策與市場信心仍需驗證",
+            "watch_metrics": [
+              "金融機構人才淨流入/就業數據",
+              "資本市場新增IPO與交易量",
+              "薪酬與招聘廣告變化"
+            ]
+          },
+          {
+            "theme": "謹慎配置房地產暴露資產",
+            "rationale": "換屋期限延長與央行放寬仍未立即拉升市場，短期流動性與需求風險高",
+            "watch_metrics": [
+              "CCL與私樓指數",
+              "成交量與按揭放款數據",
+              "政府房市相關政策調整"
+            ]
+          },
+          {
+            "theme": "為能源與貿易摩擦波動做好風險管理",
+            "rationale": "地緣政治與關稅風險可能導致油價與供應鏈價格劇烈波動",
+            "watch_metrics": [
+              "原油價格（Brent/WTI）與庫存數據",
+              "關稅公告與貿易協議進展",
+              "重大地緣政治事件即時新聞"
+            ]
+          },
+          {
+            "theme": "留意消費品牌風險與中國內需變化",
+            "rationale": "品牌在中國市場表現分化，短期內可能影響相關消費股與供應鏈",
+            "watch_metrics": [
+              "主要消費品牌銷售數據",
+              "消費者信心指數",
+              "零售與食品類企業財報"
+            ]
+          }
+        ],
+        "suggest_global_watch": [
+          "美國聯準會與主要央行貨幣政策動向",
+          "金磚與多邊貿易政策、關稅公告",
+          "烏克蘭戰事與其他地緣政治熱點發展",
+          "國際油價與能源供應鏈變化",
+          "中國監管與內需數據（消費、房市）",
+          "香港本地政策：垃圾收費、回收政策、人才引進措施"
+        ],
+        "extra_keywords": [
+          "垃圾減量",
+          "回收率34%",
+          "廚餘機",
+          "人才落戶香港",
+          "央行放寬",
+          "金磚11國",
+          "關稅勒索",
+          "烏克蘭",
+          "石油天然氣",
+          "CCL",
+          "私樓指數",
+          "康師傅"
+        ],
+        "summary": "新聞顯示本地政策偏向支持，香港在減廢與吸引金融人才方面有具體進展，推升環保與金融相關板塊的中期機會；但房地產與消費面仍顯疲弱，央行放寬措施短期提振有限。國際面臨較高的地緣政治與貿易不確定性（關稅、烏克蘭、能源），提高市場波動與下行風險。建議資金重點關注環保回收供應鏈與香港金融板塊，同時對房地產與受貿易影響的出口/物流板塊採取防守與動態監控。",
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 794,
+          "truncated_chars": 794,
+          "avg_original_per_item": 158.8,
+          "avg_truncated_per_item": 158.8,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 973,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "keyword": "创业板",
+      "analysis": {
+        "market_sentiment_index": 62,
+        "risk_index": 45,
+        "industry_heat": [
+          {
+            "industry": "可再生能源（光伏）",
+            "heat": 75,
+            "drivers": [
+              "國際/區域對綠能投資持續推動",
+              "地方項目施工與品質監管加強（光電板破碎被罰）",
+              "印尼與陸企大額投資，推動區域能源與基礎設施"
+            ]
+          },
+          {
+            "industry": "科技與金融科技（AI、碳金管）",
+            "heat": 70,
+            "drivers": [
+              "新加坡與銀行合作研發AI碳金管平台",
+              "科技基金促進科研成果轉化與創業",
+              "區域創業生態及人才流動活躍"
+            ]
+          },
+          {
+            "industry": "製造/供應鏈與東南亞投資",
+            "heat": 68,
+            "drivers": [
+              "貨物與生產鏈向東南亞遷移趨勢（航空貨運走東南亞）",
+              "印尼吸引大額中國投資，區域產能布局受益",
+              "港口與跨境合作擴張"
+            ]
+          },
+          {
+            "industry": "航太與衛星載荷",
+            "heat": 60,
+            "drivers": [
+              "B5G衛星酬載驗收遇瓶頸但持續投入測試",
+              "國家或研究機構準備調整驗收與採購策略",
+              "國防與商業航太需求同步上升"
+            ]
+          },
+          {
+            "industry": "教育與人才培育",
+            "heat": 50,
+            "drivers": [
+              "大學申請入學篩選倍率放寬，教育政策調整",
+              "地方交流與青年創業/海洋經濟推動人才培育",
+              "線上/社區健康與教育活動參與率高"
+            ]
+          },
+          {
+            "industry": "房地產與地方政策（澳門/地區）",
+            "heat": 45,
+            "drivers": [
+              "當局按實際適時調整房策，顯示政策微調傾向",
+              "旅遊與居民應對措施影響短期房市與消費"
+            ]
+          },
+          {
+            "industry": "公共安全與社會服務（醫療救援、育兒津貼）",
+            "heat": 40,
+            "drivers": [
+              "澳援緬醫療隊與災後救援關注跨境救援能力",
+              "育兒津貼、社服代表促公佈申請顯示社會政策訴求"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "整體政策取向偏向支持科技創新、區域經濟合作與可再生能源發展，同時在地方執行層面加強監管與品質控制。房策與社服呈現按需微調、務實處置；外交層面強調邊境與區域溝通。整體偏向促進投資與產業升級，但伴隨監管加嚴與地緣政治風險。",
+          "bias": "supportive"
+        },
+        "capital_flow_focus": [
+          "可再生能源與光伏項目（高品質/合規項目）",
+          "東南亞（印尼、越南、泰國）製造與基礎設施",
+          "AI與碳金融平台、綠色金融產品",
+          "航太與衛星相關供應鏈與承包商",
+          "科技初創與科研成果轉化項目"
+        ],
+        "macro_factors": [
+          {
+            "name": "地緣政治與軍事部署（美軍航艦、邊境會晤）",
+            "impact": "負面",
+            "confidence": 0.8
+          },
+          {
+            "name": "供應鏈東移與區域投資（東南亞吸資）",
+            "impact": "正面",
+            "confidence": 0.75
+          },
+          {
+            "name": "綠能投資與環境/監管合規趨嚴",
+            "impact": "正面",
+            "confidence": 0.8
+          },
+          {
+            "name": "航太/衛星技術驗收與成本壓力（B5G酬載遇瓶頸）",
+            "impact": "中性",
+            "confidence": 0.6
+          },
+          {
+            "name": "地方社會治理與公共服務需求（救援、育兒津貼）",
+            "impact": "中性",
+            "confidence": 0.5
+          },
+          {
+            "name": "教育政策放寬與人才供給變動",
+            "impact": "正面",
+            "confidence": 0.5
+          }
+        ],
+        "actionable_insights": [
+          {
+            "theme": "布局東南亞製造與物流供應鏈",
+            "rationale": "輕資產與製造鏈正往東南亞移動，印尼等國吸引大額投資，短中期對基建、港口、物流與代工需求提升。",
+            "watch_metrics": [
+              "對外直接投資（FDI）流向東南亞數據",
+              "主要港口吞吐量與貨運航線調整",
+              "區域產能擴張與新廠開工公告"
+            ]
+          },
+          {
+            "theme": "選擇合規且具品質保證的可再生能源項目",
+            "rationale": "地方監管對光伏等項目品質查核與罰則趨嚴，低質項目面臨合規風險；優質開發商與ESG導向資產更受資金青睞。",
+            "watch_metrics": [
+              "當地能源監管處罰與檢查公告",
+              "項目並網/審批與PPA價格變化",
+              "大型投資協議與國際融資案"
+            ]
+          },
+          {
+            "theme": "投入AI+綠色金融與碳管理平台",
+            "rationale": "金融機構與科技合作啟動碳金管平台，碳市場與ESG需求擴大，可在早期平台與解決方案中尋求合作或投資機會。",
+            "watch_metrics": [
+              "平台試點/商用化時間表與合作銀行名單",
+              "碳交易量與碳價格走勢",
+              "合規與監管政策對碳金融的要求"
+            ]
+          },
+          {
+            "theme": "關注航太供應鏈分段投資與風險管理",
+            "rationale": "衛星載荷驗收遇瓶頸顯示技術/驗收風險，投資宜採分段/績效掛鉤方式，並關注政府採購與補助動向。",
+            "watch_metrics": [
+              "衛星項目驗收通過率與價格調整公告",
+              "政府航太採購計劃與補助案",
+              "關鍵零組件供應與測試報告"
+            ]
+          },
+          {
+            "theme": "監控地緣政治風險並配置對沖策略",
+            "rationale": "美軍部署與大國競爭升溫可能干擾能源、航運與金融市場，需提前布局避險資產與保險/供應鏈替代方案。",
+            "watch_metrics": [
+              "海域巡航與軍事部署新聞",
+              "能源與航運保險費率變動",
+              "主要貿易路徑擾動案例"
+            ]
+          }
+        ],
+        "suggest_global_watch": [
+          "印尼與中國簽署大額投資進展與具體項目（基建、能源）",
+          "美軍在中東/東地中海航艦部署與區域緊張態勢",
+          "中國外交與印度邊境會談（王毅訪印）動向與結果",
+          "東南亞產能吸納情況及主要廠商搬遷/投資公告",
+          "新加坡與金融機構在AI碳金管平台的商業化進程",
+          "B5G/衛星項目驗收與技術瓶頸後續處置"
+        ],
+        "extra_keywords": [
+          "光電板破碎罰款",
+          "印尼投資",
+          "AI碳金管平台",
+          "B5G衛星酬載",
+          "供應鏈東移",
+          "大學入學倍率放寬",
+          "災後救援與清理",
+          "育兒津貼",
+          "邊境會晤",
+          "美軍航艦部署"
+        ],
+        "summary": "近期報章聚焦區域投資與產業轉移（印尼大額投資、供應鏈向東南亞移動）、科技與綠色金融創新（AI碳金管、科技基金促轉化）以及可再生能源的快速發展與品質監管（光伏項目被處罰）。航太衛星驗收出現技術與成本瓶頸，需關注驗收與採購動向。地方政策呈現務實微調（房策、育兒津貼、教育放寬），同時地緣政治與軍事部署（美軍航艦、邊境會晤）構成中期不確定性。整體對經濟與產業升級具支持性，但伴隨監管強化與地緣政治風險，建議資金聚焦東南亞製造與基建、合規的綠能項目、AI+綠色金融和平衡配置航太與地緣風險對沖策略。",
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 812,
+          "truncated_chars": 812,
+          "avg_original_per_item": 162.4,
+          "avg_truncated_per_item": 162.4,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 987,
+        "parse_mode": "direct"
+      }
+    }
+  ],
+  "macro_keywords_used": [
+    "地缘政治",
+    "政策",
+    "军事",
+    "行业监管",
+    "宏观经济",
+    "行业周期",
+    "绿色经济",
+    "动力电池",
+    "新能源车",
+    "供应链",
+    "锂电材料",
+    "资本市场",
+    "科创板",
+    "锂电池行业",
+    "教育与人才政策"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 7,
+      "neutral": 11,
+      "negative": 2
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        14
+      ],
+      [
+        "首日市场热度（股价与成交额）",
+        1
+      ],
+      [
+        "交易活跃度与波动性",
+        1
+      ],
+      [
+        "基本面信息可得性",
+        1
+      ],
+      [
+        "短期回调与解禁/估值风险",
+        1
+      ],
+      [
+        "市场关注度与研究覆盖提升",
+        1
+      ],
+      [
+        "公告的年度业绩预亏",
+        1
+      ],
+      [
+        "扣非后仍然亏损，反映主营业务承压",
+        1
+      ],
+      [
+        "潜在现金流与融资压力",
+        1
+      ],
+      [
+        "短期市场情绪与资金面冲击风险",
+        1
+      ],
+      [
+        "信息透明度与未来展望不确定性",
+        1
+      ],
+      [
+        "来自宁德时代的15亿元预付款",
+        1
+      ],
+      [
+        "订单/产能锁定改善营收与现金流可见性",
+        1
+      ],
+      [
+        "客户集中度/单一大客户依赖",
+        1
+      ],
+      [
+        "产能爬坡与交付风险",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 13,
+      "负面": 12,
+      "不确定": 21
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": null
+  },
+  "diagnostics": {
+    "fallback_stock_count": 11,
+    "fallback_macro_used": false,
+    "strict_json_enabled": false,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 9,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.55,
+    "warnings": [
+      {
+        "level": "warning",
+        "message": "高回退比例: 55.0% (LLM 输出稳定性较差)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "heuristic": 11,
+      "direct": 9
+    },
+    "stock_prompt_token_summary": {
+      "min": 511,
+      "max": 2208,
+      "avg": 1475.8,
+      "total": 29516,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 104,
+      "sum_original_chars": 14575,
+      "sum_truncated_chars": 14575,
+      "avg_original_per_item": 140.14,
+      "avg_truncated_per_item": 140.14,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 17419,
+    "macro_truncation_stats": {
+      "item_count": 149,
+      "original_chars": 21211,
+      "truncated_chars": 21211,
+      "avg_original_per_item": 142.36,
+      "avg_truncated_per_item": 142.36,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_extra_parse_mode_counts": {
+      "direct": 3
+    },
+    "macro_extra_multi_json_success_count": 0
+  }
+}

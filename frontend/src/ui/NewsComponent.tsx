@@ -43,32 +43,65 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [selectedStock, setSelectedStock] = useState<string>('');
   const [showStockSelector, setShowStockSelector] = useState(false);
+  const attemptedFallbackRef = React.useRef(false);
+  const [fallbackInfo, setFallbackInfo] = useState<string | null>(null);
 
   // Load news articles
   const loadNews = async () => {
-    setLoading(true);
+    setLoading(true); attemptedFallbackRef.current = false; setFallbackInfo(null);
     try {
       let url = buildApiUrl(API_ENDPOINTS.NEWS.ARTICLES);
+      let params = '';
       if (selectedStock) {
-        url = buildApiUrl(API_ENDPOINTS.NEWS.STOCK_NEWS(selectedStock));
+        // Use company_enriched endpoint with robust params
+        url = buildApiUrl(`/api/news/company_enriched/${selectedStock}`);
+        params = '?trigger_topup=true&wait_seconds=6&ensure_min=5&allow_placeholder=true';
+        // Optionally: add extra_keywords for known sparse stocks
+        if (selectedStock === '300877.SZ') {
+          params += '&extra_keywords=非织造布,无纺布,医用材料,口罩,熔喷,纺粘,热风布,卫生材料,医卫材料,擦拭';
+        }
+        url += params;
       }
-
       const response = await fetch(url);
       const data = await response.json();
-      
-      console.log('API Response:', data); // 调试日志
-      
-      // 处理不同的数据结构
       let articles = [];
       if (data.articles) {
         articles = data.articles;
       } else if (Array.isArray(data)) {
         articles = data;
       } else if (data.stocks && Array.isArray(data.stocks)) {
-        // 如果返回的是stocks数据，转换为articles格式
-        articles = [];
+        articles = data.stocks;
       }
-      
+      // Fallback: if still empty, try basic_profile endpoint
+      if ((articles as any[]).length === 0 && selectedStock && !attemptedFallbackRef.current) {
+        attemptedFallbackRef.current = true;
+        setFallbackInfo('未获取到相关新闻，正在尝试补充公司基础资料...');
+        try {
+          const profileResp = await fetch(buildApiUrl(`/api/news/basic_profile/${selectedStock}`));
+          if (profileResp.ok) {
+            const prof = await profileResp.json();
+            if (prof && prof.company_name) {
+              setArticles([
+                {
+                  id: 'profile',
+                  title: `${prof.company_name} 公司简介`,
+                  summary: prof.business_summary || prof.crawled_snippets?.[0] || '暂无详细资料',
+                  url: '',
+                  source: '公司基础资料',
+                  published_at: null,
+                  sentiment_type: 'neutral',
+                  sentiment_score: null,
+                  relevance_score: null,
+                  related_stocks: [selectedStock],
+                  keywords: [],
+                },
+              ]);
+              setFallbackInfo('已补充公司基础资料。');
+              return;
+            }
+          }
+        } catch (e) {}
+      }
       setArticles(articles || []);
     } catch (error) {
       console.error('Failed to load news:', error);
@@ -305,24 +338,24 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-[1200px] mx-auto space-y-4">
+    <div style={{ fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial', background: '#f9fafb', minHeight: '100vh', color: '#111827' }}>
+      <div className="max-w-[1200px] mx-auto p-6 space-y-6">
         {/* Header Card */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white flex-shrink-0">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
                   <path d="M14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
                 </svg>
               </div>
               <div className="min-w-0">
-                <h2 className="text-[20px] font-bold text-gray-900 truncate">
-                  {selectedStock ? `${selectedStock} 财经新闻` : '财经新闻'}
+                <h2 className="text-2xl font-extrabold text-gray-900 truncate">
+                  {selectedStock ? `${selectedStock} 财经新闻` : '财经新闻与个股资讯'}
                 </h2>
                 {selectedStock && watchlist.find(w => w.symbol === selectedStock) && (
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                  <p className="text-sm text-gray-500 mt-1 truncate">
                     {watchlist.find(w => w.symbol === selectedStock)?.name}
                   </p>
                 )}
@@ -331,14 +364,14 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
           </div>
         </div>
 
-  {/* Stock Selector and Search Layout */}
-  <div className="flex flex-col lg:flex-row gap-6">
+  {/* Search/Filter Card */}
+  <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 flex flex-col lg:flex-row gap-6">
         {/* Left: Stock Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:w-auto">
-          <div className="relative">
+            <div className="relative">
             <button
               onClick={() => setShowStockSelector(!showStockSelector)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-3 whitespace-nowrap shadow-lg hover:shadow-xl"
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-3 whitespace-nowrap shadow-md hover:shadow-lg"
             >
               <span className="text-lg">📊</span>
               <span>{selectedStock || '选择股票'}</span>
@@ -393,7 +426,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
               <button
                 onClick={collectNews}
                 disabled={isCollecting}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none"
+                className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:shadow-none"
               >
                 {isCollecting ? (
                   <span className="flex items-center gap-2">
@@ -406,7 +439,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
               <button
                 onClick={runIntelligentCollection}
                 disabled={isIntelligentCollecting}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none"
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:shadow-none"
               >
                 {isIntelligentCollecting ? (
                   <span className="flex items-center gap-2">
@@ -425,7 +458,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
         </div>
 
         {/* Right: Search Section */}
-        <div className="flex-1 max-w-2xl">
+            <div className="flex-1 max-w-2xl">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <input
@@ -434,7 +467,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchNews()}
-                className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="w-full px-4 py-2 pl-12 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:shadow-md transition-shadow duration-200"
               />
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -447,7 +480,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
               <button
                 onClick={searchNews}
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none flex-shrink-0"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:shadow-none flex-shrink-0"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -460,7 +493,7 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
               <select
                 value={sentimentFilter}
                 onChange={(e) => setSentimentFilter(e.target.value as any)}
-                className="px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200"
               >
                 <option value="all">全部情感</option>
                 <option value="positive">😊 积极</option>
@@ -502,156 +535,95 @@ export default function NewsComponent({ symbol, companyName }: NewsComponentProp
       )}
 
   {/* News List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-gray-600 text-base font-medium">正在加载新闻...</p>
-            <p className="text-gray-400 text-sm">请稍候片刻</p>
+  <div className="space-y-6">
+    {loading ? (
+      <div className="flex items-center justify-center py-16 bg-white rounded-2xl shadow-sm">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600 text-base font-medium">正在加载新闻...</p>
+          <p className="text-gray-400 text-sm">请稍候片刻</p>
+        </div>
+      </div>
+    ) : (
+      (articles || []).filter(article => sentimentFilter === 'all' || article.sentiment_type === sentimentFilter).length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
+          <div className="text-6xl mb-6">📰</div>
+          <div className="text-xl font-semibold text-gray-700 mb-3">暂无新闻数据</div>
+          <div className="text-gray-500 max-w-md mx-auto leading-relaxed">
+            {selectedStock 
+              ? `没有找到关于 ${selectedStock} 的相关新闻。请尝试收集最新新闻或切换其他股票。`
+              : '请选择股票进行新闻收集，或使用智能收集功能获取最新财经资讯。'
+            }
+          </div>
+          {fallbackInfo && (
+            <div className="text-gray-400 mt-3 text-sm">{fallbackInfo}</div>
+          )}
+          <div className="mt-8 flex justify-center gap-4">
+            {selectedStock ? (
+              <button
+                onClick={collectNews}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <span className="flex items-center gap-2">
+                  <span>📊</span>
+                  <span>收集 {selectedStock} 新闻</span>
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={runIntelligentCollection}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <span className="flex items-center gap-2">
+                  <span>🤖</span>
+                  <span>开始智能收集</span>
+                </span>
+              </button>
+            )}
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
-          {(articles || []).filter(article => 
-            sentimentFilter === 'all' || article.sentiment_type === sentimentFilter
-          ).length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="text-6xl mb-6">📰</div>
-              <div className="text-xl font-semibold text-gray-700 mb-3">暂无新闻数据</div>
-              <div className="text-gray-500 max-w-md mx-auto leading-relaxed">
-                {selectedStock 
-                  ? `没有找到关于 ${selectedStock} 的相关新闻。请尝试收集最新新闻或切换其他股票。`
-                  : '请选择股票进行新闻收集，或使用智能收集功能获取最新财经资讯。'
-                }
-              </div>
-              <div className="mt-8 flex justify-center gap-4">
-                {selectedStock ? (
-                  <button
-                    onClick={collectNews}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>📊</span>
-                      <span>收集 {selectedStock} 新闻</span>
-                    </span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={runIntelligentCollection}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🤖</span>
-                      <span>开始智能收集</span>
-                    </span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-6">
-              {(articles || []).filter(article => 
-                sentimentFilter === 'all' || article.sentiment_type === sentimentFilter
-              ).map((article) => (
-                <div
-                  key={article.id}
-                  className={`bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden group ${getSentimentBgColor(article.sentiment_type)}`}
-                >
-                  {/* Header Section */}
-                  <div className="p-6 pb-4">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors duration-200 leading-7">
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="no-underline text-gray-900 hover:underline hover:text-blue-600 transition-colors"
-                        >
-                          {article.title}
-                        </a>
-                      </h3>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {getSentimentIcon(article.sentiment_type)}
-                        <div className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getSentimentColor(article.sentiment_type)}`}>
-                          {getSentimentText(article.sentiment_type)}
-                        </div>
-                      </div>
-                    </div>
-                    
+        <div className="flex flex-col gap-6">
+          {(articles || []).filter(article => sentimentFilter === 'all' || article.sentiment_type === sentimentFilter)
+            .map((article) => (
+              <div key={article.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden w-full">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                  <div className="md:col-span-9">
+                    <a href={article.url} target="_blank" rel="noopener noreferrer" className="no-underline">
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors duration-200 leading-7">{article.title}</h3>
+                    </a>
                     {article.summary && (
-                      <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-3">
-                        {article.summary}
-                      </p>
+                      <p className="text-gray-600 text-sm leading-relaxed mt-3 line-clamp-3">{article.summary}</p>
                     )}
-                  </div>
 
-                  {/* Metadata Section */}
-                  <div className="px-6 pb-6">
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
-                      <span className="flex items-center gap-1.5">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                      <span className="flex items-center gap-1.5">{/* date icon */}
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>
                         {formatDate(article.published_at)}
                       </span>
-                      {article.source && (
-                        <span className="flex items-center gap-1.5">
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
-                          </svg>
-                          {article.source}
+                      {article.source && (<span className="flex items-center gap-1.5">{article.source}</span>)}
+                      {article.related_stocks && article.related_stocks.length > 0 && (
+                        <span className="ml-2 px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs">
+                          相关: {article.related_stocks.slice(0,3).join(', ')}{article.related_stocks.length>3?` +${article.related_stocks.length-3}`:''}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Footer Actions */}
-                  <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {article.related_stocks && article.related_stocks.length > 0 && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">相关股票:</span>
-                            <div className="flex gap-1.5">
-                              {article.related_stocks.slice(0, 3).map((stock, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md font-medium">
-                                  {stock}
-                                </span>
-                              ))}
-                              {article.related_stocks.length > 3 && (
-                                <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-md">
-                                  +{article.related_stocks.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        {article.url && (
-                          <a
-                            href={article.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 bg-white hover:bg-blue-50 border border-blue-200 hover:border-blue-300 rounded-lg text-sm transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                              <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
-                            </svg>
-                            阅读原文
-                          </a>
-                        )}
-                      </div>
+                  <div className="md:col-span-3 flex flex-col items-end gap-3">
+                    <div className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getSentimentColor(article.sentiment_type)}`}>
+                      {getSentimentText(article.sentiment_type)}
                     </div>
+                    <div className="text-xs text-gray-400">得分: {article.sentiment_score ?? '—'}</div>
+                    <div className="text-xs text-gray-400">相关度: {article.relevance_score ?? '—'}</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
         </div>
-      )}
+      )
+    )}
+  </div>
       </div>
     </div>
   );

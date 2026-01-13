@@ -107,3 +107,16 @@ backend/app/__pycache__/
 frontend/node_modules/
 frontend/dist/
 frontend/build/
+
+# Prevent stray Python scripts in repo root
+/*.py
+
+# Prevent stray docs/scripts in repo root
+/*.md
+/*.txt
+!/README.md
+/*.ps1
+/*.sh
+
+# Keep logs consolidated
+/logs/

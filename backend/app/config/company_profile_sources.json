@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-11-03",
+  "preferred_sources": {
+    "sources": []
+  },
+  "blocked_sources": {
+    "sources": []
+  },
+  "login_required_sources": {
+    "sources": []
+  },
+  "strict_anti_scraping_domains": {
+    "sources": []
+  },
+  "detection_rules": {
+    "login_detection": {
+      "enabled": true,
+      "keywords": [
+        "登录",
+        "login",
+        "会员帐户安全",
+        "请先登录"
+      ],
+      "http_status_codes": [
+        302,
+        401,
+        403
+      ]
+    }
+  }
+}

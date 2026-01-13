@@ -1,0 +1,856 @@
+{
+  "started_at": "2025-10-10T01:36:04.231706+00:00",
+  "finished_at": "2025-10-10T01:38:09.750696+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "N奥美森",
+      "symbol": "920080.SH",
+      "pct_chg": 349.333,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "恒辉安防",
+      "symbol": "300952.SZ",
+      "pct_chg": 20.0,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "中环环保",
+      "symbol": "300692.SZ",
+      "pct_chg": 19.977,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "冠中生态",
+      "symbol": "300948.SZ",
+      "pct_chg": 18.75,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "中亚股份",
+      "symbol": "300512.SZ",
+      "pct_chg": 11.591,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "四方达",
+      "symbol": "300179.SZ",
+      "pct_chg": 16.163,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 45,
+          "truncated_chars": 45,
+          "avg_original_per_item": 45.0,
+          "avg_truncated_per_item": 45.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "*ST新元",
+      "symbol": "300472.SZ",
+      "pct_chg": 11.85,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 47,
+          "truncated_chars": 47,
+          "avg_original_per_item": 47.0,
+          "avg_truncated_per_item": 47.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "东方碳素",
+      "symbol": "920175.SH",
+      "pct_chg": 13.807,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "哈焊华通",
+      "symbol": "301137.SZ",
+      "pct_chg": 10.456,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "扬杰科技",
+      "symbol": "300373.SZ",
+      "pct_chg": 10.552,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "灿芯股份",
+      "symbol": "688691.SH",
+      "pct_chg": 10.339,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "力星股份",
+      "symbol": "300421.SZ",
+      "pct_chg": 10.135,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "卓郎智能",
+      "symbol": "600545.SH",
+      "pct_chg": 10.175,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "宝泰隆",
+      "symbol": "601011.SH",
+      "pct_chg": 10.101,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 45,
+          "truncated_chars": 45,
+          "avg_original_per_item": 45.0,
+          "avg_truncated_per_item": 45.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "岱美股份",
+      "symbol": "603730.SH",
+      "pct_chg": 10.081,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "德尔未来",
+      "symbol": "002631.SZ",
+      "pct_chg": 10.076,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "新澳股份",
+      "symbol": "603889.SH",
+      "pct_chg": 10.071,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "澄星股份",
+      "symbol": "600078.SH",
+      "pct_chg": 10.067,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "申达股份",
+      "symbol": "600626.SH",
+      "pct_chg": 10.047,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "大众公用",
+      "symbol": "600635.SH",
+      "pct_chg": 10.062,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "新闻信息量过少"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "仅有极少量简讯，无法形成有效判断。",
+        "parse_mode": "low-news",
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 46,
+          "truncated_chars": 46,
+          "avg_original_per_item": 46.0,
+          "avg_truncated_per_item": 46.0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 50,
+    "risk_index": 40,
+    "industry_heat": [],
+    "policy_tone": {
+      "summary": "启发式：政策信号未充分解析",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [],
+    "macro_factors": [],
+    "actionable_insights": [],
+    "suggest_global_watch": [],
+    "extra_keywords": [],
+    "summary": "新闻密度不足，宏观信号弱",
+    "llm_fallback": true,
+    "raw": "",
+    "error": "macro_llm_empty",
+    "theme_hits": {
+      "半导体": 0,
+      "新能源": 0,
+      "人工智能": 0,
+      "消费复苏": 0,
+      "基建": 0,
+      "出海": 0,
+      "地产链": 0
+    },
+    "macro_truncation_stats": {
+      "item_count": 20,
+      "original_chars": 620,
+      "truncated_chars": 620,
+      "avg_original_per_item": 31.0,
+      "avg_truncated_per_item": 31.0,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_prompt_token_est": 1149,
+    "parse_mode": "heuristic"
+  },
+  "macro_extra": [],
+  "macro_keywords_used": [],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 0,
+      "neutral": 20,
+      "negative": 0
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        20
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 0,
+      "负面": 0,
+      "不确定": 20
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": false,
+    "azure_last_error": "404 Client Error: Resource Not Found for url: https://ai-qiutianyong-3233.openai.azure.com/openai/replies?api-version=2025-04-01-preview"
+  },
+  "diagnostics": {
+    "fallback_stock_count": 0,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 0,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.0,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 404 Client Error: Resource Not Found for url: https://ai-qiutianyong-3233.openai.azure.com/openai/replies?api-version=20"
+      },
+      {
+        "level": "warning",
+        "message": "所有个股首次解析 JSON 失败 (均依赖重试或回退)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 1,
+    "force_no_response_format": false,
+    "parse_mode_counts": {
+      "low-news": 20
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 0,
+      "avg": 0.0,
+      "total": 0,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 20,
+      "sum_original_chars": 919,
+      "sum_truncated_chars": 919,
+      "avg_original_per_item": 45.95,
+      "avg_truncated_per_item": 45.95,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 1149,
+    "macro_truncation_stats": {
+      "item_count": 20,
+      "original_chars": 620,
+      "truncated_chars": 620,
+      "avg_original_per_item": 31.0,
+      "avg_truncated_per_item": 31.0,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "searx_filter_metrics": {
+      "requery_relax_time": 20,
+      "requery_general": 40,
+      "requery_aug": 100,
+      "requery_cn_sites": 120,
+      "extreme_fallback": 20
+    }
+  }
+}

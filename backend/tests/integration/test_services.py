@@ -24,7 +24,7 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 try:
     import sys
     sys.path.append('.')
-    from app.db import get_redis_client
+    from app.core.db import get_redis_client
     REDIS_AVAILABLE = True
 except ImportError as e:
     REDIS_AVAILABLE = False

@@ -1,0 +1,1845 @@
+{
+  "started_at": "2025-10-17T12:32:39.513157+00:00",
+  "finished_at": "2025-10-17T13:01:44.633397+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "利通科技",
+      "symbol": "920225.SH",
+      "pct_chg": 15.456,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.18,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "短期价格与成交活跃度",
+            "direction": "正面",
+            "weight": 0.34,
+            "evidence": "10月13日收盘上涨22.69%，当日换手率超过20%，被列入北交所活跃股及龙虎榜，显示短期市场关注和流动性提升。"
+          },
+          {
+            "name": "主力资金净流出",
+            "direction": "负面",
+            "weight": 0.22,
+            "evidence": "10月10日主力资金净卖出481.48万元，占当日成交额约10.09%，表明有机构性资金在抛售。"
+          },
+          {
+            "name": "游资与散户参与度高",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "同一日游资净流入464.91万元（约9.74%成交额），散户也有小幅净流入，暗示行情可能由短期投机推动，稳定性存疑。"
+          },
+          {
+            "name": "高波动/龙虎榜上榜带来的短期风险",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "交易所公布信息显示因涨幅、振幅、换手率等指标上榜，通常伴随较大短期价格波动并可能引发监管或调整风险。"
+          },
+          {
+            "name": "行业专题提及汽车玻璃趋势（相关性不明）",
+            "direction": "不确定",
+            "weight": 0.11,
+            "evidence": "新闻包含汽车玻璃行业专题（天幕玻璃渗透与升级方向），但未明确利通科技与该细分市场的直接关联性，故影响不确定。"
+          }
+        ],
+        "score": 58,
+        "need_macro": true,
+        "macro_keywords": [
+          "汽车行业",
+          "行业估值",
+          "交易所流动性"
+        ],
+        "risk_flags": [
+          "高波动性与高换手率",
+          "主力资金净流出",
+          "游资推动的短期投机风险",
+          "龙虎榜/高振幅可能带来监管或交易限制风险",
+          "公司基本面与行业关联性信息不足"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证价格上涨是否由持续资金推动或仅为一日放量",
+            "suggest_window": "日-周"
+          },
+          {
+            "metric": "主力资金流向（机构净买/卖）",
+            "reason": "监测机构是否继续撤离或回流，判断中长线趋势可靠性",
+            "suggest_window": "日-周"
+          },
+          {
+            "metric": "换手率/振幅",
+            "reason": "评估流动性与短期投机热度，预警价格剧烈波动",
+            "suggest_window": "日"
+          },
+          {
+            "metric": "行业销量/订单或汽车玻璃渗透率相关数据（若关联）",
+            "reason": "确认公司若涉及汽车玻璃业务，其基本面是否受行业趋势实质支撑",
+            "suggest_window": "月-季"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "近期股价与换手率显著放大，短期市场热度高但伴随主力资金净流出和游资参与，若公司与汽车玻璃行业相关则存在行业机会；总体为短期偏积极、长期需更多公司基本面与行业数据验证。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 5727,
+          "truncated_chars": 866,
+          "avg_original_per_item": 1145.4,
+          "avg_truncated_per_item": 173.2,
+          "ratio_truncated": 0.1512,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1419,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "矩阵股份",
+      "symbol": "301365.SZ",
+      "pct_chg": 11.525,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": -0.15,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "短期交易动能",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "新闻提到创业板交易日中矩阵股份为当日5股涨停之一，且换手率指标被列入高换手名单，显示短期交易活跃性增强。"
+          },
+          {
+            "name": "股东大会/公司治理信息",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "公司披露2025年第一次临时股东会决议，声明无否决提案且未变更以往决议，但公告内容时间等细节不全，未披露实质性决策或重大事项。"
+          },
+          {
+            "name": "历史定价与估值压力",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "报道指出公司2022年上市发行价为34.72元/股，目前有报道当日收报18.76元并出现下跌，反映自上市以来股价回撤与估值压力。"
+          },
+          {
+            "name": "波动性与流动性风险",
+            "direction": "负面",
+            "weight": 0.18,
+            "evidence": "同时出现涨停和日内下跌(另有报道跌3.3%)，并被列入高换手率样本，表明短期内股价波动和流动性带来交易风险。"
+          },
+          {
+            "name": "信息披露不完整",
+            "direction": "不确定",
+            "weight": 0.11,
+            "evidence": "公告与标的识别页均未提供完整行情、会议具体日期等关键细节，公开信息有限，影响判断深度。"
+          }
+        ],
+        "score": 42,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "高波动性/高换手率导致短期价格剧烈波动",
+          "公司公告信息不完整，存在信息披露时滞或不充分风险",
+          "历史发行价与当前价格差距大，估值回撤风险",
+          "日内行情互相矛盾，短期交易信号不稳定"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "监测是否有持续放量配合股价上行或下行以判断资金推动的可持续性",
+            "suggest_window": "5-10日"
+          },
+          {
+            "metric": "换手率",
+            "reason": "高换手曾被报道，应观察换手率是否持续异常以评估短期投机行为",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可验证是否有机构性买入支持公司股价",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "公司公告/大股东表决结果执行情况",
+            "reason": "跟踪临时股东会决议后续披露与执行，以判断治理或重大事项风险",
+            "suggest_window": "10-30日"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "基于披露信息，矩阵股份短期交易活跃且存在高换手和日内波动，但公司临时股东会未披露实质性决策，且信息不完整；历史上市价高于当前价格显示估值回撤压力，综合判断偏中性偏弱，需以成交量、换手率及后续公告验证趋势。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 4851,
+          "truncated_chars": 619,
+          "avg_original_per_item": 1212.75,
+          "avg_truncated_per_item": 154.75,
+          "ratio_truncated": 0.1276,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1263,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "申联生物",
+      "symbol": "688098.SH",
+      "pct_chg": 10.649,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司相关信息缺失",
+            "direction": "负面",
+            "weight": 0.4,
+            "evidence": "提供的新闻内容未提及申联生物或其业务/业绩，只有行业层面与无关链接，无法获得公司特定信息。"
+          },
+          {
+            "name": "行业主题（汽车玻璃天幕化）",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "新闻主体为汽车玻璃行业专题，讨论天幕渗透及后续升级方向，但与申联生物是否存在直接关联不得而知。"
+          },
+          {
+            "name": "数据来源可信度",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "页面声明信息来自官方或持牌机构，且引用国信证券行业专题，行业数据整体可信度较高。"
+          },
+          {
+            "name": "新闻杂项与非相关内容",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "新闻包含与申联生物无关的多个链接和英文天气内容，增加噪音，降低提取公司信号的有效性。"
+          },
+          {
+            "name": "信息不足因子（需进一步调研）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "当前信息不足以形成关于申联生物的基本面或量化判断，需要公司公告、财报或行业链路证明。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "汽车行业",
+          "行业估值",
+          "产品升级"
+        ],
+        "risk_flags": [
+          "公司未被新闻覆盖",
+          "行业相关性不明确",
+          "信息噪音较多",
+          "无法得出可交易结论"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "确认信息披露或市场关注度变化的即时反映，验证新闻对股价的短期冲击",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "判断外资对公司或行业偏好的改变，作为资金面确认指标",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "衡量下游需求变化及行业渗透（如天幕玻璃的渗透率）对企业营收端的传导",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "库存",
+            "reason": "检测供应端积压或去库存节奏，影响短中期业绩与定价压力",
+            "suggest_window": "1季度"
+          }
+        ],
+        "confidence": 0.32,
+        "summary": "提供的新闻为行业层面数据与无关链接，未涉及申联生物具体信息。整体中性偏谨慎：行业主题（汽车玻璃天幕化）有参考价值，但无法确认与公司关联。建议补充公司公告、财报、订单与资金流等可验证数据再做判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 4155,
+          "truncated_chars": 335,
+          "avg_original_per_item": 2077.5,
+          "avg_truncated_per_item": 167.5,
+          "ratio_truncated": 0.0806,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 975,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "博苑股份",
+      "symbol": "301617.SZ",
+      "pct_chg": 13.065,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.18,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "与当升科技签署战略合作框架协议",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "公告显示博苑与当升签署框架性协议，涵盖固态锂电材料技术开发、产品供应、市场推广及股权投资，构建长期全面战略合作关系。"
+          },
+          {
+            "name": "框架协议性质与不确定性",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "公告明确为框架性协议，具体合作事项需另行签订正式协议，具体财务影响存在不确定性。"
+          },
+          {
+            "name": "固态锂电材料行业成长性与车用电池需求驱动",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "合作方向聚焦固态锂电材料，契合动力电池与新能源车技术升级趋势，具有长期市场机会。"
+          },
+          {
+            "name": "对方依赖与执行风险",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "合作依赖当升的技术/供货能力及后续正式协议谈判结果，存在执行、技术及供货节奏不确定性。"
+          },
+          {
+            "name": "信息不足（条款、规模、时间表未披露）",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "公告未披露合作具体商业条款、供货量、时间表和财务安排，短期影响难以量化。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [
+          "固态电池",
+          "锂电材料",
+          "新能源车"
+        ],
+        "risk_flags": [
+          "框架协议未落实为正式合同的执行风险",
+          "技术合作未达预期的技术实现/量产风险",
+          "对单一大客户或供应方的依赖性风险",
+          "潜在的股权投资导致的稀释或财务敞口",
+          "短期内缺乏明确营收/订单兑现的可验证证据"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "与当升的供货订单/订单签约量",
+            "reason": "评估合作从意向到商业化转化的直接证据，反映收入化路径",
+            "suggest_window": "1-6个月"
+          },
+          {
+            "metric": "相关产品ASP（平均销售价格）与毛利率",
+            "reason": "判断合作对公司盈利能力的实际贡献与议价能力",
+            "suggest_window": "3-12个月"
+          },
+          {
+            "metric": "产销率/量产进度（固态材料样品到量产节拍）",
+            "reason": "衡量技术落地与供应链稳定性，决定长期合作价值",
+            "suggest_window": "3-12个月"
+          }
+        ],
+        "confidence": 0.63,
+        "summary": "博苑股份与当升科技签署框架性战略合作协议，聚焦固态锂电材料技术、供货、市场及股权投资，战略层面利好公司进入高景气电池材料领域，但协议为框架性、未披露具体条款与量化指标，存在执行与技术落地不确定性。总体短期偏中性偏正面，需跟踪订单、供货量、价格及量产进度以验证价值兑现。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 8203,
+          "truncated_chars": 540,
+          "avg_original_per_item": 2734.33,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0658,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1105,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "N道生",
+      "symbol": "601026.SH",
+      "pct_chg": 396.321,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.38,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "华为碳化硅散热专利",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "华为公布两项涉及碳化硅作为填料的导热组合物与吸波组合物专利，目标为提升电子元器件及封装芯片散热性能，利好散热材料与封装供应链。"
+          },
+          {
+            "name": "比亚迪销量与电池装机量增长",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "比亚迪1-9月新能源汽车销量326.01万辆，同比增长18.64%；9月动力电池及储能电池装机约23.200GWh，2025年累计装机约203.251GWh，显示需求与出货韧性。"
+          },
+          {
+            "name": "比亚迪产品线与海外扩张信号",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "比亚迪宣布SHARK皮卡规划将面向国内上市，且腾势及方程豹已进入墨西哥市场，表明产品多元化与海外市场推进。"
+          },
+          {
+            "name": "特斯拉降价与市场波动",
+            "direction": "负面",
+            "weight": 0.18,
+            "evidence": "特斯拉推出售价39990美元的“精简版”Model Y并导致美股大幅回调，短期可能引发全球电动车价格竞争与ASP下行压力。"
+          },
+          {
+            "name": "证券从业违规处罚加剧市场合规风险",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "近期证监会公布多起券商从业人员违规炒股处罚，涉及金额累计约1.94亿元，显示监管执法趋严，可能影响市场流动性与从业行为。"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "半导体",
+          "新能源车",
+          "出口",
+          "监管"
+        ],
+        "risk_flags": [
+          "电动车降价引发行业ASP与毛利率下行",
+          "专利从披露到产业化存在时间与量产不确定性",
+          "监管执法趋严可能短期扰动市场情绪",
+          "供应链与原材料价格/产能波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "新能源汽车销量/产销率",
+            "reason": "验证终端需求持续性及比亚迪出货节奏对零部件、动力电池需求的传导",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "动力电池装机量（GWh）",
+            "reason": "直接反映厂商出货与产业链订单量，监测电池供应侧压力与库存变化",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "成交量与北向资金净流入",
+            "reason": "衡量A股市场对上述利好/利空新闻的资金与情绪反应",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "整车ASP及主要车型价格变动",
+            "reason": "特斯拉降价或引发行业定价传导，影响厂商毛利与定价策略",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "整体偏积极：华为碳化硅散热专利利好半导体材料与封装供应链，比亚迪销量与电池装机强劲且推进产品与海外扩张，构成正面基本面支撑。但需警惕特斯拉降价引发的价格竞争与短期行业ASP下行，以及监管执法加强对市场流动性的扰动。建议短中期关注销量/装机数据、成交量与资金流向及价格波动。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 15825,
+          "truncated_chars": 900,
+          "avg_original_per_item": 3165.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0569,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1599,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "横河精密",
+      "symbol": "300539.SZ",
+      "pct_chg": 11.051,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "行业趋势（汽车玻璃天幕化）",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "新闻包含汽车玻璃行业专题，指出天幕玻璃渗透与后续升级方向（隔热、隐私、交互），但未提及横河精密与该细分链条的明确关联。"
+          },
+          {
+            "name": "市场情绪与资金面",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "A股复盘提到券商大涨、市场情绪回暖及部分板块（储能、机器人）表现亮眼，涉及资金面讨论，但未给出针对横河精密的资金流或估值变动数据。"
+          },
+          {
+            "name": "行业景气与技术竞争（半导体/机器人）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻提及半导体链高景气、机器人领域竞争加剧及相关公司表现强势，但没有说明横河精密在这些技术或客户链中的位置。"
+          },
+          {
+            "name": "公司相关信息不足",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "提供的内容为行业与市场碎片信息，未包含横河精密的业绩、订单、产品线或公开声明，无法直接判断公司基本面变动。"
+          },
+          {
+            "name": "宏观/板块切换风险（资金面和行业周期）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "文本涉及资金面与板块表现差异，提示存在短期市场情绪或行业景气波动风险，但缺乏针对性数据衡量对横河精密的影响。"
+          }
+        ],
+        "score": 50,
+        "need_macro": true,
+        "macro_keywords": [
+          "行业景气",
+          "资金面",
+          "产业升级"
+        ],
+        "risk_flags": [
+          "信息不足",
+          "公司关联链路不明",
+          "资金面与板块轮动风险",
+          "行业相关性与公司暴露不明确"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "短期市场情绪变化可通过成交量放大或缩小反映，对股价短期波动有指示意义",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "订单/产销率",
+            "reason": "若横河精密涉足汽车或光学/传感类业务，订单和产销率是判断需求端景气的直接指标",
+            "suggest_window": "1-3月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可反映机构对个股/板块的偏好变化，尤其在A股情绪切换时具有参考价值",
+            "suggest_window": "1-4周"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "基于提供的行业与市场碎片信息，无法对横河精密作出明确的基本面或情绪判断。新闻主要覆盖汽车玻璃天幕化、A股板块表现与半导体/机器人景气，未披露公司层面的业务、业绩或订单数据。建议关注成交量、订单/产销率及北向资金等可验证指标，并获取公司公告或行业链上下游明确关联后再做定论。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 8000,
+          "truncated_chars": 360,
+          "avg_original_per_item": 4000.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.045,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 916,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "沧州明珠",
+      "symbol": "002108.SZ",
+      "pct_chg": 10.078,
+      "news_count": 6,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.35,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"国资入主带来的稳定性与资源支持\",\n      \"direction\": \"正面\",\n      \"weight\": 0.30,\n      \"evidence\": \"广州轻工拟受让东塑集团持有的约1.67亿股，交易完成后实际控制人将变更为广州市国",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "调研 | 好研报",
+          "雷眼万象-雷达财经",
+          "沧州明珠(002108.SZ)：广州市国资委拟成为公司实际控制人",
+          "沧州明珠易主 广州国资委将成新实控人",
+          "沧州明珠拟易主股价涨停 东塑集团等套现7亿国资入主",
+          "沧州明珠控制权拟发生变更 广州轻工入主"
+        ],
+        "news_truncation_stats": {
+          "item_count": 6,
+          "original_chars": 11258,
+          "truncated_chars": 1040,
+          "avg_original_per_item": 1876.33,
+          "avg_truncated_per_item": 173.33,
+          "ratio_truncated": 0.0924,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1606
+      }
+    },
+    {
+      "name": "海峡创新",
+      "symbol": "300300.SZ",
+      "pct_chg": 19.959,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"标的清单可跟踪\",\n      \"direction\": \"正面\",\n      \"weight\": 0.25,\n      \"evidence\":",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "beat365平台创业板园林概念股票有这几家！（2025725）"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 2393,
+          "truncated_chars": 180,
+          "avg_original_per_item": 2393.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0752,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 758
+      }
+    },
+    {
+      "name": "华邦健康",
+      "symbol": "002004.SZ",
+      "pct_chg": 10.11,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "新闻内容以汽车玻璃与其他非医药类头条为主，未包含华邦健康相关经营、财务或事件信息。"
+          },
+          {
+            "name": "非相关行业覆盖（汽车而非医药）",
+            "direction": "负面",
+            "weight": 0.3,
+            "evidence": "页面主要呈现汽车行业与本地新闻，主题与华邦健康主营业务无直接关联，降低对公司判断的直接参考价值。"
+          },
+          {
+            "name": "行业/估值数据出现（可作宏观/行业参考）",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "出现“行业估值与基本数据”“汽车玻璃行业专题”等表述，表明有行业层面数据但与公司所属行业不一致，可能间接提示市场估值方法或行业切换逻辑。"
+          },
+          {
+            "name": "数据来源合规性",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "页面声明信息来自官方或持牌机构，提升数据可靠性，但并未针对华邦健康提供信息。"
+          },
+          {
+            "name": "市场噪音/新闻碎片化影响分析效率",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "多条无关标题并列，信息碎片化，增加从新闻中抽取公司相关信号的难度。"
+          }
+        ],
+        "score": 45,
+        "need_macro": true,
+        "macro_keywords": [
+          "汽车行业",
+          "汽车玻璃",
+          "行业估值"
+        ],
+        "risk_flags": [
+          "公司相关信息缺失",
+          "新闻与公司主营业务不相关",
+          "短期市场噪音可能导致误判",
+          "片段化信息增加分析不确定性"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "监测市场对公司个股的短期关注度与资金活跃程度",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "反映外资对公司或行业的配置倾向与信心",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "库存/产销率",
+            "reason": "衡量产品供需与销售效率，若下降可能影响业绩",
+            "suggest_window": "月度"
+          },
+          {
+            "metric": "ASP/订单量",
+            "reason": "直接关联收入端变动，短期内可验证营收弹性",
+            "suggest_window": "季度"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "所给新闻主要为汽车行业与其它无关头条，未提供华邦健康相关信息；结论中性偏谨慎，需补充公司层面披露或行业宏观数据以作进一步判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 8193,
+          "truncated_chars": 540,
+          "avg_original_per_item": 2731.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0659,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1262,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "艾比森",
+      "symbol": "300389.SZ",
+      "pct_chg": 20.0,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "山东墨龙",
+      "symbol": "002490.SZ",
+      "pct_chg": 10.065,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息有限/缺乏基本面披露",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "新闻仅包含AH对照表与0568（山东墨龙）报价/图表链接，未披露公司经营、财报或重大事件细节。"
+          },
+          {
+            "name": "A/H 市场/估值差（潜在套利与波动）",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "首条为A/H对照表，新闻源为市场情报/对照数据，提示存在A/H溢价/折价信息但未给出0568具体A/AH溢价数值。"
+          },
+          {
+            "name": "港股交易与衍生品可见度（流动性/交易工具）",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "包含HK warrants/报价及多功能互动图表链接，表明市场可获得实时/图表工具，有助于短期交易与流动性观察。"
+          },
+          {
+            "name": "市场情报来源为经纪/数据服务（非公司公告）",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "信息来自凯基（KGI）与报价/图表站点，属于市场/数据服务信息而非公司官方公告，需谨慎解读。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "信息不足：无公司经营/财务/重大事项披露",
+          "估值波动风险：A/H溢价折价可能引发价差波动",
+          "流动性/盘中波动：仅有报价页面，不代表深度成交数据"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证市场关注度与短期流动性变化，判断报价页面是否伴随真实成交",
+            "suggest_window": "1-10日"
+          },
+          {
+            "metric": "A/H 溢价/折价幅度",
+            "reason": "监控同股不同市场的价差，判断套利机会及估值分歧风险",
+            "suggest_window": "日内至1个月"
+          },
+          {
+            "metric": "北向资金净流入/净流出",
+            "reason": "衡量外资对相关港股（或A股）配置力度，提示机构兴趣变化",
+            "suggest_window": "1周-1个月"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "所给新闻仅为市场情报与报价/图表链接（含AH对照表与0568山东墨龙页面），缺乏公司层面经营或财务信息。短期可关注成交量、A/H溢价与北向资金等验证市场活跃度与估值分歧；总体信息不足以得出明确基本面结论，维持中性观察。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 4739,
+          "truncated_chars": 360,
+          "avg_original_per_item": 2369.5,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.076,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 974,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "珠江钢琴",
+      "symbol": "002678.SZ",
+      "pct_chg": 10.108,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.55,\n      \"evidence\": \"提供的两条新闻内容均为美国地方事件与文化节目，与珠江钢琴无直接关联，未涉及公司业绩、订单、产品、管理层或财务信息。\"\n    },\n    {\n      \"name\": \"新闻相关性缺失（无公司基本面或行业信息）\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.25,\n      \"evidence\": \"新闻主题为州长与游乐场/戏剧播客，与中国钢琴制造或珠江钢琴业务无交集，无法推断公司经营或需求变化。\"\n    },\n    {\n      \"name\": \"短期市场反应与流动性风险\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.12,\n      \"evidence\": \"在缺乏公司信息时，股价可能对无关新闻或市场噪音敏感，短期成交量与资金流向可放大波动。\"\n    },\n    {\n      \"name\": \"潜在舆情/突发事件风险\",\n      \"direction\": \"负面\",\n      \"weight\": 0.08,\n",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "Gov. Landry mentions Alexandria as possible candidate for National Guard again",
+          "Talking to Chickens"
+        ],
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 993,
+          "truncated_chars": 300,
+          "avg_original_per_item": 496.5,
+          "avg_truncated_per_item": 150.0,
+          "ratio_truncated": 0.3021,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 948
+      }
+    },
+    {
+      "name": "远大控股",
+      "symbol": "000626.SZ",
+      "pct_chg": 10.034,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": -0.55,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "对外担保总额超过经审计净资产",
+            "direction": "负面",
+            "weight": 0.4,
+            "evidence": "公告指出公司及控股子公司对外担保总额超过公司最近一期经审计净资产100%"
+          },
+          {
+            "name": "为资产负债率高于70%的单位提供担保",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "公告提及对资产负债率超过70%的单位担保，增加违约及关联风险"
+          },
+          {
+            "name": "信息披露与董事会声明（治理透明度）",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "公司及董事会保证信息披露真实、准确、完整并作出特别风险提示，体现披露合规性"
+          },
+          {
+            "name": "宏观与市场情绪（短期股市活跃）",
+            "direction": "不确定",
+            "weight": 0.12,
+            "evidence": "市场层面报道A股近期强势、成交量高企，可能短期支撑股价和流动性，但与公司基本面风险存在背离"
+          },
+          {
+            "name": "信息不足（关联担保明细、担保期限及对价未披露）",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "公告未披露各项担保的具体金额分布、期限、是否有对价或担保资产，影响风险量化判断"
+          }
+        ],
+        "score": 35,
+        "need_macro": true,
+        "macro_keywords": [
+          "监管政策",
+          "市场流动性",
+          "行业景气"
+        ],
+        "risk_flags": [
+          "对外担保超出净资产",
+          "高杠杆关联方违约风险",
+          "或引发控股层面连带负债",
+          "可能影响融资成本/银行授信",
+          "信息披露细节不足导致透明度风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "对外担保余额/新增担保",
+            "reason": "直接反映公司或子公司承担的或有负债规模变化",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "子公司资产负债率与坏账准备",
+            "reason": "评估被担保方偿付能力与潜在损失敞口",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "成交量与股价",
+            "reason": "短期市场对该公告的情绪反应，影响流动性与再融资条件",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "北向资金净流入/流出",
+            "reason": "外资动向可放大对公司估值与市场情绪的影响",
+            "suggest_window": "1个月"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "公司公告显示对外担保规模已超过经审计净资产且涉及高杠杆被担保主体，短期对公司偿债能力与融资成本构成负面风险；披露完整性有限，需重点跟踪担保余额、被担保方资产负债率及市场流动性变化。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 8070,
+          "truncated_chars": 430,
+          "avg_original_per_item": 2690.0,
+          "avg_truncated_per_item": 143.33,
+          "ratio_truncated": 0.0533,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1047,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "睿能科技",
+      "symbol": "603933.SH",
+      "pct_chg": 10.022,
+      "news_count": 9,
+      "report": {
+        "sentiment_score": -0.15,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "短期异常交易/股价快速波动",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "公告称10月15-17日连续3个交易日收盘价涨幅偏离值累计达20%，并新增“昨日涨停”概念，显示短期价格异常波动"
+          },
+          {
+            "name": "公司自查披露：生产经营正常、无未披露重大事项",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "公司公告经自查生产经营正常，未发现应披露而未披露的重大事项"
+          },
+          {
+            "name": "治理/历史套现与业绩波动记录",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "此前报道指出实控人家族IPO前曾套现近2亿，且公司业绩存在剧烈波动，增加治理与业绩可持续性风险"
+          },
+          {
+            "name": "行业/题材驱动（芯片、存储概念）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "市场传闻及新闻提及存储芯片、芯片概念带动板块上涨，可能为短期情绪性催化剂但持续性存疑"
+          },
+          {
+            "name": "信息不充分（消息面驱动未见实质业绩或合同增长证据）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公告主要为交易异常说明与自查结论，未披露新的业绩、订单或重大合作等实质性利好信息"
+          }
+        ],
+        "score": 45,
+        "need_macro": true,
+        "macro_keywords": [
+          "半导体芯片",
+          "市场情绪",
+          "IPO融资"
+        ],
+        "risk_flags": [
+          "异常交易/高波动风险",
+          "投机性消息面驱动",
+          "实控人历史套现/治理风险",
+          "业绩波动性高",
+          "信息披露/透明度不足"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "放量通常伴随筹码集中或投机驱动，可验证涨停与异常波动的持续性",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "北向资金净流入/流出",
+            "reason": "外资动向可反映机构对事件的判断，帮助区分投机与机构参与",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "订单/合同新增量",
+            "reason": "若为基本面改善驱动，应伴随订单或大额客户合同增长",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "反映业务端真实经营变化，验证公司自查结论与业绩支撑",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.62,
+        "summary": "睿能科技出现连续三日交易异常并短期涨停题材，存在明显的情绪性驱动与放量风险；公司自查称经营正常但未披露实质性业绩或订单支持，且历史上实控人套现与业绩波动增加治理及可持续性担忧。短期应关注成交量、北向资金动向及订单/产销等数据以判断事件是题材驱动还是基本面改善。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 9,
+          "original_chars": 908,
+          "truncated_chars": 908,
+          "avg_original_per_item": 100.89,
+          "avg_truncated_per_item": 100.89,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1754,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "平潭发展",
+      "symbol": "000592.SZ",
+      "pct_chg": 10.089,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": -0.1,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "政策方向与五年规划影响",
+            "direction": "不确定",
+            "weight": 0.35,
+            "evidence": "新闻核心为第四次全会与五年规划议题，表明宏观政策和行业导向可能调整，但未指向具体行业或公司，平潭发展的受益/受损方向需看后续政策细则。"
+          },
+          {
+            "name": "潜在的基建/区域支持机会",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "高层会议通常伴随对基础设施、区域发展等长期规划的部署，若相关政策向地方项目倾斜，可能利好具有区域或基建属性的公司（需公司业务匹配确认）。"
+          },
+          {
+            "name": "政治与人事不确定性带来的监管/执行风险",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "新闻提及高层人事与权力博弈，人员变动或政策调整加剧短期监管与地方执行的不确定性，可能导致项目推进节奏波动。"
+          },
+          {
+            "name": "信息不足（公司层面）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻为宏观政治议题，未包含平潭发展具体经营、订单、财务或公告信息，无法直接判断公司基本面受影响方向与程度。"
+          },
+          {
+            "name": "短期市场情绪与资金面冲击",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "重大政治会议通常引发短期资金避险或择机，可能带来股价波动与北向资金流向短期变化，影响中小市值公司表现。"
+          }
+        ],
+        "score": 48,
+        "need_macro": true,
+        "macro_keywords": [
+          "政策",
+          "五年规划",
+          "政治不确定性"
+        ],
+        "risk_flags": [
+          "政策方向未明导致公司受益不确定",
+          "高层人事变动带来监管或项目执行风险",
+          "新闻未包含公司层面核心数据（信息披露不足）",
+          "短期资金面与市场情绪波动"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "北向资金净流入",
+            "reason": "反映外资对相关板块/个股的短期态度，会议期间资金流向会放大市场情绪影响",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "成交量/换手率",
+            "reason": "监测市场对公司消息敏感度与短期价格驱动力，识别资金追涨/逃离信号",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "公司项目中标/地方专项债/财政拨款公告",
+            "reason": "直接验证是否有政策或资金向公司相关业务倾斜，决定基本面实质改善与否",
+            "suggest_window": "1个月-3个月"
+          },
+          {
+            "metric": "公司季度经营数据（若披露）/订单变化",
+            "reason": "检验会议相关政策是否快速传导至公司经营端，影响营收与利润节奏",
+            "suggest_window": "1个月-3个月"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "新闻为中国高层第四次全会的宏观政治议题，可能改变政策导向并间接影响区域或基建类公司，但未提供平潭发展具体信息。总体情绪中性偏谨慎，需关注后续政策细则、公司公告与可验证的资金流与项目中标数据来判断实质影响。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 4000,
+          "truncated_chars": 180,
+          "avg_original_per_item": 4000.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.045,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 817,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "辰欣药业",
+      "symbol": "603367.SH",
+      "pct_chg": 10.024,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "梦百合",
+      "symbol": "603313.SH",
+      "pct_chg": 10.024,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "新闻相关性低",
+            "direction": "不确定",
+            "weight": 0.35,
+            "evidence": "提供的新闻为汽车玻璃行业专题与OceanGate潜水艇事件，文本未提及梦百合或家居/床垫相关业务或财务信息，直接关联性缺失。"
+          },
+          {
+            "name": "行业错配风险",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "新闻聚焦汽车玻璃技术渗透与行业估值，属于汽车与工业链范畴，与梦百合主营家居寝具存在行业错配，可能导致误判公司基本面。"
+          },
+          {
+            "name": "需关注宏观/行业信号",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻来源为行业专题报告（国信证券），提示存在行业层面的估值与技术演进信息，需判断是否有系统性宏观或行业传导至消费品端。"
+          },
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "公开文本未包含梦百合的经营数据、业绩预告、订单、渠道或财务变化，难以得出对公司估值或短期股价的明确判断。"
+          },
+          {
+            "name": "潜在市场情绪/流动性影响",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "外部行业报道与国际事件（如OceanGate事故）可能影响市场风险偏好与媒体关注度，间接影响中小盘或消费板块流动性，但传导路径不明确。"
+          }
+        ],
+        "score": 45,
+        "need_macro": true,
+        "macro_keywords": [
+          "汽车玻璃",
+          "汽车行业",
+          "家居消费"
+        ],
+        "risk_flags": [
+          "信息披露不足",
+          "新闻与公司业务不相关导致判断失误",
+          "行业错配风险",
+          "短期流动性/情绪影响不明确"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证市场对相关新闻的关注度及资金是否在短期内对梦百合股价产生异动",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "观察外资对公司或板块的配置变动以判断情绪与资金面影响",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "订单/出货量",
+            "reason": "直接反映公司经营端受宏观或行业传导的实际影响，若可获取为关键验证指标",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "库存/产销率",
+            "reason": "判断渠道消化与库存压力，评估新闻或宏观因素是否传导至终端需求",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "所给新闻主要为汽车玻璃行业专题与无关国际事件，未包含梦百合相关经营或财务信息；基于当前信息保持中性立场，建议获取公司披露或消费端/渠道数据进行后续判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 6813,
+          "truncated_chars": 360,
+          "avg_original_per_item": 3406.5,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0528,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 937,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "园林股份",
+      "symbol": "605303.SH",
+      "pct_chg": 10.029,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足（新闻与公司无关）\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.5,\n      \"evidence\": \"提供的新闻内容与园林股份无关，报道为美职篮球员球队选项及当地火灾，未涉及公司业务、财务或行业信息。\"\n    },\n    {\n      \"name\": \"短期事件驱动缺失\",\n      \"direction\": \"负面\",\n      \"weight\": 0.2,\n      \"evidence\": \"无相关的利好/利空事件或公告，短期股价缺乏明确的新闻触发因素导致波动驱动不足。\"\n    },\n    {\n      \"name\": \"需补充基本面/业绩数据以形成判断\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.15,\n      \"evidence\": \"未提供公司财报、订单、合同、产销或市场份额等基本面信息，无法评估业绩趋势。\"\n    },\n    {\n      \"name\": \"潜在数据来源/新闻误配风险\",\n      \"direction\": \"负面\",\n      \"weight\": 0.15,\n      \"evidence\": \"新闻与目标公司不相关，存在数据抓取或新闻匹配错误的风险，需确认信息来源的相关性和完整性。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"新闻主题与公司无关——信息匹配错误风险\",\n    \"基于当前新闻无法形成投资判断——信息不足\",\n    \"短期无事件驱动，可能导致波动性放大但方向不明确\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"metric\": \"成交量\",\n      \"reason\": \"确认是否有异常交易放量",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "San Antonio Spurs extend team options for Victor Wembanyama, Stephon Castle"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 248,
+          "truncated_chars": 180,
+          "avg_original_per_item": 248.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.7258,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 823
+      }
+    },
+    {
+      "name": "孚日股份",
+      "symbol": "002083.SZ",
+      "pct_chg": 10.02,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.35,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "行业趋势 — 天幕玻璃渗透",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "国信证券报告指出汽车玻璃天幕化快速渗透，相较传统天窗与钢车顶在美学与空间感上更具优势，暗示对上游玻璃与模组厂需求扩大。"
+          },
+          {
+            "name": "产品升级需求（隔热/隐私/交互）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "报告提出后续升级方向为解决隔热、隐私、交互三大痛点，表明高附加值产品方向，有利于具备技术与客户对接能力的公司提升ASP与毛利。"
+          },
+          {
+            "name": "公司竞争力与技术能力不明",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "新闻为行业专题，未披露孚日股份在天幕玻璃、隔热/隐私/交互等技术储备、客户结构或产能布局，无法直接判断公司能否受益。"
+          },
+          {
+            "name": "行业/原材料与成本压力",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "行业升级可能带来对高性能材料与加工工艺的需求，同时原材料、加工成本或设备投入上升（新闻未具体说明孚日是否能有效转嫁成本）。"
+          },
+          {
+            "name": "信息披露不足",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "提供资料为行业报告片段与外部新闻，缺乏孚日股份的订单、营收、毛利、产销率等公司层面数据，影响结论精度。"
+          }
+        ],
+        "score": 58,
+        "need_macro": true,
+        "macro_keywords": [
+          "汽车玻璃",
+          "天幕化",
+          "汽车行业"
+        ],
+        "risk_flags": [
+          "公司层面信息披露不足",
+          "原材料与加工成本波动",
+          "技术或产品升级未落地的执行风险",
+          "行业竞争加剧导致价格压力",
+          "订单与客户集中度风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "产销率",
+            "reason": "能直接反映孚日产能利用与销售转化，判断是否受天幕化需求拉动",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "ASP（平均销售价格）",
+            "reason": "产品升级若能带来更高ASP将提升盈利，应监测价格端变化",
+            "suggest_window": "1季"
+          },
+          {
+            "metric": "库存水平",
+            "reason": "库存变化提示需求端弹性与生产节奏，过高或过低均具风险",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "订单/大客户合同披露",
+            "reason": "关键用于验证公司是否获得天幕或高附加值产品订单",
+            "suggest_window": "即时/披露后1月"
+          },
+          {
+            "metric": "成交量/北向资金流向",
+            "reason": "短期资金与交易量变化可反映市场对孚日题材反应与信心变化",
+            "suggest_window": "1周-1月"
+          }
+        ],
+        "confidence": 0.45,
+        "summary": "行业报告显示汽车玻璃天幕化与高附加值升级趋势，对上游玻璃与模组厂具备中性偏正面的逻辑利好；但新闻缺乏孚日股份的公司层面关键数据（产能、订单、技术能力、成本传导能力），导致结论不确定性较高。建议关注公司产销率、ASP、订单披露与库存等可验证指标以判断实际受益程度。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 5456,
+          "truncated_chars": 360,
+          "avg_original_per_item": 2728.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.066,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 977,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "汇嘉时代",
+      "symbol": "603101.SH",
+      "pct_chg": 10.019,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.12,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "行业技术趋势（天幕玻璃渗透）",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "国信证券报告指出汽车玻璃天幕化快速渗透，并在美学与空间方面优于传统天窗/钢车顶。"
+          },
+          {
+            "name": "产品升级驱动（隔热/隐私/交互）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "报告提出后续升级方向为解决隔热、隐私、交互三大痛点，暗示功能性和溢价空间。"
+          },
+          {
+            "name": "公司关联与信息披露",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "提供的新闻/页面未明确说明汇嘉时代与汽车玻璃业务或具体订单/客户的直接关联，信息不足。"
+          },
+          {
+            "name": "成本与竞争压力",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "行业向高附加值产品演进可能带来技术/材料投入与竞争加剧，原材料及制造成本波动风险存在。"
+          },
+          {
+            "name": "行业估值与周期性",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "新闻包含行业估值与基本数据说明，提示估值与行业周期影响，但未给出明确政策或宏观信号。"
+          }
+        ],
+        "score": 55,
+        "need_macro": true,
+        "macro_keywords": [
+          "汽车玻璃",
+          "汽车行业",
+          "智能座舱"
+        ],
+        "risk_flags": [
+          "公司与新闻所述行业趋势关联不明确",
+          "信息披露有限，无法验证订单/客户情况",
+          "原材料价格与产能投入带来成本波动风险",
+          "行业竞争与技术迭代速度可能压缩利润率"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "产销率/销售量",
+            "reason": "衡量天幕等新型玻璃渗透速度与市场接受度",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "ASP（平均售价）",
+            "reason": "产品升级带来溢价，ASP上升验证需求与价值转移",
+            "suggest_window": "季度-半年"
+          },
+          {
+            "metric": "订单量/新客户合同",
+            "reason": "领先指标，反映未来收入确认与产能利用",
+            "suggest_window": "月"
+          },
+          {
+            "metric": "库存水平",
+            "reason": "渠道库存变化可识别需求回落或补库节奏",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "成交量（股市）",
+            "reason": "市场对公司消息与行业进展的关注度，可用于短期流动性与情绪判断",
+            "suggest_window": "周-月"
+          }
+        ],
+        "confidence": 0.45,
+        "summary": "行业报告显示汽车玻璃天幕化渗透及功能升级带来机会，但新闻未明确汇嘉时代与此趋势的关联；建议跟踪公司披露、产销/订单与ASP等关键指标以验证受益程度。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 7509,
+          "truncated_chars": 540,
+          "avg_original_per_item": 2503.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0719,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1142,
+        "parse_mode": "direct"
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 55,
+    "risk_index": 50,
+    "industry_heat": [
+      {
+        "industry": "新能源",
+        "heat": 60,
+        "drivers": [
+          "光伏",
+          "锂"
+        ]
+      },
+      {
+        "industry": "消费复苏",
+        "heat": 60,
+        "drivers": [
+          "消费",
+          "出行"
+        ]
+      },
+      {
+        "industry": "基建",
+        "heat": 60,
+        "drivers": [
+          "基建",
+          "铁路"
+        ]
+      },
+      {
+        "industry": "半导体",
+        "heat": 45,
+        "drivers": [
+          "芯片",
+          "半导体"
+        ]
+      },
+      {
+        "industry": "人工智能",
+        "heat": 45,
+        "drivers": [
+          "AI",
+          "人工智能"
+        ]
+      },
+      {
+        "industry": "出海",
+        "heat": 45,
+        "drivers": [
+          "出口",
+          "外需"
+        ]
+      },
+      {
+        "industry": "地产链",
+        "heat": 45,
+        "drivers": [
+          "地产",
+          "物业"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "启发式：政策信号未充分解析",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [
+      "新能源",
+      "消费复苏",
+      "基建"
+    ],
+    "macro_factors": [
+      {
+        "name": "新能源",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "消费复苏",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "基建",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "半导体",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "人工智能",
+        "impact": "中性",
+        "confidence": 0.4
+      }
+    ],
+    "actionable_insights": [],
+    "suggest_global_watch": [],
+    "extra_keywords": [],
+    "summary": "主题 新能源 相关信息增量；主题 消费复苏 相关信息增量；主题 基建 相关信息增量",
+    "llm_fallback": true,
+    "raw": "",
+    "error": "macro_llm_empty",
+    "theme_hits": {
+      "半导体": 3,
+      "新能源": 4,
+      "人工智能": 3,
+      "消费复苏": 4,
+      "基建": 4,
+      "出海": 3,
+      "地产链": 3
+    },
+    "macro_truncation_stats": {
+      "item_count": 150,
+      "original_chars": 60770,
+      "truncated_chars": 4730,
+      "avg_original_per_item": 405.13,
+      "avg_truncated_per_item": 31.53,
+      "ratio_truncated": 0.0778,
+      "max_len_per_item": 160
+    },
+    "macro_prompt_token_est": 4444,
+    "parse_mode": "heuristic"
+  },
+  "macro_extra": [],
+  "macro_keywords_used": [
+    "汽车行业",
+    "行业估值",
+    "交易所流动性",
+    "产品升级",
+    "半导体",
+    "新能源车",
+    "出口",
+    "监管",
+    "行业景气",
+    "资金面",
+    "产业升级",
+    "汽车玻璃",
+    "监管政策",
+    "市场流动性",
+    "半导体芯片"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 5,
+      "neutral": 11,
+      "negative": 4
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        8
+      ],
+      [
+        "短期价格与成交活跃度",
+        1
+      ],
+      [
+        "主力资金净流出",
+        1
+      ],
+      [
+        "游资与散户参与度高",
+        1
+      ],
+      [
+        "高波动/龙虎榜上榜带来的短期风险",
+        1
+      ],
+      [
+        "行业专题提及汽车玻璃趋势（相关性不明）",
+        1
+      ],
+      [
+        "短期交易动能",
+        1
+      ],
+      [
+        "股东大会/公司治理信息",
+        1
+      ],
+      [
+        "历史定价与估值压力",
+        1
+      ],
+      [
+        "波动性与流动性风险",
+        1
+      ],
+      [
+        "信息披露不完整",
+        1
+      ],
+      [
+        "公司相关信息缺失",
+        1
+      ],
+      [
+        "行业主题（汽车玻璃天幕化）",
+        1
+      ],
+      [
+        "数据来源可信度",
+        1
+      ],
+      [
+        "新闻杂项与非相关内容",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 17,
+      "负面": 20,
+      "不确定": 38
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": "500 Server Error: Internal Server Error for url: https://ai-qiutianyong-3233.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+  },
+  "diagnostics": {
+    "fallback_stock_count": 4,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 6,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 12,
+    "parse_success_stock_retry": 2,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.2,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 500 Server Error: Internal Server Error for url: https://ai-qiutianyong-3233.openai.azure.com/openai/responses?api-versi"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 5,
+    "force_no_response_format": true,
+    "azure_fail_count": 1,
+    "parse_mode_counts": {
+      "direct": 12,
+      "heuristic": 4,
+      "no-news": 2,
+      "retry": 2
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1754,
+      "avg": 1016.1,
+      "total": 20322,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 56,
+      "sum_original_chars": 107341,
+      "sum_truncated_chars": 8998,
+      "avg_original_per_item": 1916.8,
+      "avg_truncated_per_item": 160.68,
+      "overall_ratio_truncated": 0.0838
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4444,
+    "macro_truncation_stats": {
+      "item_count": 150,
+      "original_chars": 60770,
+      "truncated_chars": 4730,
+      "avg_original_per_item": 405.13,
+      "avg_truncated_per_item": 31.53,
+      "ratio_truncated": 0.0778,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 66,
+      "empty_results": 436,
+      "requery_relax_time": 8,
+      "requery_general": 15,
+      "requery_aug": 105,
+      "requery_cn_sites": 210,
+      "db_fallback_try": 14,
+      "db_fallback_added": 9,
+      "extreme_fallback": 18,
+      "backend_enriched_fallback_added": 20,
+      "skip_duplicate": 1,
+      "skip_domain": 2,
+      "skip_old_published": 10
+    }
+  }
+}

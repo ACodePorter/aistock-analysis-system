@@ -44,7 +44,12 @@ search:
   favicon_resolver: ""
   # Default search language - leave blank to detect from browser information or
   # use codes from 'languages.py'
-  default_lang: "auto"
+  default_lang: "zh-CN"
+  # Restrict selectable languages to Chinese to reduce foreign-language results.
+  # (Must be valid codes from searxng's languages.py)
+  languages:
+    - zh
+    - zh-CN
   # max_page: 0  # if engine supports paging, 0 means unlimited numbers of pages
   # Available languages
   # languages:
@@ -64,14 +69,15 @@ search:
     # For error "Access denied" and "HTTP error [402, 403]"
     SearxEngineAccessDenied: 86400
     # For error "CAPTCHA"
-    SearxEngineCaptcha: 86400
+    # Reduce suspension time to recover quicker; long suspensions can lead to persistent empty results.
+    SearxEngineCaptcha: 600
     # For error "Too many request" and "HTTP error 429"
     SearxEngineTooManyRequests: 3600
     # Cloudflare CAPTCHA
-    cf_SearxEngineCaptcha: 1296000
+    cf_SearxEngineCaptcha: 3600
     cf_SearxEngineAccessDenied: 86400
     # ReCAPTCHA
-    recaptcha_SearxEngineCaptcha: 604800
+    recaptcha_SearxEngineCaptcha: 3600
 
   # remove format to deny access, use lower case.
   # formats: [html, csv, json, rss]
@@ -176,9 +182,9 @@ ui:
 #
 outgoing:
   # default timeout in seconds, can be override by engine
-  request_timeout: 3.0
+  request_timeout: 10.0
   # the maximum timeout in seconds
-  # max_request_timeout: 10.0
+  max_request_timeout: 20.0
   # suffix of searxng_useragent, could contain information like an email address
   # to the administrator
   useragent_suffix: ""
@@ -515,7 +521,7 @@ engines:
     categories: [general]
     engine: baidu
     shortcut: bd
-    disabled: true
+    disabled: false
 
   - name: baidu images
     baidu_category: images
@@ -537,6 +543,7 @@ engines:
     # add "list" to the array to get results in the results list
     display_type: ["infobox"]
     categories: [general]
+    disabled: true
 
   - name: bilibili
     engine: bilibili
@@ -555,6 +562,7 @@ engines:
   - name: bing news
     engine: bing_news
     shortcut: bin
+    disabled: true
 
   - name: bing videos
     engine: bing_videos
@@ -2215,6 +2223,7 @@ engines:
     base_url: "https://{language}.wikinews.org/"
     search_type: text
     srsort: create_timestamp_desc
+    disabled: true
     about:
       website: https://www.wikinews.org/
       wikidata_id: Q964

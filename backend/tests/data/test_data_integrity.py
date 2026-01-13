@@ -8,8 +8,8 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from app.db import SessionLocal
-from app.models import Report, Stock, Task, PriceDaily, Signal, Forecast, Watchlist
+from app.core.db import SessionLocal
+from app.core.models import Report, Stock, Task, PriceDaily, Signal, Forecast, Watchlist
 from sqlalchemy import select, func
 import json
 from datetime import datetime, timedelta

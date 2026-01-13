@@ -1,0 +1,70 @@
+{
+  "timestamp": "20251010_084816",
+  "generated_at_utc": "2025-10-10T08:48:16.182293+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 0,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 2,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.0,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 404 Client Error: Resource Not Found for url: https://ai-qiutianyong-3233.openai.azure.com/openai/replies?api-version=20"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 2,
+    "force_no_response_format": true,
+    "azure_fail_count": 2,
+    "parse_mode_counts": {
+      "direct": 2,
+      "low-news": 18
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 955,
+      "avg": 88.05,
+      "total": 1761,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 22,
+      "sum_original_chars": 1339,
+      "sum_truncated_chars": 1320,
+      "avg_original_per_item": 60.86,
+      "avg_truncated_per_item": 60.0,
+      "overall_ratio_truncated": 0.9858
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 2287,
+    "macro_truncation_stats": {
+      "item_count": 29,
+      "original_chars": 2010,
+      "truncated_chars": 2006,
+      "avg_original_per_item": 69.31,
+      "avg_truncated_per_item": 69.17,
+      "ratio_truncated": 0.998,
+      "max_len_per_item": 220
+    },
+    "searx_filter_metrics": {
+      "empty_results": 397,
+      "requery_relax_time": 19,
+      "requery_aug": 105,
+      "skip_domain": 3,
+      "requery_general": 38,
+      "requery_cn_sites": 126,
+      "db_fallback_try": 18,
+      "extreme_fallback": 19
+    }
+  },
+  "version": 1
+}

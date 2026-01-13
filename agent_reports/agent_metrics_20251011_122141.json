@@ -1,0 +1,79 @@
+{
+  "timestamp": "20251011_122141",
+  "generated_at_utc": "2025-10-11T12:21:41.795278+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 4,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 5,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 5,
+    "parse_success_stock_retry": 1,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.2,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Max retries exceeded with url: /openai/respo"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 1,
+    "force_no_response_format": false,
+    "azure_fail_count": 1,
+    "parse_mode_counts": {
+      "heuristic": 4,
+      "retry": 1,
+      "direct": 5,
+      "no-news": 10
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1615,
+      "avg": 491.55,
+      "total": 9831,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 24,
+      "sum_original_chars": 55073,
+      "sum_truncated_chars": 3887,
+      "avg_original_per_item": 2294.71,
+      "avg_truncated_per_item": 161.96,
+      "overall_ratio_truncated": 0.0706
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 5377,
+    "macro_truncation_stats": {
+      "item_count": 48,
+      "original_chars": 105233,
+      "truncated_chars": 6029,
+      "avg_original_per_item": 2192.35,
+      "avg_truncated_per_item": 125.6,
+      "ratio_truncated": 0.0573,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 37,
+      "skip_domain": 4,
+      "empty_results": 453,
+      "requery_relax_time": 11,
+      "skip_duplicate": 8,
+      "requery_aug": 105,
+      "requery_general": 22,
+      "requery_cn_sites": 210,
+      "db_fallback_try": 17,
+      "extreme_fallback": 20,
+      "http_timeout": 1
+    }
+  },
+  "version": 1
+}

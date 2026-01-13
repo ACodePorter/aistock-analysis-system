@@ -1,0 +1,76 @@
+{
+  "timestamp": "20251021_124118",
+  "generated_at_utc": "2025-10-21T12:41:18.972433+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 3,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 10,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 7,
+    "parse_success_stock_retry": 7,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.15,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 5,
+    "force_no_response_format": false,
+    "azure_fail_count": 0,
+    "parse_mode_counts": {
+      "direct": 7,
+      "retry": 7,
+      "heuristic": 3,
+      "no-news": 3
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2202,
+      "avg": 944.75,
+      "total": 18895,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 51,
+      "sum_original_chars": 120901,
+      "sum_truncated_chars": 8756,
+      "avg_original_per_item": 2370.61,
+      "avg_truncated_per_item": 171.69,
+      "overall_ratio_truncated": 0.0724
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 3034,
+    "macro_truncation_stats": {
+      "item_count": 152,
+      "original_chars": 34620,
+      "truncated_chars": 2679,
+      "avg_original_per_item": 227.76,
+      "avg_truncated_per_item": 17.62,
+      "ratio_truncated": 0.0774,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 70,
+      "empty_results": 449,
+      "requery_relax_time": 6,
+      "requery_general": 11,
+      "requery_aug": 110,
+      "requery_cn_sites": 220,
+      "db_fallback_try": 13,
+      "db_fallback_added": 1,
+      "extreme_fallback": 19,
+      "http_timeout": 1,
+      "backend_enriched_fallback_added": 23,
+      "skip_old_published": 21
+    }
+  },
+  "version": 1
+}

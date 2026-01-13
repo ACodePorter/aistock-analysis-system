@@ -9,7 +9,7 @@ import unittest
 backend_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, backend_root)
 
-from app.news_service import NewsProcessor  # type: ignore
+from app.news.news_service import NewsProcessor  # type: ignore
 
 
 class TestContentQuality(unittest.TestCase):

@@ -1,0 +1,83 @@
+{
+  "timestamp": "20260105_054549",
+  "generated_at_utc": "2026-01-05T05:45:49.502084+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 4,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 5,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 8,
+    "parse_success_stock_retry": 1,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.2,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 5,
+    "force_no_response_format": true,
+    "azure_fail_count": 0,
+    "parse_mode_counts": {
+      "direct": 8,
+      "no-news": 7,
+      "heuristic": 4,
+      "retry": 1
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2043,
+      "avg": 782.35,
+      "total": 15647,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 63,
+      "sum_original_chars": 15996,
+      "sum_truncated_chars": 6065,
+      "avg_original_per_item": 253.9,
+      "avg_truncated_per_item": 96.27,
+      "overall_ratio_truncated": 0.3792
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4245,
+    "macro_truncation_stats": {
+      "item_count": 73,
+      "original_chars": 10159,
+      "truncated_chars": 3988,
+      "avg_original_per_item": 139.16,
+      "avg_truncated_per_item": 54.63,
+      "ratio_truncated": 0.3926,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 11,
+      "skip_domain": 1960,
+      "requery_relax_time": 25,
+      "skip_not_match_terms": 625,
+      "requery_general": 21,
+      "requery_aug": 134,
+      "skip_low_cjk": 305,
+      "requery_cn_sites": 260,
+      "empty_results": 410,
+      "requery_low_quality": 22,
+      "requery_llm_rewrite": 52,
+      "requery_rewrite_sites": 150,
+      "fallback_relaxed_domain": 12,
+      "db_fallback_try": 12,
+      "extreme_fallback": 22,
+      "skip_duplicate": 24,
+      "skip_blocked_title": 69,
+      "skip_short_title": 4,
+      "skip_generic": 3
+    }
+  },
+  "version": 1
+}

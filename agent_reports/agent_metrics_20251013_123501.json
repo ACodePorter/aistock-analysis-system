@@ -1,0 +1,77 @@
+{
+  "timestamp": "20251013_123501",
+  "generated_at_utc": "2025-10-13T12:35:01.838864+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 10,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 6,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 9,
+    "parse_success_stock_retry": 1,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.5,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', Non"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 3,
+    "force_no_response_format": true,
+    "azure_fail_count": 3,
+    "parse_mode_counts": {
+      "direct": 9,
+      "heuristic": 10,
+      "retry": 1
+    },
+    "stock_prompt_token_summary": {
+      "min": 903,
+      "max": 2103,
+      "avg": 1347.35,
+      "total": 26947,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 109,
+      "sum_original_chars": 127907,
+      "sum_truncated_chars": 13195,
+      "avg_original_per_item": 1173.46,
+      "avg_truncated_per_item": 121.06,
+      "overall_ratio_truncated": 0.1032
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4548,
+    "macro_truncation_stats": {
+      "item_count": 154,
+      "original_chars": 47268,
+      "truncated_chars": 4845,
+      "avg_original_per_item": 306.94,
+      "avg_truncated_per_item": 31.46,
+      "ratio_truncated": 0.1025,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 89,
+      "empty_results": 428,
+      "requery_aug": 110,
+      "requery_relax_time": 6,
+      "requery_general": 8,
+      "skip_duplicate": 1,
+      "requery_cn_sites": 220,
+      "db_fallback_try": 7,
+      "extreme_fallback": 16,
+      "backend_enriched_fallback_added": 17
+    }
+  },
+  "version": 1
+}

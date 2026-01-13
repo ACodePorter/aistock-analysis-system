@@ -1,0 +1,2126 @@
+{
+  "started_at": "2025-10-09T06:37:05.851533+00:00",
+  "finished_at": "2025-10-09T06:52:38.853424+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "C云汉",
+      "symbol": "301563.SZ",
+      "pct_chg": 46.404,
+      "news_count": 4,
+      "report": {
+        "sentiment_score": 0.12,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "盘中大幅上涨与高成交额",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "报道显示盘中涨超67%，触发二次临停，成交额超13亿元，表明短期市场关注和资金介入显著。"
+          },
+          {
+            "name": "触发临时停牌与高波动性",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "首次上涨达到或超过30%触发临停，复牌后继续大幅拉升再触发二次临停，反映出极高的短期波动与交易中断风险。"
+          },
+          {
+            "name": "次新股/可验证历史信息有限",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "公司9月30日刚登陆A股，为次新股，上市时间短，公开历史业绩与经营数据可验证性有限。"
+          },
+          {
+            "name": "业务为电子元器件分销与产业互联网（基本面不确定）",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "公司定位为电子元器件分销与产业互联网融合发展，长期逻辑存在但新闻未披露订单、营收或毛利等关键基本面数据。"
+          },
+          {
+            "name": "可能以投机/散户驱动为主",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "短时间内价格与成交显著放大并触发停牌，常见由市场情绪或短线投机推动，后续回撤风险较大。"
+          }
+        ],
+        "score": 40,
+        "need_macro": true,
+        "macro_keywords": [
+          "电子制造业",
+          "半导体供应链",
+          "次新股行情"
+        ],
+        "risk_flags": [
+          "高波动性并频繁触发停牌",
+          "可能由散户或短期投机推动，回撤风险大",
+          "次新股历史业绩与信息披露不足",
+          "成交量大幅放大但缺乏基本面支撑",
+          "短期流动性和交易中断风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/成交额",
+            "reason": "验证股价拉升是否伴随真实资金持续介入及换手，判断流动性与广度",
+            "suggest_window": "当日及接下来的1-5个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资参与度可反映机构性买盘是否支撑估值与延续性",
+            "suggest_window": "1周-1个月"
+          },
+          {
+            "metric": "机构持仓变动/大股东增减持公告",
+            "reason": "机构或大股东持仓变化将影响中长期供给与市场信心",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "公司订单/出货及毛利率披露",
+            "reason": "核心经营数据能验证电子元器件分销业务的需求与盈利能力",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "云汉芯城为次新股（9月30日上市），10月9日盘中连续大幅拉升，盘中涨超67%并触发二次临停，成交额超13亿元。事件反映出强烈的短期资金与市场情绪推动，但缺乏同步披露的基本面利好（订单、营收或利润数据）。短期技术面与资金面偏多，但伴随高波动与投机性风险；建议关注成交量、北向资金、机构持仓及公司后续业绩/订单披露以判断行情可持续性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 504,
+          "truncated_chars": 504,
+          "avg_original_per_item": 126.0,
+          "avg_truncated_per_item": 126.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1258,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "常辅股份",
+      "symbol": "920396.SH",
+      "pct_chg": 29.993,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.45,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股价大幅上涨",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "常辅股份当日上涨20.57%，股价报34.53元/股，短期买盘强劲。"
+          },
+          {
+            "name": "板块联动（可控核聚变题材）",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "可控核聚变板块持续走高，行业内多股涨停或涨超10%，常辅受板块效应推动。"
+          },
+          {
+            "name": "高换手与成交活跃度",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "当日成交额1.61亿元，换手率9.57%，显示短期资金活跃，但可能伴随波动和短线交易行为。"
+          },
+          {
+            "name": "估值偏高",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "动态市盈率约92.63倍，估值较高，盈利或基本面需可持续支撑，否则回调风险大。"
+          },
+          {
+            "name": "中小盘市值特征（波动性）",
+            "direction": "不确定",
+            "weight": 0.12,
+            "evidence": "总市值24.85亿元，流通市值17.55亿元，属于中小市值股票，易受资金面影响波动放大。"
+          }
+        ],
+        "score": 65,
+        "need_macro": true,
+        "macro_keywords": [
+          "核聚变",
+          "能源",
+          "科技创新"
+        ],
+        "risk_flags": [
+          "高动态市盈率（92.63倍），估值回调风险",
+          "短期高换手伴随追涨资金，存在快速回撤可能",
+          "板块跟风上涨，题材热度驱动下业绩兑现不确定",
+          "中小盘股流动性与波动性较高，波段风险需控制仓位"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "持续放量支持趋势延续，量能萎缩可能预示回调",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "换手率",
+            "reason": "高换手率反映短线交易活跃度，连续高换手为情绪主导信号",
+            "suggest_window": "3-10个交易日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资介入力度可验证资金质量与中期趋势稳定性",
+            "suggest_window": "5-20个交易日"
+          },
+          {
+            "metric": "板块内涨停/领涨股数量",
+            "reason": "板块热度能否扩散决定题材持续性与个股估值支撑",
+            "suggest_window": "1-10个交易日"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "常辅股份受可控核聚变板块拉动，短期股价大幅上涨并伴随高换手，属于题材驱动的资金活跃行情；但公司当前动态市盈率偏高且为中小市值，存在估值与波动风险，建议关注后续成交量、换手率及板块资金延续性以判断趋势是否可持续。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 179,
+          "truncated_chars": 179,
+          "avg_original_per_item": 89.5,
+          "avg_truncated_per_item": 89.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 903,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "灵鸽科技",
+      "symbol": "920284.SH",
+      "pct_chg": 29.98,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.05,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"股价短线大幅上涨\",\n      \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 7 column 7 (char 114)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "灵鸽科技（920284）上涨25.92%，成交额2.50亿，换手率10.31%"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 151,
+          "truncated_chars": 151,
+          "avg_original_per_item": 151.0,
+          "avg_truncated_per_item": 151.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 829
+      }
+    },
+    {
+      "name": "天力复合",
+      "symbol": "920576.SH",
+      "pct_chg": 20.74,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.1,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"未提供任何新闻或公告，无法提取事实或事件进行判定\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"信息不足：缺乏新闻或公告，无法评估事件驱动风险或基本面变化\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"metric\": \"成交量\",\n      \"reason\": \"判断市场关注度与短期资金流入/出，验证消息影响力\",\n      \"suggest_window\": \"1周-1个月",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 22 column 25 (char 449)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [],
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 552
+      }
+    },
+    {
+      "name": "博苑股份",
+      "symbol": "301617.SZ",
+      "pct_chg": 20.006,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.62,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"价格行为（涨停）\",\n      \"direction\": \"正面\",\n      \"weight\": 0.35,\n      \"evidence\": \"10月9日盘中涨停，09:35报85.06元/股，显示短期强势买盘推动。\"\n    },\n    {\n      \"name\": \"资金面（主力净流入）\",\n      \"direction\": \"正面\",\n      \"weight\": 0.30,\n      \"evidence\": \"主力资金净流入2973.58万元，表明有机构或大单资金介入。\"\n    },\n    {\n      \"name\": \"成交及换手（流动性）\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.20,\n      \"evidence\": \"成交额1.57亿元，换手率5.59%，说明短期交易活跃但需观察持续性与资金来源。\"\n    },\n    {\n      \"name\": \"信息完整性/驱动明确性\",\n      \"direction\": \"负面\",\n      \"weight\": 0.15,\n      \"evidence\": \"公告或基本面驱动未披露，新闻仅报价与资金流向，题材和业绩支撑不明确，存在短期炒作可能。\"\n    }\n  ],\n  \"score\": 65,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"涨停但缺乏明确基本面或公告支",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 34 column 5 (char 750)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "博苑股份涨停，成交额1.57亿元，主力资金净流入2973.58万元"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 79,
+          "truncated_chars": 79,
+          "avg_original_per_item": 79.0,
+          "avg_truncated_per_item": 79.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 692
+      }
+    },
+    {
+      "name": "冠中生态",
+      "symbol": "300948.SZ",
+      "pct_chg": 20.025,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.55,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "AI 战略投资者引入",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "公告与媒体报道显示拟将15.5%股份协议转让给杭州深蓝财鲸人工智能科技合伙企业，市场解读为引入AI战略资源并推动业务转型，相关消息触发股价与转债大幅上涨。"
+          },
+          {
+            "name": "控制权变更与表决权放弃",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "控股股东冠中投资及实控人拟分两期转让所持15.5%股份，并放弃剩余股份表决权，带来股权结构与治理不确定性，需要监管审批与后续安排明确。"
+          },
+          {
+            "name": "海外市场拓展与大额订单中标",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "新闻标题与内容明确提到海外市场拓展与大额订单中标，市场预期有助于业绩扩张与营收增量，成为涨停的重要基本面催化。"
+          },
+          {
+            "name": "二级市场交易活跃与资金推动",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "股价连续涨停（10月9日16.13元，涨幅20.02%，市值27.11亿元），9月30日连续两日封涨停，换手率1.18%，成交额与封单资金规模显著，短期资金推动明显。"
+          },
+          {
+            "name": "可转债市场追捧",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "冠中转债开盘涨约9%，并在此前连续两个交易日封于涨停，可转债与正股联动反映市场对公司控制权变更及成长预期的追捧，但也可能加剧短期波动。"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "人工智能",
+          "海外拓展",
+          "并购重组"
+        ],
+        "risk_flags": [
+          "控制权变更不确定性与监管审批风险",
+          "实控人放弃表决权可能导致治理结构风险",
+          "大额订单能否持续、回款与业绩兑现风险",
+          "短期股价与可转债波动风险、高度依赖市场情绪"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察涨停后成交量是否持续放大或迅速回落以判断短期热度与散户参与度",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "机构/外资参与度可验证市场对公司基本面与治理变化的长期认可度",
+            "suggest_window": "5-30日"
+          },
+          {
+            "metric": "合同/订单金额与回款进度",
+            "reason": "检测大额订单的履约与回款情况以确认业绩可持续性",
+            "suggest_window": "30-90日"
+          },
+          {
+            "metric": "可转债价格与溢价率",
+            "reason": "可转债走势反映市场对控制权变更与未来股价预期的敏感性",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "公司重大资产重组/股权转让审批进展",
+            "reason": "控制权变更需监管与司法/审批流程确认，直接影响事件落地与后续股价表现",
+            "suggest_window": "30-90日"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "冠中生态因引入AI战略投资者、海外拓展和大额订单中标等利好消息引发连续涨停与可转债大幅上涨，市场情绪明显偏乐观。但控股股东拟转让15.5%并放弃表决权带来控制权与治理不确定性，需重点关注订单兑现、回款、监管审批及资金流向的后续验证。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 428,
+          "truncated_chars": 428,
+          "avg_original_per_item": 142.67,
+          "avg_truncated_per_item": 142.67,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1044,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "海科新源",
+      "symbol": "301292.SZ",
+      "pct_chg": 20.019,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.18,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "收入增长",
+            "direction": "正面",
+            "weight": 0.27,
+            "evidence": "2025年上半年营业收入23.16亿元，同比增长27.92%，显示业务规模有较快扩张。"
+          },
+          {
+            "name": "利润趋势改善",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "归属于上市公司股东的净利润由上年同期-1.10亿元收窄至-4283.06万元，扣非后净利由-1.15亿元收窄至-4975.82万元，亏损幅度减小。"
+          },
+          {
+            "name": "经营性现金流与持续亏损",
+            "direction": "负面",
+            "weight": 0.28,
+            "evidence": "经营活动产生的现金流量净额为-2.48亿元，较上年同期-1.95亿元进一步恶化，且公司已连续亏损1.5年，现金消耗仍显著。"
+          },
+          {
+            "name": "公司层面激励与扩张举措（回购/扩张）",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "市场报道涨停原因包含业务扩张与股份回购，回购可在短期内支持股价并体现管理层信心。"
+          },
+          {
+            "name": "关联方担保与治理/财务风险",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "涨停消息提及关联方担保，可能带来或暴露关联交易与担保责任的信用/法律风险；另2023年募资高峰（约11亿元）下存在业绩兑现压力。"
+          }
+        ],
+        "score": 48,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "连续亏损且经营性现金流为负，短期仍需现金支持",
+          "关联方担保可能引发对外担保或利益输送的信用/合规风险",
+          "股份回购与市场炒作可能掩盖基本面短期脆弱性",
+          "IPO高募资后存在业绩兑现与成长预期压力"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "季度经营活动现金流",
+            "reason": "检验公司现金消耗是否收敛，评估资金链压力与短期偿债能力",
+            "suggest_window": "1个季度"
+          },
+          {
+            "metric": "归母净利润/扣非后净利润（季度）",
+            "reason": "持续观察亏损是否转正及利润收敛速度，验证盈利改善是否稳定",
+            "suggest_window": "1-2个季度"
+          },
+          {
+            "metric": "订单量/产销率",
+            "reason": "判断收入增长可持续性与下游需求强度，验证业绩增长是否来自真实业务扩张",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "成交量与北向资金流向",
+            "reason": "监测市场情绪变化与外资参与度，评估股价是否由基本面驱动或短期资金推动",
+            "suggest_window": "1个月"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "海科新源2025年上半年收入显著增长（+27.9%），亏损幅度较上年收窄，但经营性现金流仍大幅为负并连续亏损约1.5年。市场对其业务扩张与股份回购反应积极（触及涨停），但关联方担保及现金流压力构成实质性风险。总体为基本面改善但仍脆弱、市场情绪短期偏正的混合结论。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 314,
+          "truncated_chars": 314,
+          "avg_original_per_item": 157.0,
+          "avg_truncated_per_item": 157.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 919,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "灿芯股份",
+      "symbol": "688691.SH",
+      "pct_chg": 20.004,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.5,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股价大幅涨停并登龙虎榜",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "9月30日收盘价101.88元，上涨15.41%，因日收盘价格涨幅达到15%登上交易所龙虎榜，为近5个交易日内首次上榜。"
+          },
+          {
+            "name": "主力资金与融资净买入",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "当日主力资金净流入5825.06万元，占成交额4.44%；两融数据显示融资净买入5687.12万元，融资余额4.65亿元，显示机构/融资买方支撑。"
+          },
+          {
+            "name": "行业板块轮动与题材带动",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "存储芯片概念及科创50板块当日走强，多只芯片股创历史新高，灿芯股份与同行涨停，行业情绪明显带动个股表现。"
+          },
+          {
+            "name": "成交活跃度与换手率",
+            "direction": "正面",
+            "weight": 0.12,
+            "evidence": "当日换手率19.38%，成交量13.85万手，成交额13.13亿元，短期交易活跃，流动性充足。"
+          },
+          {
+            "name": "游资与散户净流出及短期投机风险",
+            "direction": "负面",
+            "weight": 0.08,
+            "evidence": "当日游资净流出5505.73万元（占成交额4.19%），散户净流出319.33万元，显示存在游资与短线资金博弈及潜在回撤风险。"
+          }
+        ],
+        "score": 70,
+        "need_macro": true,
+        "macro_keywords": [
+          "存储芯片",
+          "半导体",
+          "科创50"
+        ],
+        "risk_flags": [
+          "短期高波动与封板后回撤风险",
+          "游资博弈导致价格非基本面驱动",
+          "融资高位加剧强平风险（若回调）",
+          "行业情绪转向时同步下行风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检验上涨是否由持续资金推动或仅短期放量博弈",
+            "suggest_window": "5-20个交易日"
+          },
+          {
+            "metric": "融资余额与日净融资买入",
+            "reason": "监测融资资金追涨规模与潜在杠杆风险",
+            "suggest_window": "1-10个交易日"
+          },
+          {
+            "metric": "主力/机构资金流向（板块轮动）",
+            "reason": "判断行业主题资金是否持续向灿芯股份集中",
+            "suggest_window": "5-20个交易日"
+          },
+          {
+            "metric": "换手率",
+            "reason": "高换手结合价涨可判断成交质量与换手造成的波动性",
+            "suggest_window": "3-10个交易日"
+          }
+        ],
+        "confidence": 0.78,
+        "summary": "灿芯股份因存储芯片板块热度及资金推动当日涨停并登龙虎榜，主力与融资净买入支撑明显，成交活跃；但游资净流出、短期高波动和融资杠杆带来回撤风险，需通过成交量、融资余额和主力流向验证趋势可持续性。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 869,
+          "truncated_chars": 857,
+          "avg_original_per_item": 173.8,
+          "avg_truncated_per_item": 171.4,
+          "ratio_truncated": 0.9862,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1707,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "国光电气",
+      "symbol": "688776.SH",
+      "pct_chg": 20.0,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.45,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "市场资金推升/短期走强",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "10月9日股价触及涨停（+20%），当日成交额6.40亿元，短期资金活跃推动股价上涨。"
+          },
+          {
+            "name": "核聚变技术题材",
+            "direction": "不确定",
+            "weight": 0.18,
+            "evidence": "新闻强调核聚变技术，属于强题材驱动，但技术路径和商业化存在不确定性，可能驱动炒作。"
+          },
+          {
+            "name": "军工业务敞口",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "报道提到军工业务，军工属性在当下往往带来估值溢价与政策关注，属于利好题材。"
+          },
+          {
+            "name": "研发投入/技术投入",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "新闻点出公司加大研发投入，长期有助于技术积累与产品竞争力，但见效周期较长。"
+          },
+          {
+            "name": "机构持仓/基金关注度",
+            "direction": "正面",
+            "weight": 0.12,
+            "evidence": "中邮基金旗下两只基金合计持有5万股，报道显示机构有一定持仓并出现浮盈，表明受到部分公募关注。"
+          },
+          {
+            "name": "估值与题材炒作风险",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "短期20%涨停可能导致估值快速抬升，若技术与业绩不能兑现存在回调风险；题材驱动特征明显。"
+          }
+        ],
+        "score": 66,
+        "need_macro": true,
+        "macro_keywords": [
+          "核聚变",
+          "军工",
+          "资金面"
+        ],
+        "risk_flags": [
+          "短期高波动/题材炒作风险",
+          "技术商业化不确定性（核聚变）",
+          "估值快速抬升后回撤风险",
+          "机构持仓集中度低，资金稳定性待观察",
+          "业绩/订单兑现风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证短期资金是否持续流入或在涨停后放量回落，判断行情持续性",
+            "suggest_window": "日内-1周"
+          },
+          {
+            "metric": "基金/机构持仓变动",
+            "reason": "监测公募与机构是否持续增持或减仓，判断资金面稳定性",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "军工订单/合同披露",
+            "reason": "直接关联业务端的营收与业绩兑现，能验证军工题材的实质支撑",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资动向可放大/抑制短期涨幅，体现跨市场情绪与配置变化",
+            "suggest_window": "日-1周"
+          }
+        ],
+        "confidence": 0.65,
+        "summary": "新闻显示国光电气因核聚变与军工题材及研发投入引发短期资金活跃，股价涨停并有公募持仓浮盈，整体偏积极。但核聚变商业化与题材持续性不确定，短期估值与波动风险较高，建议关注成交量、机构持仓及军工订单的后续披露以验证基本面支撑。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 244,
+          "truncated_chars": 244,
+          "avg_original_per_item": 122.0,
+          "avg_truncated_per_item": 122.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 901,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "哈焊华通",
+      "symbol": "301137.SZ",
+      "pct_chg": 19.99,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.45,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "行业催化（可控核聚变利好）",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "央视报道合肥BEST可控核聚变装置关键突破，媒体跟进导致可控核聚变概念走强，多股涨停，形成板块性催化。"
+          },
+          {
+            "name": "公司基本面披露（营收/利润/研发）",
+            "direction": "正面",
+            "weight": 0.27,
+            "evidence": "相关新闻指出哈焊华通当日触及涨停，分析称公司呈现营收增长、利润提升并加大研发投入，支持基本面向好信号。"
+          },
+          {
+            "name": "市场交易活跃度（涨停与成交额）",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "哈焊华通当日涨停（+19.99%），涨停价46.1元，总成交额5.26亿元，短期市场热度高，流动性显著提高。"
+          },
+          {
+            "name": "短期投机/情绪驱动风险",
+            "direction": "负面",
+            "weight": 0.13,
+            "evidence": "概念炒作推动多股涨停，存在资金短期追逐与高波动性风险，价格可能脱离基本面并面临快速回调。"
+          },
+          {
+            "name": "公司与聚变产业链关联度不确定",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "报道为板块概念带动，尚未有明确披露哈焊华通在可控核聚变项目中的具体订单或核心供货证据，需要进一步核实关联程度。"
+          }
+        ],
+        "score": 68,
+        "need_macro": true,
+        "macro_keywords": [
+          "可控核聚变",
+          "核能",
+          "清洁能源"
+        ],
+        "risk_flags": [
+          "短期炒作风险（涨停后回调）",
+          "公司与聚变项目的实际关联性未完全明确",
+          "高波动/流动性集中导致交易风险",
+          "估值快速上升带来的回撤风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量（换手率）",
+            "reason": "判断涨停是否由持续资金支撑或短期封板导致的脆弱性",
+            "suggest_window": "1-5个交易日"
+          },
+          {
+            "metric": "北向资金净流入/机构席位",
+            "reason": "检测是否有长期机构资金参与以验证趋势可持续性",
+            "suggest_window": "5-20个交易日"
+          },
+          {
+            "metric": "公司新签订单/大客户合同披露",
+            "reason": "确认公司与核聚变或相关上游设备的实际业务关联及营收可见度",
+            "suggest_window": "1个季度内"
+          },
+          {
+            "metric": "季度营收与毛利率变动",
+            "reason": "验证媒体关于营收增长与利润提升的持续性与质量",
+            "suggest_window": "1-2个季度"
+          }
+        ],
+        "confidence": 0.68,
+        "summary": "综合判断为偏正面：媒体报道的可控核聚变突破引发板块性上涨，叠加公司被报道有营收、利润和研发投入改善，推动哈焊华通涨停并出现较高成交。但需警惕概念炒作带来的短期波动与公司与聚变产业链的实际关联仍需进一步核实，建议重点跟踪成交量、机构资金流向及公司订单/季度财务数据以验证持久性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 262,
+          "truncated_chars": 262,
+          "avg_original_per_item": 87.33,
+          "avg_truncated_per_item": 87.33,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 968,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "嘉亨家化",
+      "symbol": "300955.SZ",
+      "pct_chg": 20.0,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.1,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.8,\n      \"evidence\": \"未收到任何关于嘉亨家化的具体新闻内容或事件描述，无法判定影响方向与强度。\"\n    },\n    {\n      \"name\": \"流动性/资金面\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.1,\n      \"evidence\": \"无成交量、北向资金等资金面数据进行判断，可能影响短期股价波动评估。\"\n    },\n    {\n      \"name\": \"经营/订单与产销\",\n      \"direction\": \"不确定\",\n      \"weight\": 0.1,\n      \"evidence\": \"缺乏关于订单、ASP、产销率或库存的最新信息，无法评估基本面短期变化。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"新闻缺失/信息不充分\",\n    \"基于不完整信息做出决策的风险\",\n    \"短期数据不可验证\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"metric\": \"成交量\",\n      \"reason\": \"验证市场对任何后续信息的即时",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 35 column 17 (char 709)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [],
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 552
+      }
+    },
+    {
+      "name": "中亚股份",
+      "symbol": "300512.SZ",
+      "pct_chg": 19.975,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.45,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"全球深冷/液化相关资本开支上行\",\n      \"direction\": \"正面\",\n      \"weight\": 0.35,\n      \"evidence\": \"GPCA 预计2025年中东GCC石化资本开支同比+43",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Unterminated string starting at: line 9 column 19 (char 181)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "中泰股份300435：国内深冷潮头立，出海爆发欲试锋",
+          "斥资29.87亿元 中华企业联手宸嘉发展入主徐汇东安旧改核心地块"
+        ],
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 477,
+          "truncated_chars": 468,
+          "avg_original_per_item": 238.5,
+          "avg_truncated_per_item": 234.0,
+          "ratio_truncated": 0.9811,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1022
+      }
+    },
+    {
+      "name": "中望软件",
+      "symbol": "688083.SH",
+      "pct_chg": 19.539,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.56,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "市场短期资金推动（涨停与成交）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "2025-10-09触及涨停，涨幅20%，涨停价91.14元，总成交额7.20亿元，显示短期买盘推动和市场关注度提升。"
+          },
+          {
+            "name": "股权激励",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "新闻标题明确提到股权激励，通常利于管理层与股东利益一致、提升中长期激励效应。"
+          },
+          {
+            "name": "境外业务增长",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "标题指出境外业务增长，表明收入来源多元化与国际拓展，可能带来增量收入与估值溢价。"
+          },
+          {
+            "name": "研发投入高",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "标题强调研发投入高，长期利好产品竞争力，但短期可能压缩利润率与现金流，影响短期业绩。"
+          },
+          {
+            "name": "机构重仓（基金持股）",
+            "direction": "正面",
+            "weight": 0.12,
+            "evidence": "国寿安保旗下基金持有5.94万股，占该基金净值比例4%，为第五大重仓股，显示机构认可和持仓稳定性。"
+          },
+          {
+            "name": "流通盘与短线波动风险",
+            "direction": "负面",
+            "weight": 0.08,
+            "evidence": "流通市值154.56亿元，单日大幅上涨并伴随高换手（成交额7.20亿元），可能存在短期投机与波动性放大风险。"
+          }
+        ],
+        "score": 70,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "短期高波动/炒作风险",
+          "研发投入短期压缩利润与现金流风险",
+          "境外业务合规、市场与汇率风险",
+          "估值回撤风险（涨停后短期回调概率）"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/换手率",
+            "reason": "判断涨停是否由持续资金入场或短期炒作驱动，确认量价配合的强度。",
+            "suggest_window": "5-10日"
+          },
+          {
+            "metric": "机构/基金持仓变化",
+            "reason": "观察是否有持续增持或减持以判断中长期资金支持强度。",
+            "suggest_window": "季度与10-30日滚动监测"
+          },
+          {
+            "metric": "境外收入占比与同行海外营收增速",
+            "reason": "验证新闻中境外业务增长的持续性与贡献度，评估汇率与市场风险暴露。",
+            "suggest_window": "季度（3个月）"
+          },
+          {
+            "metric": "研发投入与毛利率/净利率变化",
+            "reason": "衡量高研发投入是否转化为产品竞争力或仅在短期压缩利润。",
+            "suggest_window": "季度至半年"
+          }
+        ],
+        "confidence": 0.78,
+        "summary": "基于涨停、股权激励、境外业务增长与高研发投入等信息，整体偏正面：短期市场关注度与机构持仓支撑股价，但需警惕短期投机波动、研发投入对短期业绩的压制及境外业务的合规/汇率风险。建议跟踪成交量变化、机构持仓变动、境外收入贡献与研发投入对盈利的中长期转化。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 192,
+          "truncated_chars": 192,
+          "avg_original_per_item": 96.0,
+          "avg_truncated_per_item": 96.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 868,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "西部超导",
+      "symbol": "688122.SH",
+      "pct_chg": 19.911,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.7,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "价格与市场情绪",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "2025-10-09触及涨停，涨幅20%，涨停价78.11元，总成交额37.34亿元，显示短期强劲资金推动与市场关注度。"
+          },
+          {
+            "name": "业绩增长预期",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "新闻标题直接提出“业绩增长”为涨停逻辑之一（但文中未披露具体财务数据），市场预期业绩向好。"
+          },
+          {
+            "name": "技术领先与业务拓展",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "标题提到“技术领先+业务拓展”，暗示公司在超导相关技术或业务布局存在进展，构成中长期逻辑支撑。"
+          },
+          {
+            "name": "主题与行业轮动（超导/军工）",
+            "direction": "正面",
+            "weight": 0.15,
+            "evidence": "超导概念持续走强，多股涨停；中航证券研报指出国防军工等新域主题轮动，有利于相关核心标的被资金关注。"
+          },
+          {
+            "name": "资金活跃度与短期炒作风险",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "高成交额与多只概念股同时涨停，既体现资金活跃也提示可能存在主题炒作或短期过度推高估值的风险。"
+          }
+        ],
+        "score": 72,
+        "need_macro": true,
+        "macro_keywords": [
+          "军工",
+          "超导",
+          "科技创新"
+        ],
+        "risk_flags": [
+          "短期高度波动（涨停伴随大额成交）",
+          "主题/资金驱动炒作风险",
+          "业绩具体数字未在新闻中披露，需财报验证",
+          "估值回撤风险（当前市值较大，若业绩兑现不足可能回调）"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/换手率",
+            "reason": "验证涨停是否由持续资金流入推动或由短期交易驱动",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "北向资金净流入/机构持仓变化",
+            "reason": "观察外资与机构是否参与以判断行情稳定性和持续性",
+            "suggest_window": "5-30日"
+          },
+          {
+            "metric": "公司订单量/产销率",
+            "reason": "检测业务扩展与业绩增长能否被实际销量和订单支撑",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "公司公告（业绩预告/重大合同）",
+            "reason": "直接验证业绩增长与业务拓展的实质性进展",
+            "suggest_window": "1个月"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "西部超导因业绩增长预期、技术领先与业务拓展等利好叠加超导/军工主题轮动，于2025-10-09触及涨停并伴随高成交额，短期市场情绪偏积极。需警惕主题性资金驱动带来的短期波动与估值回撤风险，重点跟踪成交量、北向资金流向、公司订单/产销及后续公告以验证基本面支撑。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 302,
+          "truncated_chars": 302,
+          "avg_original_per_item": 100.67,
+          "avg_truncated_per_item": 100.67,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 983,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "中洲特材",
+      "symbol": "300963.SZ",
+      "pct_chg": 19.989,
+      "news_count": 4,
+      "report": {
+        "sentiment_score": 0.63,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "股价与市场情绪（涨停与成交活跃）",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "2025-10-09触及涨停，涨幅19.72%，涨停价22.51元，总成交额12.57亿元，显示短期资金推动与市场关注度提升。"
+          },
+          {
+            "name": "公司治理与业务改善",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "公司密集修订内部管理制度，涉及董事会运作、信息披露、关联交易等，报道指向治理优化、业务拓展与现金流改善。"
+          },
+          {
+            "name": "行业/板块势头（钴镍板块走强）",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "钴镍板块整体走强，多股涨停，中洲特材作为相关个股受板块轮动利好影响。"
+          },
+          {
+            "name": "融资融券与短期资金流向",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "9月30日融资买入3941.22万元但当日融资净卖出1207.52万元，融资余额2.23亿元较昨日下滑5.13%，存在短期资金波动与杠杆回撤风险。"
+          },
+          {
+            "name": "宏观/能源类事件（核聚变突破）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "国产聚变装置BEST项目取得关键进展，带动核能板块上涨，但与中洲特材的直接相关性不明确，影响存在不确定性。"
+          }
+        ],
+        "score": 72,
+        "need_macro": true,
+        "macro_keywords": [
+          "有色金属",
+          "核能",
+          "行业景气"
+        ],
+        "risk_flags": [
+          "短期高波动性/涨停后回调风险",
+          "融资余额波动与杠杆风险（融资净卖出、余额下降）",
+          "对钴、镍等大宗商品价格高度敏感",
+          "治理变动虽为利好，但执行与信息披露存在不确定性",
+          "流动性在短期内可能集中，换手高导致价量背离风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交额/换手率",
+            "reason": "验证涨停是否由持续资金介入或短期炒作驱动",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "融资净买入/融资余额",
+            "reason": "衡量杠杆资金方向与短期多空力量变化",
+            "suggest_window": "5-20交易日"
+          },
+          {
+            "metric": "钴价/镍价（现货与期货）",
+            "reason": "公司盈利与订单价格高度依赖相关金属价格",
+            "suggest_window": "1-8周"
+          },
+          {
+            "metric": "产销率/库存变化",
+            "reason": "反映公司实际销售与交付节奏，验证基本面改善的持续性",
+            "suggest_window": "4-12周"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "近期中洲特材受到公司治理优化、业务拓展和板块（钴镍）行情带动，出现涨停与较高成交，短期市场情绪偏正面。但单日融资呈净卖出且融资余额下滑，显示短期资金存在波动；核聚变等能源事件影响公司相关性不确定。建议关注成交量、融资流向、钴镍价格及公司产销/库存变化以验证趋势持续性。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 4,
+          "original_chars": 567,
+          "truncated_chars": 567,
+          "avg_original_per_item": 141.75,
+          "avg_truncated_per_item": 141.75,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1386,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "迈为股份",
+      "symbol": "300751.SZ",
+      "pct_chg": 18.752,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.35,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "机构持仓增持（易方达创业板ETF）",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "易方达创业板ETF二季度增持5.24万股，持有376.57万股，占流通股的1.96%，今日浮盈约1950.64万元，显示机构增持与流动性支持。"
+          },
+          {
+            "name": "行业景气与政策利好（输变电/新能源板块）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "新闻提及全球电网建设与升级需求增加、输变电行业整体上行；西部大开发税收优惠按15%税率征收，有望降低企业税负并增加利润空间。"
+          },
+          {
+            "name": "ETF及市场短期推动（价格与资金追逐）",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "新能源ETF午后上涨导致成分股迈为股份、特变电工涨超10%，ETF近6月净值上涨49.44%，显示板块性资金带来的短期推动。"
+          },
+          {
+            "name": "融资融券数据变化（融资净卖出、余额下滑）",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "9月30日融资买入9125.96万元、偿还1.42亿元，融资净卖出5042.22万元，融资余额6.46亿元；融资融券余额6.53亿元较昨日下滑7.13%，反映短期杠杆减少和可能的获利了结压力。"
+          },
+          {
+            "name": "融券与短期抛压（融券余量）",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "当日融券卖出3200股、融券偿还1300股，融券净卖出1900股，融券余量7.22万股，短期对股价方向影响存在不确定性。"
+          }
+        ],
+        "score": 66,
+        "need_macro": true,
+        "macro_keywords": [
+          "税收政策",
+          "输变电/电网建设",
+          "新能源行业"
+        ],
+        "risk_flags": [
+          "融资余额下降显示短期去杠杆或获利回吐风险",
+          "股价受ETF短期资金推动，波动性加大（短期涨幅显著）",
+          "税收优惠政策区域性/时效性不确定，持续性需验证",
+          "单一基金持股占比较低（1.96%），机构支持有限"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检测是否为持续性买盘或仅为短期资金推动的高换手",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "融资余额与融券余量",
+            "reason": "观察杠杆资金变化以判断获利回吐或做空压力",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "ETF持仓变动（成分股权重/新增流入）",
+            "reason": "验证ETF资金是否持续流入以支撑股价",
+            "suggest_window": "2周-1个月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向常与估值修正和中长期资金趋势相关",
+            "suggest_window": "1个月"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "总体偏正面：机构ETF增持、行业景气与税收优惠构成利好，且ETF带来的短期资金推动使股价放量上涨；但融资净卖出和融资融券余额下降提示短期去杠杆与波动风险，需关注成交量、融资余额与ETF持仓的后续变化。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 553,
+          "truncated_chars": 528,
+          "avg_original_per_item": 184.33,
+          "avg_truncated_per_item": 176.0,
+          "ratio_truncated": 0.9548,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1266,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "燕东微",
+      "symbol": "688172.SH",
+      "pct_chg": 18.119,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.2,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "融资净买入",
+            "direction": "正面",
+            "weight": 0.35,
+            "evidence": "9月30日融资买入1.97亿元，融资偿还1.77亿元，融资净买入1909.37万元，显示当日买入意愿增加。"
+          },
+          {
+            "name": "成交额与股价短期表现",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "当日股价上涨5.22%，成交额14.22亿元，短期放量上涨表明市场关注和动量较强。"
+          },
+          {
+            "name": "融资余额处于高位",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "当前融资余额3.80亿元，占流通市值2.37%，融资余额超过近一年90%分位，杠杆率与潜在抛售风险偏高。"
+          },
+          {
+            "name": "融券变动微小",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "当日仅融券偿还1001股，融券活动微弱，对短期价格形成与对冲影响不确定。"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "融资余额处于近一年90%分位：高杠杆与回撤放大风险",
+          "高融资占比可能在回调时触发快速抛压或强制平仓",
+          "放量上涨伴不确定资金来源，短期波动性增加",
+          "融券量极低，空方抑制/对冲能力有限"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "融资余额变动",
+            "reason": "监控杠杆趋势与是否继续上行或回落，判断资金延续性与风险累积",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "日/周成交量（换手率）",
+            "reason": "验证放量上涨的持续性与散户/机构追涨动力",
+            "suggest_window": "日-1周"
+          },
+          {
+            "metric": "融资净买入/融券余量",
+            "reason": "同时观察融资买入与融券变化，判断多空力量与潜在回补压力",
+            "suggest_window": "日-1月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "检测外资是否参与以确认资金面延续性（可增强走势可信度）",
+            "suggest_window": "1周-1月"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "短期利好：9月30日出现显著融资净买入且伴随放量上涨，显示市场短期买盘活跃。隐含风险：融资余额处于近一年高位（90%分位），杠杆偏高，若回调可能放大跌幅。建议重点跟踪融资余额、成交量与北向资金等短期数据以判断资金持续性。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 200,
+          "truncated_chars": 200,
+          "avg_original_per_item": 200.0,
+          "avg_truncated_per_item": 200.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 770,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "九菱科技",
+      "symbol": "920505.SH",
+      "pct_chg": 18.246,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.1,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "{\n  \"sentiment_score\": 0.0,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"信息不足\",\n      \"direction\": \"不确定\",\n      \"weight\": 1.0,\n      \"evidence\": \"未提供相关新闻原文或具体事件描述，无法判断对公司基本面或市场情绪的具体影响。\"\n    }\n  ],\n  \"score\": 50,\n  \"need_macro\": false,\n  \"macro_keywords\": [],\n  \"risk_flags\": [\n    \"新闻来源缺失/信息不足，无法验证事实\",\n    \"基于不完整信息易导致判断偏差\",\n    \"可能被突发公告或财报事件短期放大影响\"\n  ],\n  \"correlation_watch\": [\n    {\n      \"metric\": \"成交量\",\n      \"reason\": \"短期资金情绪与流动性变化可快速反映股价波动，验证是否有异动\",\n      \"suggest_window\": \"1-5个交易日\"\n    },\n    {\n      \"metric\": \"北向资金净流入\",\n      \"reason\": \"外资流向可影响盘面强度与中期趋势，适合观察是否有持续买入/卖出\",\n      \"suggest_window\": \"5-20个交易日\"\n    },\n    {\n      \"metric\":",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "Expecting value: line 32 column 16 (char 669)",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [],
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 552
+      }
+    },
+    {
+      "name": "品茗科技",
+      "symbol": "688109.SH",
+      "pct_chg": 17.823,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": -0.05,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "股价与成交量动能",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "10月9日涨5.27%，报105.90元/股，成交额3.71亿元，换手率4.74%，且股价已连续10天上涨，短期动能明显。"
+          },
+          {
+            "name": "被纳入交易所严重异动名单",
+            "direction": "负面",
+            "weight": 0.3,
+            "evidence": "上海证券交易所公告品茗科技自2025-10-09起被纳入异动股票池（严重异动），监控期至2025-10-22，提示价格短期异常波动和监管关注。"
+          },
+          {
+            "name": "机构持仓/基金关注",
+            "direction": "不确定",
+            "weight": 0.12,
+            "evidence": "报道提及华夏基金旗下1只基金重仓并持有浮盈，但公开披露持股数/比例信息有限，无法判断持续性与规模性影响。"
+          },
+          {
+            "name": "短期波动与流动性风险",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "连续上涨并被列为严重异动，伴随较高换手率，短期内存在高波动、套利/追涨回调风险及流动性快速变化可能。"
+          },
+          {
+            "name": "基本面与业绩信息不足",
+            "direction": "不确定",
+            "weight": 0.13,
+            "evidence": "新闻主要聚焦股价、交易与异动名单，缺乏业绩、订单、客户与长期业务指标，无法判断上涨是否与基本面匹配。"
+          }
+        ],
+        "score": 48,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "被交易所纳入严重异动名单（监管关注/交易限制风险）",
+          "短期高波动/追涨回调风险",
+          "成交与换手率快速上升可能伴随筹码集中或快速流动",
+          "公开基本面信息不足，存在估值脱节风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "验证涨势是否由稳定资金推动或由短期投机放大",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "换手率/流通筹码变化",
+            "reason": "监测筹码轮动与持股集中度，判断是否有短期游资介入",
+            "suggest_window": "1-10日"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "判断外资/机构持续买入力度与趋势稳定性",
+            "suggest_window": "5-20日"
+          },
+          {
+            "metric": "机构持仓变动/基金持仓披露",
+            "reason": "跟踪持仓披露以确认机构是否持续增持或减持",
+            "suggest_window": "月度/披露期"
+          }
+        ],
+        "confidence": 0.65,
+        "summary": "短期技术面显示明显上涨动能且成交活跃，但交易所已将品茗科技列为严重异动股票，提示监管关注与高波动风险。机构持仓信息有限且基本面披露不足，整体呈现利好动能与监管/波动风险并存，建议短期关注成交量、换手率及机构持仓变化以验证上涨的可持续性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 289,
+          "truncated_chars": 289,
+          "avg_original_per_item": 144.5,
+          "avg_truncated_per_item": 144.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 901,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "美力科技",
+      "symbol": "300611.SZ",
+      "pct_chg": 17.333,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.65,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "券商给予买入评级",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "开源证券10月8日发布研报给予“买入”评级，指出业绩拐点将至、整合见效并有盈利修复预期。"
+          },
+          {
+            "name": "零部件订单放量与汽车业务增长预期",
+            "direction": "正面",
+            "weight": 0.22,
+            "evidence": "研报提及零部件订单放量，另新闻显示股价因新能源车零部件及业绩改善触及涨停，反映市场对订单与需求的乐观预期。"
+          },
+          {
+            "name": "财务改善与盈利修复",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "研报指出公司财务轻装上阵、整合见效且盈利修复逐步显现，作为评级理由之一。"
+          },
+          {
+            "name": "新业务（智能化与全球化）拓展",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "研报认为新业务双引擎（智能化与全球化）将打开增长天花板，但涉及海外扩张执行需要验证。"
+          },
+          {
+            "name": "下游竞争与订单兑现风险",
+            "direction": "负面",
+            "weight": 0.12,
+            "evidence": "研报列明风险提示：下游汽车市场竞争激烈、零部件业务订单落地或新订单拓展可能不及预期。"
+          }
+        ],
+        "score": 75,
+        "need_macro": true,
+        "macro_keywords": [
+          "新能源汽车",
+          "汽车零部件",
+          "智能化",
+          "全球化"
+        ],
+        "risk_flags": [
+          "零部件订单落地不及预期",
+          "下游汽车市场竞争加剧压缩毛利",
+          "海外业务拓展与国际市场开拓执行风险",
+          "短期股价波动与成交量异常（涨停）导致流动性/估值波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/换手率",
+            "reason": "股价已触及涨停，需观察成交量是否支持估值上行或为短期投机性推动。",
+            "suggest_window": "1周"
+          },
+          {
+            "metric": "新订单落地/订单金额披露",
+            "reason": "研报和风险提示均以订单放量为关键增长驱动，需要验证订单实际落地与合同履约。",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "产销率上升可直接验证业绩修复与零部件需求的真实改善。",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "北向资金净流入/机构持仓变化",
+            "reason": "观察外资与机构是否持续买入以判断市场共识与资金面支持力度。",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "境外业务收入/海外订单进展",
+            "reason": "全球化被列为增长天花板，需跟踪海外订单与收入贡献是否兑现。",
+            "suggest_window": "3-6个月"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "开源证券给予美力科技“买入”评级并指出订单放量、盈利修复与新业务（智能化+全球化）将推动业绩回升；市场对上述预期在10月9日表现为涨停与显著成交。主要驱动为订单与业务结构改善，主要风险为订单兑现不及预期、下游竞争及海外拓展执行。建议持续跟踪成交量、订单落地、产销率及北向资金等短期可验证指标。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 292,
+          "truncated_chars": 292,
+          "avg_original_per_item": 146.0,
+          "avg_truncated_per_item": 146.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1127,
+        "parse_mode": "direct"
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 78,
+    "risk_index": 55,
+    "industry_heat": [
+      {
+        "industry": "存储芯片/半导体",
+        "heat": 95,
+        "drivers": [
+          "DRAM/NAND普遍涨价与供给收紧预期",
+          "科创50与多只芯片股创历史新高",
+          "设备与材料需求上行（SEMI预测）",
+          "融资与机构买入力度增强"
+        ]
+      },
+      {
+        "industry": "可控核聚变/核能概念",
+        "heat": 90,
+        "drivers": [
+          "BEST装置关键部件交付及温度突破等实质进展",
+          "概念股集体爆发、多股涨停",
+          "国内外政策与资金投入增强（中德等）"
+        ]
+      },
+      {
+        "industry": "超导/新材料（核钢、特种材料）",
+        "heat": 82,
+        "drivers": [
+          "西部超导等龙头涨停、资金关注度高",
+          "为核聚变、国防等上游工程提供关键材料",
+          "政策与军工轮动带来持续题材关注"
+        ]
+      },
+      {
+        "industry": "次新股/小盘高波动板块",
+        "heat": 75,
+        "drivers": [
+          "C云汉等次新股极端波动触发二次临停",
+          "高换手率与短期资金博弈活跃",
+          "交易所异动监测与监管关注上升"
+        ]
+      },
+      {
+        "industry": "新能源/锂电与汽车零部件",
+        "heat": 70,
+        "drivers": [
+          "美力科技涨停、业绩改善与出海布局",
+          "企业对锂电与园林新能源产品布局反馈积极",
+          "下游汽车与储能需求长期增长预期"
+        ]
+      },
+      {
+        "industry": "深冷/工程装备与基础设施（LNG、液化）",
+        "heat": 65,
+        "drivers": [
+          "全球LNG新增产能与中东石化资本开支上行",
+          "深冷相关设备与材料需求长期可期",
+          "中泰等企业受益于出海与大型更新换代需求"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "总体偏向支持与包容：国内推动提升资本市场吸引力与并购改革（并购六条）、鼓励科技与战略新兴产业发展；地方与国际层面对核聚变、高端制造等加大投入与协调支持。",
+      "bias": "supportive"
+    },
+    "capital_flow_focus": [
+      "存储芯片与半导体设备龙头",
+      "可控核聚变/超导与相关材料概念股",
+      "科创板与科创50ETF等科技主题ETF",
+      "次新股与高波动小盘股（短线资金博弈）",
+      "可转债与融资买入活跃个股"
+    ],
+    "macro_factors": [
+      {
+        "name": "10月资金面季节性（先松后紧）",
+        "impact": "中性",
+        "confidence": 0.7
+      },
+      {
+        "name": "资本市场改革与并购政策（并购六条、提升吸引力）",
+        "impact": "正面",
+        "confidence": 0.8
+      },
+      {
+        "name": "全球存储芯片价格上涨与供给趋紧",
+        "impact": "正面",
+        "confidence": 0.85
+      },
+      {
+        "name": "地缘政治与军工支出上升（台海、俄乌等）",
+        "impact": "负面",
+        "confidence": 0.6
+      },
+      {
+        "name": "可控核聚变技术与工程进展",
+        "impact": "正面",
+        "confidence": 0.7
+      }
+    ],
+    "actionable_insights": [
+      {
+        "theme": "优先关注存储芯片与半导体设备龙头（中长期）",
+        "rationale": "全球DRAM/NAND涨价、需求端由AI与数据中心驱动、设备市场预计继续扩张，利好行业盈利与估值修复。",
+        "watch_metrics": [
+          "DRAM/NAND现货与合同价格变化",
+          "半导体设备订单与SEMI出货/销售数据",
+          "公司营收/净利季报与大客户订单公布",
+          "融资买入与机构持仓变动"
+        ]
+      },
+      {
+        "theme": "短线把握可控核聚变与超导题材波段机会（高频交易）",
+        "rationale": "BEST项目等进展带动市场情绪与资金快速涌入，但存在题材炒作与回调风险，适合短线事件驱动交易。",
+        "watch_metrics": [
+          "项目里程碑、官方通报与央媒报道",
+          "成交量与主力净流入",
+          "概念股涨停/连板数量与融资占比",
+          "监管/行业细则公布"
+        ]
+      },
+      {
+        "theme": "控制次新股与小盘高波动仓位，重视风控",
+        "rationale": "次新股出现极端波动（多次触发临停），短期收益与风险并存，易受游资与交易所异动管理影响。",
+        "watch_metrics": [
+          "交易所异动名单、临停触发记录",
+          "换手率、成交额与融资融券余额",
+          "封单/申购资金与大单动向",
+          "公司基本面披露与募资情况"
+        ]
+      },
+      {
+        "theme": "关注可转债与融资动向中的套利与配置机会",
+        "rationale": "个别转债（如冠中转债）连涨反映市场对控制权与重组预期的溢价，适合在明确事件驱动下布局可转债/股债组合。",
+        "watch_metrics": [
+          "可转债溢价率、转股价与换手",
+          "标的公司并购重组/控制权事项公告",
+          "两融净买入/融资余额变化",
+          "转债到期与发行节奏"
+        ]
+      },
+      {
+        "theme": "中长期布局深冷与工程装备类受益国产替代与全球更新换代机会",
+        "rationale": "全球乙烯裂解装置与LNG扩产带来长期深冷、特种材料与装备需求，相关龙头将受益稳健订单与出海机会。",
+        "watch_metrics": [
+          "大单/海外合同签约公告",
+          "中东与欧洲下游项目资本开支计划",
+          "相关企业产能投放与毛利率表现",
+          "出口与海外并购进展"
+        ]
+      }
+    ],
+    "suggest_global_watch": [
+      "DRAM/NAND价格与全球主要厂商（三星、美光、铠侠、闪迪）定价动态",
+      "德国及欧盟关于核聚变的大额投资与行动方案进展",
+      "美国对台军售与印太地区防务支出趋势（影响军工与材料需求）",
+      "全球半导体设备订单与SEMI季度展望",
+      "主要资本市场流动性与美联储/央行货币政策动向"
+    ],
+    "extra_keywords": [
+      "可控核聚变",
+      "存储芯片涨价",
+      "科创50",
+      "次新股临停",
+      "涨停潮",
+      "融资买入",
+      "可转债",
+      "超导",
+      "深冷装备",
+      "并购六条",
+      "资金面先松后紧"
+    ],
+    "summary": "今日A股以科技与新兴战略方向为主线，科创50与存储芯片、可控核聚变、超导等板块领涨，多只个股创历史新高；市场情绪偏乐观但伴随次新股与小盘极端波动（临停、严重异动）与季节性资金面不确定性。政策层面总体支持资本市场与科技并购，短中期机会以半导体与核能相关龙头为主，需警惕事件驱动题材的超短期波动与地缘政治风险。",
+    "macro_truncation_stats": {
+      "item_count": 81,
+      "original_chars": 11733,
+      "truncated_chars": 11700,
+      "avg_original_per_item": 144.85,
+      "avg_truncated_per_item": 144.44,
+      "ratio_truncated": 0.9972,
+      "max_len_per_item": 300
+    },
+    "macro_prompt_token_est": 10234,
+    "parse_mode": "direct"
+  },
+  "macro_extra": [
+    {
+      "keyword": "可控核聚变",
+      "analysis": {
+        "market_sentiment_index": 50,
+        "risk_index": 40,
+        "industry_heat": [
+          {
+            "industry": "基建",
+            "heat": 15,
+            "drivers": [
+              "基建",
+              "铁路"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "启发式：政策信号未充分解析",
+          "bias": "neutral"
+        },
+        "capital_flow_focus": [
+          "基建"
+        ],
+        "macro_factors": [
+          {
+            "name": "基建",
+            "impact": "中性",
+            "confidence": 0.4
+          }
+        ],
+        "actionable_insights": [],
+        "suggest_global_watch": [],
+        "extra_keywords": [],
+        "summary": "主题 基建 相关信息增量",
+        "llm_fallback": true,
+        "raw": "{\n  \"market_sentiment_index\": 82,\n  \"risk_index\": 45,\n  \"industry_heat\": [\n    {\n      \"industry\": \"可控核聚变/核能\",\n      \"heat\": 92,\n      \"drivers\": [\n        \"BEST装置关键部件交付，项目进入新阶段\",\n        \"国家级科研工程与战略布局（合肥未来大科学城）\",\n        \"概念股集体大涨引发",
+        "error": "macro_llm_empty",
+        "theme_hits": {
+          "半导体": 0,
+          "新能源": 0,
+          "人工智能": 0,
+          "消费复苏": 0,
+          "基建": 1,
+          "出海": 0,
+          "地产链": 0
+        },
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 513,
+          "truncated_chars": 513,
+          "avg_original_per_item": 102.6,
+          "avg_truncated_per_item": 102.6,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 869,
+        "parse_mode": "heuristic"
+      }
+    },
+    {
+      "keyword": "存储芯片涨价",
+      "analysis": {
+        "market_sentiment_index": 50,
+        "risk_index": 40,
+        "industry_heat": [
+          {
+            "industry": "半导体",
+            "heat": 30,
+            "drivers": [
+              "芯片",
+              "半导体"
+            ]
+          },
+          {
+            "industry": "人工智能",
+            "heat": 30,
+            "drivers": [
+              "AI",
+              "人工智能"
+            ]
+          },
+          {
+            "industry": "基建",
+            "heat": 15,
+            "drivers": [
+              "基建",
+              "铁路"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "启发式：政策信号未充分解析",
+          "bias": "neutral"
+        },
+        "capital_flow_focus": [
+          "半导体",
+          "人工智能",
+          "基建"
+        ],
+        "macro_factors": [
+          {
+            "name": "半导体",
+            "impact": "中性",
+            "confidence": 0.4
+          },
+          {
+            "name": "人工智能",
+            "impact": "中性",
+            "confidence": 0.4
+          },
+          {
+            "name": "基建",
+            "impact": "中性",
+            "confidence": 0.4
+          }
+        ],
+        "actionable_insights": [],
+        "suggest_global_watch": [],
+        "extra_keywords": [],
+        "summary": "主题 半导体 相关信息增量；主题 人工智能 相关信息增量；主题 基建 相关信息增量",
+        "llm_fallback": true,
+        "raw": "{\n  \"market_sentiment_index\": 82,\n  \"risk_index\": 48,\n  \"industry_heat\": [\n    {\n      \"industry\": \"存储芯片（DRAM/NAND）\",\n      \"heat\": 95,\n      \"drivers\": [\n        \"多家大厂宣布15%-30%调价、现货持续上行\",\n        \"AI算力与数据中心需求推动容量与高端存储需求\",\n        \"海外厂商减产与供给收缩引发短缺\"\n      ]\n    },\n    {\n      \"industry\": \"旧款存储（DDR3/DDR4、NOR Flash等）\",\n      \"heat\": 82,\n      \"drivers\": [\n        \"旧款产品因主流产能短缺出现超预期涨价\",\n        \"短期利润空间被重新发现，需求向替代/",
+        "error": "macro_llm_empty",
+        "theme_hits": {
+          "半导体": 2,
+          "新能源": 0,
+          "人工智能": 2,
+          "消费复苏": 0,
+          "基建": 1,
+          "出海": 0,
+          "地产链": 0
+        },
+        "macro_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 732,
+          "truncated_chars": 732,
+          "avg_original_per_item": 146.4,
+          "avg_truncated_per_item": 146.4,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 1011,
+        "parse_mode": "heuristic"
+      }
+    },
+    {
+      "keyword": "科创50",
+      "analysis": {
+        "market_sentiment_index": 50,
+        "risk_index": 40,
+        "industry_heat": [
+          {
+            "industry": "半导体",
+            "heat": 30,
+            "drivers": [
+              "芯片",
+              "半导体"
+            ]
+          }
+        ],
+        "policy_tone": {
+          "summary": "启发式：政策信号未充分解析",
+          "bias": "neutral"
+        },
+        "capital_flow_focus": [
+          "半导体"
+        ],
+        "macro_factors": [
+          {
+            "name": "半导体",
+            "impact": "中性",
+            "confidence": 0.4
+          }
+        ],
+        "actionable_insights": [],
+        "suggest_global_watch": [],
+        "extra_keywords": [],
+        "summary": "主题 半导体 相关信息增量",
+        "llm_fallback": true,
+        "raw": "{\n  \"market_sentiment_index\": 78,\n  \"risk_index\": 42,\n  \"industry_heat\": [\n    {\n      \"industry\": \"半导体/芯片\",\n      \"heat\": 90,\n      \"drivers\": [\n        \"科创50中多只半导体股创历史新高\",\n        \"芯原股份、中芯国际、华虹等权重股大幅上涨\",\n        \"行业ETF和主题资金关注度提升\"\n      ]\n    },\n    {\n      \"industry\": \"先进封装\",\n      \"heat\": 85,\n      \"drivers\": [\n        \"先进封装板块与半导体联动上涨\",\n        \"市场对封装在产业链中地位的认可度提升\",\n        \"相关个股涨幅显著带动板块情绪\"\n      ]\n    },\n    {\n      \"industry\": \"存储芯片\",\n      \"heat\": 80,\n      \"drivers\": [\n        \"存储类个股随科创板涨势走强\",\n        \"市场对存储景气改善的预期\",\n        \"相关板块在今日涨幅靠前\"\n      ]\n    },\n    {\n      \"industry\": \"硬科技/科创板ETF\",\n      \"heat\": 78,\n      \"drivers",
+        "error": "macro_llm_empty",
+        "theme_hits": {
+          "半导体": 2,
+          "新能源": 0,
+          "人工智能": 0,
+          "消费复苏": 0,
+          "基建": 0,
+          "出海": 0,
+          "地产链": 0
+        },
+        "macro_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 461,
+          "truncated_chars": 461,
+          "avg_original_per_item": 153.67,
+          "avg_truncated_per_item": 153.67,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 300
+        },
+        "macro_prompt_token_est": 787,
+        "parse_mode": "heuristic"
+      }
+    }
+  ],
+  "macro_keywords_used": [
+    "电子制造业",
+    "半导体供应链",
+    "次新股行情",
+    "核聚变",
+    "能源",
+    "科技创新",
+    "人工智能",
+    "海外拓展",
+    "并购重组",
+    "存储芯片",
+    "半导体",
+    "科创50",
+    "军工",
+    "资金面",
+    "可控核聚变"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 13,
+      "neutral": 7,
+      "negative": 0
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        6
+      ],
+      [
+        "盘中大幅上涨与高成交额",
+        1
+      ],
+      [
+        "触发临时停牌与高波动性",
+        1
+      ],
+      [
+        "次新股/可验证历史信息有限",
+        1
+      ],
+      [
+        "业务为电子元器件分销与产业互联网（基本面不确定）",
+        1
+      ],
+      [
+        "可能以投机/散户驱动为主",
+        1
+      ],
+      [
+        "股价大幅上涨",
+        1
+      ],
+      [
+        "板块联动（可控核聚变题材）",
+        1
+      ],
+      [
+        "高换手与成交活跃度",
+        1
+      ],
+      [
+        "估值偏高",
+        1
+      ],
+      [
+        "中小盘市值特征（波动性）",
+        1
+      ],
+      [
+        "AI 战略投资者引入",
+        1
+      ],
+      [
+        "控制权变更与表决权放弃",
+        1
+      ],
+      [
+        "海外市场拓展与大额订单中标",
+        1
+      ],
+      [
+        "二级市场交易活跃与资金推动",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 42,
+      "负面": 16,
+      "不确定": 19
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+  },
+  "diagnostics": {
+    "fallback_stock_count": 6,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 11,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 9,
+    "parse_success_stock_retry": 5,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.3,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', Non"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "direct": 9,
+      "heuristic": 6,
+      "retry": 5
+    },
+    "stock_prompt_token_summary": {
+      "min": 552,
+      "max": 1707,
+      "avg": 960.0,
+      "total": 19200,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 42,
+      "sum_original_chars": 5902,
+      "sum_truncated_chars": 5856,
+      "avg_original_per_item": 140.52,
+      "avg_truncated_per_item": 139.43,
+      "overall_ratio_truncated": 0.9922
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 10234,
+    "macro_truncation_stats": {
+      "item_count": 81,
+      "original_chars": 11733,
+      "truncated_chars": 11700,
+      "avg_original_per_item": 144.85,
+      "avg_truncated_per_item": 144.44,
+      "ratio_truncated": 0.9972,
+      "max_len_per_item": 300
+    },
+    "macro_extra_parse_mode_counts": {
+      "heuristic": 3
+    },
+    "macro_extra_multi_json_success_count": 0
+  }
+}

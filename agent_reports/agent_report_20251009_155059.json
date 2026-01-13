@@ -1,0 +1,981 @@
+{
+  "started_at": "2025-10-09T15:49:50.700412+00:00",
+  "finished_at": "2025-10-09T15:50:59.825138+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "C云汉",
+      "symbol": "301563.SZ",
+      "pct_chg": 40.89,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "raw_empty",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "触发二次临停！次新股C云汉盘中大涨70% 公司回应",
+          "C云汉盘中涨超67% 触发二次临停",
+          "C云汉涨超30%触发临停",
+          "触发二次临停!次新股c云汉盘中大涨70%，公司回应 - 21财经",
+          "云汉芯城:首次公开发行股票并在创业板上市之上市公告书提示性公告 _ N云汉 (301563) _ 公告正文",
+          "C云汉涨超30%触发临停 来源：第一财经深交所公告，\"C云汉\" (301563)盘中成交价较开盘价首次上涨达到或超过30%，深交所自今日11时 ...",
+          "301563 云汉芯城 首次公开发行股票并在创业板上市投资风险特别公告 - 中国日报网",
+          "云汉芯城 (301563):首次公开发行股票并在创业板上市之上市公告书提示性公告- CFi.CN 中财网",
+          "触发二次临停!次新股C云汉盘中大涨70%，公司回应_财经频道_证券之星",
+          "云汉芯城 (301563)公司动态_九方智投"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1022,
+          "truncated_chars": 1022,
+          "avg_original_per_item": 102.2,
+          "avg_truncated_per_item": 102.2,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1983
+      }
+    },
+    {
+      "name": "英杰电气",
+      "symbol": "300820.SZ",
+      "pct_chg": 20.008,
+      "news_count": 2,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "raw_empty",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "AI耗电催化，核电股王者归来！A股再掀涨停潮，港股美股涨不停歇",
+          "英杰电气：子公司成都晨晖公司的射频电源车间已经在承接生产任务"
+        ],
+        "news_truncation_stats": {
+          "item_count": 2,
+          "original_chars": 251,
+          "truncated_chars": 251,
+          "avg_original_per_item": 125.5,
+          "avg_truncated_per_item": 125.5,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 891
+      }
+    },
+    {
+      "name": "灿芯股份",
+      "symbol": "688691.SH",
+      "pct_chg": 20.004,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "raw_empty",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "灿芯股份(688691) 最新公告和新闻稿",
+          "灿芯股份最新公告：公司日常经营正常无应披露而未 ...",
+          "灿芯股份涨20% 机构净买入3.58亿元 - 金融证券",
+          "灿芯股份：公司日常经营正常无应披露而未披露的重大事项",
+          "灿芯股份龙虎榜数据（10月9日）",
+          "灿芯股份发布股价异动公告",
+          "灿芯股份: 股票交易异常波动公告 - 证券之星",
+          "灿芯股份股东询价转让初步定价61.88元/股，10家机构参与报价",
+          "灿芯股份大宗交易折价成交50.00万股",
+          "灿芯股份龙虎榜数据（10月9日） - 股票"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1067,
+          "truncated_chars": 1067,
+          "avg_original_per_item": 106.7,
+          "avg_truncated_per_item": 106.7,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1937
+      }
+    },
+    {
+      "name": "灵鸽科技",
+      "symbol": "920284.SH",
+      "pct_chg": 29.98,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "博苑股份",
+      "symbol": "301617.SZ",
+      "pct_chg": 20.006,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "冠中生态",
+      "symbol": "300948.SZ",
+      "pct_chg": 20.025,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "常辅股份",
+      "symbol": "920396.SH",
+      "pct_chg": 29.993,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "海科新源",
+      "symbol": "301292.SZ",
+      "pct_chg": 20.019,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "西部超导",
+      "symbol": "688122.SH",
+      "pct_chg": 20.003,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "燕东微",
+      "symbol": "688172.SH",
+      "pct_chg": 18.483,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "减持风险",
+            "direction": "负面",
+            "weight": 1.0,
+            "evidence": "出现关键词: 减持"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.4,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "raw_empty",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": true,
+          "处罚": false
+        },
+        "news_titles": [
+          "财说| 在建工程超58亿元，燕东微想要盈利有点难",
+          "在建工程超58亿元，燕东微想要盈利有点难",
+          "国家集成电路基金是烟台这家上市公司第一大股东，年内减持519万股"
+        ],
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 266,
+          "truncated_chars": 266,
+          "avg_original_per_item": 88.67,
+          "avg_truncated_per_item": 88.67,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 1081
+      }
+    },
+    {
+      "name": "国光电气",
+      "symbol": "688776.SH",
+      "pct_chg": 20.0,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "中望软件",
+      "symbol": "688083.SH",
+      "pct_chg": 20.0,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "嘉亨家化",
+      "symbol": "300955.SZ",
+      "pct_chg": 20.0,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "中洲特材",
+      "symbol": "300963.SZ",
+      "pct_chg": 19.989,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "哈焊华通",
+      "symbol": "301137.SZ",
+      "pct_chg": 19.99,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "中亚股份",
+      "symbol": "300512.SZ",
+      "pct_chg": 19.975,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "九菱科技",
+      "symbol": "920505.SH",
+      "pct_chg": 18.973,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "天力复合",
+      "symbol": "920576.SH",
+      "pct_chg": 18.389,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "未匹配到显著关键词"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式情感与因子抽取 (LLM 不可用)。",
+        "raw": "",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "raw_empty",
+        "keyword_hits": {
+          "订单": false,
+          "扩产": false,
+          "涨价": false,
+          "减持": false,
+          "处罚": false
+        },
+        "news_titles": [
+          "核能领域迎重大利好！可控核聚变板块午盘大涨超6%，多股涨停"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 114,
+          "truncated_chars": 114,
+          "avg_original_per_item": 114.0,
+          "avg_truncated_per_item": 114.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 707
+      }
+    },
+    {
+      "name": "迈为股份",
+      "symbol": "300751.SZ",
+      "pct_chg": 17.745,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "美力科技",
+      "symbol": "300611.SZ",
+      "pct_chg": 17.333,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 1.0,
+            "evidence": "当日无有效新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日无有效新闻，暂不做情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 50,
+    "risk_index": 40,
+    "industry_heat": [
+      {
+        "industry": "人工智能",
+        "heat": 15,
+        "drivers": [
+          "AI",
+          "人工智能"
+        ]
+      },
+      {
+        "industry": "基建",
+        "heat": 15,
+        "drivers": [
+          "基建",
+          "铁路"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "启发式：政策信号未充分解析",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [
+      "人工智能",
+      "基建"
+    ],
+    "macro_factors": [
+      {
+        "name": "人工智能",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "基建",
+        "impact": "中性",
+        "confidence": 0.4
+      }
+    ],
+    "actionable_insights": [],
+    "suggest_global_watch": [],
+    "extra_keywords": [],
+    "summary": "主题 人工智能 相关信息增量；主题 基建 相关信息增量",
+    "llm_fallback": true,
+    "raw": "",
+    "error": "macro_llm_empty",
+    "theme_hits": {
+      "半导体": 0,
+      "新能源": 0,
+      "人工智能": 1,
+      "消费复苏": 0,
+      "基建": 1,
+      "出海": 0,
+      "地产链": 0
+    },
+    "macro_truncation_stats": {
+      "item_count": 26,
+      "original_chars": 2720,
+      "truncated_chars": 2720,
+      "avg_original_per_item": 104.62,
+      "avg_truncated_per_item": 104.62,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_prompt_token_est": 2893,
+    "parse_mode": "heuristic"
+  },
+  "macro_extra": [],
+  "macro_keywords_used": [],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 1,
+      "neutral": 19,
+      "negative": 0
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        19
+      ],
+      [
+        "减持风险",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 0,
+      "负面": 1,
+      "不确定": 19
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "disabled",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": false,
+    "azure_last_error": "cannot access local variable '_CHAT_EMPTY_COUNT' where it is not associated with a value"
+  },
+  "diagnostics": {
+    "fallback_stock_count": 5,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 0,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.25,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: cannot access local variable '_CHAT_EMPTY_COUNT' where it is not associated with a value"
+      },
+      {
+        "level": "warning",
+        "message": "所有个股首次解析 JSON 失败 (均依赖重试或回退)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "heuristic": 5,
+      "no-news": 15
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1983,
+      "avg": 329.95,
+      "total": 6599,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 26,
+      "sum_original_chars": 2720,
+      "sum_truncated_chars": 2720,
+      "avg_original_per_item": 104.62,
+      "avg_truncated_per_item": 104.62,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 2893,
+    "macro_truncation_stats": {
+      "item_count": 26,
+      "original_chars": 2720,
+      "truncated_chars": 2720,
+      "avg_original_per_item": 104.62,
+      "avg_truncated_per_item": 104.62,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "searx_filter_metrics": {
+      "requery_aug": 92,
+      "requery_relax_time": 16,
+      "skip_domain": 2,
+      "requery_general": 32,
+      "skip_duplicate": 2
+    }
+  }
+}

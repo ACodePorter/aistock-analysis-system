@@ -1,0 +1,276 @@
+{
+  "_comment": "企业档案搜索服务配置 - 域名分类与规则",
+  "version": "1.0.0",
+  "last_updated": "2025-11-03",
+  
+  "preferred_sources": {
+    "_description": "优先选择的信源域名（按优先级排序）",
+    "sources": [
+      {
+        "domain": "baike.baidu.com",
+        "priority": 1,
+        "name": "百度百科",
+        "type": "encyclopedia",
+        "reliability": "high",
+        "notes": "权威、结构化、中文最全"
+      },
+      {
+        "domain": "zh.wikipedia.org",
+        "priority": 2,
+        "name": "维基百科（中文）",
+        "type": "encyclopedia",
+        "reliability": "high",
+        "notes": "国际公司、可靠性高"
+      },
+      {
+        "domain": "en.wikipedia.org",
+        "priority": 3,
+        "name": "维基百科（英文）",
+        "type": "encyclopedia",
+        "reliability": "high",
+        "notes": "国际公司信息"
+      },
+      {
+        "domain": "tianyancha.com",
+        "priority": 4,
+        "name": "天眼查",
+        "type": "business_registry",
+        "reliability": "high",
+        "notes": "中国企业、工商信息准确"
+      },
+      {
+        "domain": "qcc.com",
+        "priority": 5,
+        "name": "企查查",
+        "type": "business_registry",
+        "reliability": "high",
+        "notes": "中国企业、公开信息"
+      },
+      {
+        "domain": "1688.com",
+        "priority": 6,
+        "name": "阿里1688",
+        "type": "b2b_platform",
+        "reliability": "medium",
+        "notes": "供应商平台"
+      },
+      {
+        "domain": "linkedin.com",
+        "priority": 7,
+        "name": "LinkedIn",
+        "type": "professional_network",
+        "reliability": "high",
+        "notes": "国际公司、人员信息"
+      },
+      {
+        "domain": "crunchbase.com",
+        "priority": 8,
+        "name": "Crunchbase",
+        "type": "startup_database",
+        "reliability": "high",
+        "notes": "创业公司、融资信息"
+      },
+      {
+        "domain": "nasdaq.com",
+        "priority": 9,
+        "name": "NASDAQ",
+        "type": "stock_exchange",
+        "reliability": "high",
+        "notes": "上市公司"
+      },
+      {
+        "domain": "szse.cn",
+        "priority": 10,
+        "name": "深交所",
+        "type": "stock_exchange",
+        "reliability": "high",
+        "notes": "A股上市公司"
+      },
+      {
+        "domain": "sse.com.cn",
+        "priority": 11,
+        "name": "上交所",
+        "type": "stock_exchange",
+        "reliability": "high",
+        "notes": "A股上市公司"
+      },
+      {
+        "domain": "stock.finance.sina.com.cn",
+        "priority": 12,
+        "name": "新浪财经",
+        "type": "financial_portal",
+        "reliability": "medium",
+        "notes": "上市公司基本信息"
+      },
+      {
+        "domain": "eastmoney.com",
+        "priority": 13,
+        "name": "东方财富",
+        "type": "financial_portal",
+        "reliability": "medium",
+        "notes": "股票、公司信息"
+      }
+    ]
+  },
+  
+  "blocked_sources": {
+    "_description": "必须排除的域名（列表页、论坛、垃圾内容等）",
+    "sources": [
+      {
+        "domain": "aastocks.com",
+        "reason": "信息质量低",
+        "category": "low_quality"
+      },
+      {
+        "domain": "jrj.com.cn",
+        "reason": "广告内容多",
+        "category": "low_quality"
+      },
+      {
+        "domain": "guba.eastmoney.com",
+        "reason": "股吧论坛",
+        "category": "forum"
+      },
+      {
+        "domain": "caifuhao.eastmoney.com",
+        "reason": "自媒体内容",
+        "category": "ugc"
+      },
+      {
+        "domain": "futunn.com",
+        "reason": "信息质量低",
+        "category": "low_quality"
+      },
+      {
+        "domain": "moomoo.com",
+        "reason": "信息质量低",
+        "category": "low_quality"
+      },
+      {
+        "domain": "dnf.gamebbs.qq.com",
+        "reason": "DNF游戏论坛 - 与企业信息无关",
+        "category": "forum"
+      },
+      {
+        "domain": "weforum.org",
+        "reason": "世界经济论坛 - 反爬严格且内容不相关",
+        "category": "anti_scraping"
+      },
+      {
+        "domain": "forum.jellyfin.org",
+        "reason": "Jellyfin论坛 - 与企业信息无关",
+        "category": "forum"
+      },
+      {
+        "domain": "apps.apple.com",
+        "reason": "Apple App Store - 应用下载页面，非企业信息来源",
+        "category": "app_store"
+      },
+      {
+        "domain": "zhihu.com",
+        "reason": "知乎问答 - 论坛类内容，非官方档案",
+        "category": "forum"
+      }
+    ]
+  },
+  
+  "login_required_sources": {
+    "_description": "需要账号登录的网站（检测到登录页面后自动加入）",
+    "sources": [
+      {
+        "domain": "www.vzkoo.com",
+        "reason": "检测到登录验证页面：为提升会员帐户安全",
+        "detection_keywords": ["会员帐户安全", "需与您确认", "确认此网页操作"],
+        "added_at": "2025-11-03",
+        "auto_detected": true
+      },
+      {
+        "domain": "aiqicha.baidu.com",
+        "reason": "百度爱企查需要登录查看详细信息",
+        "detection_keywords": ["登录", "验证", "请先登录"],
+        "added_at": "2025-11-03",
+        "auto_detected": true
+      },
+      {
+        "domain": "qcc.com",
+        "reason": "企查查需要登录查看详细信息",
+        "detection_keywords": ["登录", "weblogin", "302 Found"],
+        "added_at": "2025-11-03",
+        "notes": "302重定向到weblogin"
+      },
+      {
+        "domain": "tianyancha.com",
+        "reason": "天眼查需要登录查看详细信息",
+        "detection_keywords": ["登录", "验证", "请先登录"],
+        "added_at": "2025-11-03"
+      }
+    ]
+  },
+  
+  "strict_anti_scraping_domains": {
+    "_description": "反爬虫严格的域名（需要特殊处理）",
+    "sources": [
+      {
+        "domain": "weforum.org",
+        "strategy": "special_headers",
+        "rate_limit_seconds": [2.0, 5.0],
+        "notes": "需要Google referer和英文语言头"
+      },
+      {
+        "domain": "zhihu.com",
+        "strategy": "cookie_rotation",
+        "rate_limit_seconds": [2.0, 5.0],
+        "notes": "需要清除cookies重试"
+      },
+      {
+        "domain": "tianyancha.com",
+        "strategy": "slow_rate",
+        "rate_limit_seconds": [2.0, 5.0],
+        "notes": "需要较慢的访问频率"
+      },
+      {
+        "domain": "qcc.com",
+        "strategy": "slow_rate",
+        "rate_limit_seconds": [2.0, 5.0],
+        "notes": "需要较慢的访问频率"
+      }
+    ]
+  },
+  
+  "detection_rules": {
+    "_description": "自动检测规则配置",
+    "login_detection": {
+      "enabled": true,
+      "keywords": [
+        "登录",
+        "login",
+        "weblogin",
+        "会员帐户安全",
+        "需与您确认",
+        "确认此网页操作",
+        "请先登录",
+        "验证码",
+        "captcha"
+      ],
+      "http_status_codes": [302, 401, 403],
+      "redirect_patterns": [
+        "/login",
+        "/weblogin",
+        "/signin",
+        "/auth"
+      ]
+    },
+    "content_quality": {
+      "min_content_length": 100,
+      "max_content_length": 100000,
+      "blocked_phrases": [
+        "为提升会员帐户安全",
+        "请先登录",
+        "验证码错误",
+        "页面不存在",
+        "404",
+        "403 Forbidden"
+      ]
+    }
+  }
+}

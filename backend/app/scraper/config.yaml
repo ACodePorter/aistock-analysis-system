@@ -1,0 +1,87 @@
+# Scraper Configuration
+
+domains:
+  wikipedia:
+    patterns:
+      - "*.wikipedia.org"
+      - "zh.wikipedia.org"
+      - "en.wikipedia.org"
+    fetcher: "wikipedia"
+    
+  tianyancha:
+    patterns:
+      - "*.tianyancha.com"
+      - "top.tianyancha.com"
+      - "www.tianyancha.com"
+    fetcher: "playwright"
+    requires_state: true
+    
+  qcc:
+    patterns:
+      - "*.qcc.com"
+      - "www.qcc.com"
+    fetcher: "playwright"
+    requires_state: true
+    
+  baidu_baike:
+    patterns:
+      - "baike.baidu.com"
+    fetcher: "requests"
+    requires_login: false
+
+# Storage states for login-required sites
+storage_states:
+  tianyancha: "states/tianyancha_state_default.json"
+  qcc: "states/qcc_state_default.json"
+
+# User Agents for rotation
+user_agents:
+  - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  - "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0"
+  - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15"
+
+# Proxies (optional)
+proxies: []
+  # - "http://user:pass@ip:port"
+  # - "socks5://ip:port"
+
+# Rate limiting per domain (requests per second)
+rate_limit_per_domain:
+  wikipedia: 5.0
+  tianyancha: 0.2
+  qcc: 0.2
+  baidu_baike: 1.0
+
+# Retry configuration
+retry:
+  max_attempts: 5
+  backoff_base: 2
+  backoff_max: 60
+
+# Browser configuration (Playwright)
+browser:
+  headless: true
+  timeout: 30000  # milliseconds
+  wait_until: "networkidle"
+  max_concurrent: 3
+
+# Task queue
+queue:
+  db_path: "queue/tasks.db"
+  batch_size: 10
+
+# Notification
+notify:
+  enabled: false
+  method: "file"  # "email", "slack", "file"
+  log_path: "logs/failures.json"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  path: "logs/scraper.log"
+  max_size_mb: 100
+  backup_count: 5

@@ -1,0 +1,1871 @@
+{
+  "started_at": "2026-01-05T05:24:15.225188+00:00",
+  "finished_at": "2026-01-05T05:45:49.494472+00:00",
+  "top20_count": 20,
+  "stock_reports": [
+    {
+      "name": "赛诺医疗",
+      "symbol": "688108.SH",
+      "pct_chg": 20.01,
+      "news_count": 9,
+      "report": {
+        "sentiment_score": -0.15,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "美国FDA突破性器械认定",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "赛诺神畅的COMETIU及COMEX获美国FDA突破性医疗器械认定（2025-08-06报道），提升国际市场准入与技术背书可能性。"
+          },
+          {
+            "name": "国内注册被否（COMETIU）",
+            "direction": "负面",
+            "weight": 0.35,
+            "evidence": "赛诺神畅的COMETIU自膨式颅内药物涂层支架系统国内注册申请未获国家药监局批准（2025-10-28公告），直接影响国内商业化路径与短期收入预期。"
+          },
+          {
+            "name": "业绩与盈利规模偏小且行业排名靠后",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "2025年三季报营业收入3.64亿元、归母净利润2111.80万元，在已披露同业公司中分别排名第84/第87，显示规模与盈利能力有限。"
+          },
+          {
+            "name": "海外并购与国际化布局",
+            "direction": "正面",
+            "weight": 0.12,
+            "evidence": "公司拟以约1.52亿元收购美国eLum約72.73%股权（2023公告），有助获取技术、渠道及海外市场资源，但存在整合风险。"
+          },
+          {
+            "name": "产品管线局限与ESG评级",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "公司表示在售与在研产品尚无可应用于脑机接口的产品（2025-08-13），且华证ESG评级为B、行业排名第73，显示长期增长点与治理需观察。"
+          }
+        ],
+        "score": 45,
+        "need_macro": true,
+        "macro_keywords": [
+          "医疗器械监管",
+          "跨境并购",
+          "国际审批"
+        ],
+        "risk_flags": [
+          "国内注册被拒导致国内商业化推迟或受限",
+          "盈利规模偏小，行业排名靠后，短期财务弹性有限",
+          "海外并购整合与跨境市场不确定性",
+          "新品推广与市场接受度存在不确定性",
+          "对单一产品COMETIU依赖存在集中风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "短期市场情绪对公司股价反应迅速，监管/审批新闻后成交量放大提示资金关注度变化",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资对医疗器械跨境审批与并购的态度影响公司估值与流动性，北向动向可反映国际投资者偏好",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "产品注册/审批进展（次数与批件）",
+            "reason": "COMETIU国内注册被否，后续重新申报或补充材料进展直接决定商业化时点与收益兑现",
+            "suggest_window": "1月-6月"
+          },
+          {
+            "metric": "产销率/订单量",
+            "reason": "新获批或海外市场打开后，产销率与订单量是验证销售转化与盈利改善的关键短期指标",
+            "suggest_window": "1月-3月"
+          }
+        ],
+        "confidence": 0.75,
+        "summary": "公司在国际认证（FDA突破性认定）与海外并购方面具备积极信号，可改善长期技术与市场前景；但国内核心产品COMETIU遭国家药监局注册否决、当前营收与净利规模较小且行业排名靠后，短期商业化与盈利存在不确定性。建议关注后续国内注册复议/补报进展、海外市场商业化与产销数据，以及市场成交量与北向资金动向。总体判断偏谨慎。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 9,
+          "original_chars": 898,
+          "truncated_chars": 898,
+          "avg_original_per_item": 99.78,
+          "avg_truncated_per_item": 99.78,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1809,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "凯德石英",
+      "symbol": "920179.SH",
+      "pct_chg": 20.523,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "三博脑科",
+      "symbol": "301293.SZ",
+      "pct_chg": 20.007,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "产品推进与验证",
+            "direction": "正面",
+            "weight": 0.4762,
+            "evidence": "关键词命中: 送样, 送樣, 验证"
+          },
+          {
+            "name": "业绩压力",
+            "direction": "负面",
+            "weight": 0.5238,
+            "evidence": "关键词命中: 预亏, 預虧, 下滑"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式解析：基于标题/摘要关键词。 事件: 产品推进与验证, 业绩压力.",
+        "raw": "{\n  \"sentiment_score\": 0.65,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"比亚迪全年交付量超越特斯拉（市占和销量领先信号）\",\n      \"direction\": \"正面\",\n      \"weight\": 0.40,\n      \"evidence\": \"新闻报道指出2025年全年特斯拉首次被中国汽车制造商比亚迪超越，表明比亚迪交付量和",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "回购": false,
+          "回購": false,
+          "回购股份": false,
+          "回購股份": false,
+          "购回": false,
+          "購回": false,
+          "累计回购": false,
+          "累計回購": false,
+          "增持": false,
+          "增持计划": false,
+          "增持計劃": false,
+          "拟增持": false,
+          "擬增持": false,
+          "减持": false,
+          "減持": false,
+          "拟减持": false,
+          "擬減持": false,
+          "清仓": false,
+          "套现": false,
+          "套現": false,
+          "资金流入": false,
+          "資金流入": false,
+          "主力": false,
+          "淨流入": false,
+          "净流入": false,
+          "大幅流入": false,
+          "资金净流入": false,
+          "資金淨流入": false,
+          "订单": false,
+          "訂單": false,
+          "中标": false,
+          "中標": false,
+          "新签": false,
+          "新簽": false,
+          "签约": false,
+          "簽約": false,
+          "合同": false,
+          "合約": false,
+          "送样": false,
+          "送樣": false,
+          "验证": false,
+          "驗證": false,
+          "试产": false,
+          "試產": false,
+          "量产": false,
+          "量產": false,
+          "交付": true,
+          "砷化镓": false,
+          "砷化鎵": false,
+          "卫星": false,
+          "衛星": false,
+          "在轨": false,
+          "在軌": false,
+          "适合长期": false,
+          "適合長期": false,
+          "技术突破": false,
+          "技術突破": false,
+          "预亏": false,
+          "預虧": false,
+          "下滑": true,
+          "亏损": false,
+          "虧損": false,
+          "不及预期": false,
+          "不及預期": false,
+          "处罚": false,
+          "處罰": false,
+          "调查": false,
+          "調查": false,
+          "立案": false,
+          "监管": false,
+          "監管": false,
+          "诉讼": false,
+          "訴訟": false,
+          "仲裁": false,
+          "纠纷": false,
+          "糾紛": false
+        },
+        "news_titles": [
+          "比亚迪 - 财报，业绩电话会，研报，新闻 - Reportify"
+        ],
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 4000,
+          "truncated_chars": 180,
+          "avg_original_per_item": 4000.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.045,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 749
+      }
+    },
+    {
+      "name": "锦好医疗",
+      "symbol": "920925.SH",
+      "pct_chg": 20.942,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "博拓生物",
+      "symbol": "688767.SH",
+      "pct_chg": 20.011,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "道氏技术",
+      "symbol": "300409.SZ",
+      "pct_chg": 20.009,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "*ST天龙",
+      "symbol": "300029.SZ",
+      "pct_chg": 20.045,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "倍益康",
+      "symbol": "920199.SH",
+      "pct_chg": 29.98,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "翔宇医疗",
+      "symbol": "688626.SH",
+      "pct_chg": 20.0,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.68,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "专利与认证优势",
+            "direction": "正面",
+            "weight": 0.28,
+            "evidence": "公司已获授权专利66项，产品通过欧盟CE、CMD认证，显示技术壁垒与合规进入海外市场的潜力（来源：公司介绍、官网）。"
+          },
+          {
+            "name": "技术拓展与新品（脑机接口赛道）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "公司明确布局脑机接口领域，并在陆家嘴与投资者活动中推出十余款相关新品，表明战略延伸与技术投入（来源：相关报道、活动新闻）。"
+          },
+          {
+            "name": "市场化能力与产品线覆盖",
+            "direction": "正面",
+            "weight": 0.18,
+            "evidence": "公司定位为康复平台型龙头，覆盖评定/训练/理疗/辅具/护理五大门类，展厅展示多款康复机器人与辅助设备，利于渠道与医院场景落地（来源：多篇公司/展会报道）。"
+          },
+          {
+            "name": "科创板上市与品牌可信度",
+            "direction": "正面",
+            "weight": 0.14,
+            "evidence": "公司于2021年在科创板上市，法定注册资金与公开披露提高融资与公众关注度，可支持研发与市场扩张（来源：公司简介、媒体报道）。"
+          },
+          {
+            "name": "信息与财务可验证数据不足",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "现有新闻主要为公司定位、专利与新品披露，缺乏近期营收、毛利、订单量、毛利率和现金流等关键财务/运营指标，限制短期业绩判断。"
+          }
+        ],
+        "score": 78,
+        "need_macro": true,
+        "macro_keywords": [
+          "康复器械行业",
+          "科创板",
+          "脑机接口"
+        ],
+        "risk_flags": [
+          "技术实现与临床验证风险",
+          "市场化/客户采纳速度不确定",
+          "研发投入与资本开支压力",
+          "行业竞争与价格压力",
+          "信息披露/财务数据不足以支撑估值判断"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "订单量/出货量",
+            "reason": "新品发布与展会后，短期能否转化为订单是验证商业化的直接信号",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "产销率/设备稼动率",
+            "reason": "衡量产能利用与交付能力，反映供需匹配与出货健康度",
+            "suggest_window": "3个月"
+          },
+          {
+            "metric": "ASP（单台平均售价）",
+            "reason": "监测是否因新品或竞品导致价格波动，影响毛利水平",
+            "suggest_window": "3个月"
+          },
+          {
+            "metric": "成交量（股市） & 北向资金净流入",
+            "reason": "市场对公司战略与科创板标的的情绪与资金面反应，可短期影响股价波动",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "研发投入占比 / 研发里程碑披露",
+            "reason": "评估脑机接口等前沿项目的进展速度与未来商业化路径",
+            "suggest_window": "6个月"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "总体偏正面：翔宇医疗在康复器械领域具备较强的专利与认证优势，并积极布局脑机接口与多款新品，展现技术与市场扩张路径；但当前报道缺乏关键财务与订单数据，短期商业化与盈利能力仍需通过订单、产销与营收数据验证，存在技术实现与市场接受度风险。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 505,
+          "truncated_chars": 505,
+          "avg_original_per_item": 72.14,
+          "avg_truncated_per_item": 72.14,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1321,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "伟思医疗",
+      "symbol": "688580.SH",
+      "pct_chg": 20.0,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": 0.15,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "一季度业绩增长",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "2025年一季度营收约9591万元，同比+9.4%；归母净利润约3322万元/3008.2万元，分别同比增长约52.7%和76.85%，显示短期盈利能力改善。"
+          },
+          {
+            "name": "技术与产品矩阵（康复机器人、脑机接口、AI）",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "公司宣布已构建覆盖上下肢、全周期的运动康复机器人产品矩阵，拥有数十项与脑机接口相关专利，并积极将AI用于经颅磁刺激与康复场景，表明中长期技术储备与产品化推进。"
+          },
+          {
+            "name": "高管与大股东减持",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "董事/副总/财务拟合计减持不超7656股（不超0.0080%）；股东志达创投已减持95.61万股且减持区间届满，短期或对市场情绪造成压制。"
+          },
+          {
+            "name": "2024年度业绩回落",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "2024年度营业收入4亿元，同比减少13.45%；归母净利润约1亿元，同比减少26.61%，存在业绩波动与周期性下行风险。"
+          },
+          {
+            "name": "历史分红与股东回报记录",
+            "direction": "正面",
+            "weight": 0.1,
+            "evidence": "2023年度实施10转4并派现金红利，每股派现1.5058元，显示公司有分红传统，有利于长期股东信心。"
+          }
+        ],
+        "score": 62,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "股东及管理层减持可能带来短期抛压/市场情绪负面",
+          "2024年营收与净利下滑凸显业绩波动风险",
+          "技术/产品商业化节奏与市场接受度不确定",
+          "医疗器械/脑机接口相关监管、临床验证及资金投入风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "监测减持公告后是否有持续放量以判断抛售压力与市场接纳度",
+            "suggest_window": "1-4周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资动向可反映机构对公司技术与估值的信心变化",
+            "suggest_window": "1个月"
+          },
+          {
+            "metric": "新签订单/合同金额",
+            "reason": "判断技术产品商业化与营收延续性，验证Q1增长的可持续性",
+            "suggest_window": "1季度"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "检测康复机器人与相关设备产能利用与交付节奏，对营收回升的支撑强度进行短期验证",
+            "suggest_window": "1-3个月"
+          }
+        ],
+        "confidence": 0.72,
+        "summary": "总体信息呈现短期业绩回暖与中长期技术布局并存的局面：2025年一季度盈利显著改善且有多项产品与专利支撑，但2024年业绩下滑与股东减持带来短期不确定性。建议跟踪成交量、资金流向、订单与出货节奏以判断业绩可持续性与市场情绪变化。",
+        "parsing_attempts": 3,
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 981,
+          "truncated_chars": 981,
+          "avg_original_per_item": 98.1,
+          "avg_truncated_per_item": 98.1,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1968,
+        "parse_mode": "retry"
+      }
+    },
+    {
+      "name": "当虹科技",
+      "symbol": "688039.SH",
+      "pct_chg": 20.0,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.12,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "板块整体表现",
+            "direction": "正面",
+            "weight": 0.4,
+            "evidence": "AI语料概念上涨2.00%，板块内39股上涨，位居板块涨幅第7"
+          },
+          {
+            "name": "主力资金流入",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "标题指出6股主力资金净流入超亿元，显示短期资金关注度提升"
+          },
+          {
+            "name": "信息覆盖/个股关联不足",
+            "direction": "不确定",
+            "weight": 0.25,
+            "evidence": "新闻未提及当虹科技，无法直接判断该公司受益程度或基本面变化"
+          },
+          {
+            "name": "板块内分化风险",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "板块内既有涨停、显著上涨个股，也有下跌个股，表现分化明显"
+          }
+        ],
+        "score": 55,
+        "need_macro": false,
+        "macro_keywords": [
+          "AI语料",
+          "人工智能",
+          "概念股"
+        ],
+        "risk_flags": [
+          "信息不足（新闻未涉及当虹科技）",
+          "板块内部表现分化，短期回撤风险",
+          "资金驱动特征明显，存在投机性波动",
+          "个股相关性/受益路径不明确"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量/换手率",
+            "reason": "验证资金介入力度与持续性，判断涨幅可持续性",
+            "suggest_window": "1-5日"
+          },
+          {
+            "metric": "板块主力资金净流入",
+            "reason": "监测主题资金流向，评估短期情绪和动量",
+            "suggest_window": "1-7日"
+          },
+          {
+            "metric": "个股涨跌幅与领涨股表现",
+            "reason": "判断当虹科技是否跟随领涨个股出现联动或滞后效应",
+            "suggest_window": "3-10日"
+          }
+        ],
+        "confidence": 0.45,
+        "summary": "AI语料概念整体上涨且有多只个股获得超亿元主力净流入，体现短期资金关注与主题活跃。但新闻未提及当虹科技，无法直接判断其受益程度；板块内部表现分化，短期以资金流向与成交量验证信号为主。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 2462,
+          "truncated_chars": 180,
+          "avg_original_per_item": 2462.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.0731,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 741,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "爱朋医疗",
+      "symbol": "300753.SZ",
+      "pct_chg": 20.0,
+      "news_count": 10,
+      "report": {
+        "sentiment_score": -1.0,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "减持风险",
+            "direction": "负面",
+            "weight": 1.0,
+            "evidence": "标题命中(公司直接): 爱朋医疗(300753.SZ)：高管李庆拟减持不超11.92万股 | 爱朋医疗(300753.SZ)：公司副总经理李庆拟减持11.92万股"
+          }
+        ],
+        "score": 40,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式解析：基于标题/摘要关键词。 事件: 减持风险.",
+        "raw": "{\n  \"sentiment_score\": -0.45,\n  \"sentiment_label\": \"negative\",\n  \"factors\": [\n    {\n      \"name\": \"半年业绩由盈转亏且营收下滑\",\n      \"direction\": \"负面\",\n      \"weight\": 0.40,\n      \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "回购": false,
+          "回購": false,
+          "回购股份": false,
+          "回購股份": false,
+          "购回": false,
+          "購回": false,
+          "累计回购": false,
+          "累計回購": false,
+          "增持": false,
+          "增持计划": false,
+          "增持計劃": false,
+          "拟增持": false,
+          "擬增持": false,
+          "减持": true,
+          "減持": false,
+          "拟减持": true,
+          "擬減持": false,
+          "清仓": false,
+          "套现": false,
+          "套現": false,
+          "资金流入": false,
+          "資金流入": false,
+          "主力": false,
+          "淨流入": false,
+          "净流入": false,
+          "大幅流入": false,
+          "资金净流入": false,
+          "資金淨流入": false,
+          "订单": false,
+          "訂單": false,
+          "中标": false,
+          "中標": false,
+          "新签": false,
+          "新簽": false,
+          "签约": false,
+          "簽約": false,
+          "合同": false,
+          "合約": false,
+          "送样": false,
+          "送樣": false,
+          "验证": false,
+          "驗證": false,
+          "试产": false,
+          "試產": false,
+          "量产": false,
+          "量產": false,
+          "交付": false,
+          "砷化镓": false,
+          "砷化鎵": false,
+          "卫星": false,
+          "衛星": false,
+          "在轨": false,
+          "在軌": false,
+          "适合长期": false,
+          "適合長期": false,
+          "技术突破": false,
+          "技術突破": false,
+          "预亏": false,
+          "預虧": false,
+          "下滑": false,
+          "亏损": false,
+          "虧損": false,
+          "不及预期": false,
+          "不及預期": false,
+          "处罚": false,
+          "處罰": false,
+          "调查": false,
+          "調查": false,
+          "立案": false,
+          "监管": false,
+          "監管": false,
+          "诉讼": false,
+          "訴訟": false,
+          "仲裁": false,
+          "纠纷": false,
+          "糾紛": false
+        },
+        "news_titles": [
+          "爱朋医疗(300753.SZ)：高管李庆拟减持不超11.92万股",
+          "爱朋医疗(300753.SZ)：公司副总经理李庆拟减持11.92万股",
+          "爱朋医疗：高级管理人员李庆8月8日至8月12日减持11.92万股",
+          "爱朋医疗(300753.SZ)发布上半年业绩，由盈转亏至1937.91万元",
+          "爱朋医疗(300753.SZ)董事关继峰累计减持0.21%股份 减持计划实施完毕",
+          "爱朋医疗(300753.SZ)：章泓精选1号拟减持不超过2%股份",
+          "爱朋医疗（300753.SZ）新增一起对外投资，被投资公司为海南方寸医院管理有限公司",
+          "爱朋医疗（300753.SZ）新增一起对外投资，被投资公司为爱朋智元脑科学技术（上海）有限公司",
+          "爱朋医疗：便携式脑电图机等获医疗器械注册证",
+          "【异动股】人脑工程板块高开，爱朋医疗(300753.CN)涨19.99%"
+        ],
+        "news_truncation_stats": {
+          "item_count": 10,
+          "original_chars": 1173,
+          "truncated_chars": 1164,
+          "avg_original_per_item": 117.3,
+          "avg_truncated_per_item": 116.4,
+          "ratio_truncated": 0.9923,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 2043
+      }
+    },
+    {
+      "name": "狄耐克",
+      "symbol": "300884.SZ",
+      "pct_chg": 20.0,
+      "news_count": 5,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "新闻事件概览",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "标题预览: 厦门狄耐克智能科技股份有限公司 | Dnake - 狄耐克-楼宇对讲、智能家居 | 狄耐克智能家居线上体验展厅V1.0 - Dnake"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.3,
+        "summary": "启发式解析：基于标题/摘要关键词。 事件: 新闻事件概览.",
+        "raw": "{\n  \"sentiment_score\": 0.15,\n  \"sentiment_label\": \"neutral\",\n  \"factors\": [\n    {\n      \"name\": \"数字化/线上展厅推进\",\n      \"direction\": \"",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "回购": false,
+          "回購": false,
+          "回购股份": false,
+          "回購股份": false,
+          "购回": false,
+          "購回": false,
+          "累计回购": false,
+          "累計回購": false,
+          "增持": false,
+          "增持计划": false,
+          "增持計劃": false,
+          "拟增持": false,
+          "擬增持": false,
+          "减持": false,
+          "減持": false,
+          "拟减持": false,
+          "擬減持": false,
+          "清仓": false,
+          "套现": false,
+          "套現": false,
+          "资金流入": false,
+          "資金流入": false,
+          "主力": false,
+          "淨流入": false,
+          "净流入": false,
+          "大幅流入": false,
+          "资金净流入": false,
+          "資金淨流入": false,
+          "订单": false,
+          "訂單": false,
+          "中标": false,
+          "中標": false,
+          "新签": false,
+          "新簽": false,
+          "签约": false,
+          "簽約": false,
+          "合同": false,
+          "合約": false,
+          "送样": false,
+          "送樣": false,
+          "验证": false,
+          "驗證": false,
+          "试产": false,
+          "試產": false,
+          "量产": false,
+          "量產": false,
+          "交付": false,
+          "砷化镓": false,
+          "砷化鎵": false,
+          "卫星": false,
+          "衛星": false,
+          "在轨": false,
+          "在軌": false,
+          "适合长期": false,
+          "適合長期": false,
+          "技术突破": false,
+          "技術突破": false,
+          "预亏": false,
+          "預虧": false,
+          "下滑": false,
+          "亏损": false,
+          "虧損": false,
+          "不及预期": false,
+          "不及預期": false,
+          "处罚": false,
+          "處罰": false,
+          "调查": false,
+          "調查": false,
+          "立案": false,
+          "监管": false,
+          "監管": false,
+          "诉讼": false,
+          "訴訟": false,
+          "仲裁": false,
+          "纠纷": false,
+          "糾紛": false
+        },
+        "news_titles": [
+          "厦门狄耐克智能科技股份有限公司",
+          "Dnake - 狄耐克-楼宇对讲、智能家居",
+          "狄耐克智能家居线上体验展厅V1.0 - Dnake",
+          "狄耐克OA办公系统",
+          "Dnake - 狄耐克"
+        ],
+        "news_truncation_stats": {
+          "item_count": 5,
+          "original_chars": 235,
+          "truncated_chars": 235,
+          "avg_original_per_item": 47.0,
+          "avg_truncated_per_item": 47.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 941
+      }
+    },
+    {
+      "name": "谱尼测试",
+      "symbol": "300887.SZ",
+      "pct_chg": 20.0,
+      "news_count": 0,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "当日未检索到与公司直接相关的公开新闻"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.2,
+        "summary": "当日未检索到与公司直接相关的公开新闻，暂不进行情绪与因子判断。",
+        "parse_mode": "no-news",
+        "news_truncation_stats": {
+          "item_count": 0,
+          "original_chars": 0,
+          "truncated_chars": 0,
+          "avg_original_per_item": 0,
+          "avg_truncated_per_item": 0,
+          "ratio_truncated": 0,
+          "max_len_per_item": 260
+        },
+        "prompt_token_est": 0
+      }
+    },
+    {
+      "name": "迈普医学",
+      "symbol": "301033.SZ",
+      "pct_chg": 20.0,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 0.42,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "财务业绩增长",
+            "direction": "正面",
+            "weight": 0.45,
+            "evidence": "2025年三季报归母净利润7585.40万元，营业收入2.49亿元；2025年中报归母净利润4729.91万元，同比增长46.03%，上半年营收1.58亿元，同比增长29.28%。"
+          },
+          {
+            "name": "经营性现金流充足",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "2025年三季经营活动现金净流入为8375.82万元，现金流入规模接近或超过同期净利润，表明盈利质量较好。"
+          },
+          {
+            "name": "股东拟减持",
+            "direction": "负面",
+            "weight": 0.15,
+            "evidence": "多位股东公告拟减持：深圳凯盈、风炎基金拟合计不超1.22%，国寿成达拟不超1%，短期可能对股价形成抛压或信心影响。"
+          },
+          {
+            "name": "与关联方签订独家代理协议",
+            "direction": "不确定",
+            "weight": 0.12,
+            "evidence": "公司与江西司托迈、江西远赛签订持续葡萄糖监测系统产品独家代理销售协议，有助渠道拓展但涉及关联方交易，存在合规/定价/关联交易披露关注点。"
+          },
+          {
+            "name": "中长期可持续性与放大效应不明",
+            "direction": "不确定",
+            "weight": 0.08,
+            "evidence": "短期业绩和现金流改善明显，但对未来驱动（如市场份额、产品线扩张、定价能力）与行业竞争态势的持续性新闻中未充分披露。"
+          }
+        ],
+        "score": 68,
+        "need_macro": false,
+        "macro_keywords": [
+          "医疗器械",
+          "医保支付",
+          "渠道"
+        ],
+        "risk_flags": [
+          "股东减持风险",
+          "关联交易合规与定价风险",
+          "业绩可持续性不确定",
+          "信息披露或后续业绩波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "监测股东减持执行期间与公告后的买卖盘压力与流动性变化",
+            "suggest_window": "1-3个月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "判断外资对公司估值偏好及短期价格影响",
+            "suggest_window": "周度至1个月"
+          },
+          {
+            "metric": "经营活动现金流",
+            "reason": "验证现金流的可持续性与盈利质量，与会计利润匹配",
+            "suggest_window": "季度"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "评估与关联方代理协议对销量转化能力的实际影响",
+            "suggest_window": "1-6个月"
+          },
+          {
+            "metric": "ASP（平均售价）与毛利率",
+            "reason": "观察定价能力和产品组合变化对盈利的放大或侵蚀",
+            "suggest_window": "季度"
+          }
+        ],
+        "confidence": 0.7,
+        "summary": "迈普医学2025年中报与三季报显示营收与净利双增长且经营性现金流强劲，短期基本面偏正面；但多名股东拟小幅减持（合计约1%级别）及与关联方的独家代理协议带来短期抛压与合规/定价不确定性，建议关注成交量、现金流与出货数据以验证业绩可持续性。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 685,
+          "truncated_chars": 685,
+          "avg_original_per_item": 97.86,
+          "avg_truncated_per_item": 97.86,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1533,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "冠昊生物",
+      "symbol": "300238.SZ",
+      "pct_chg": 20.0,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息披露有限",
+            "direction": "不确定",
+            "weight": 0.35,
+            "evidence": "新闻为公司简介节选，内容主要为薪资、现金赔偿、已行使期权价值及货币单位说明，缺乏经营性或财务性详细数据。"
+          },
+          {
+            "name": "业务覆盖与一体化生产描述",
+            "direction": "正面",
+            "weight": 0.25,
+            "evidence": "简介提到公司从事研发、制造与销售，暗示具备生产与商业化链条，但未给出规模或业绩数据。"
+          },
+          {
+            "name": "薪酬与期权披露提示治理信息",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "文本明确披露薪资、奖金及期权行使价等项目，表明有一定治理/激励披露，但未见高层持股或关联交易细节。"
+          },
+          {
+            "name": "缺乏业绩与现金流信息",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "没有给出营收、利润、订单、现金及负债等关键财务指标，难以评估短期基本面。"
+          },
+          {
+            "name": "潜在合规/披露风险需关注",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "公开资料片段格式化，可能为通用简介，需后续核验完整披露以判断合规与信息透明度。"
+          }
+        ],
+        "score": 50,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "信息披露有限",
+          "缺乏关键业绩/现金流数据",
+          "治理与期权披露不完整风险",
+          "短期流动性/股价波动风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "检验市场对该消息或后续披露的即时反应与流动性变化",
+            "suggest_window": "1周-1月"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资动向可反映机构对公司或板块偏好变化",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "产销率/出货量",
+            "reason": "若公司自称具备制造→销售链条，产销率能验证商业化进度",
+            "suggest_window": "1月-3月"
+          },
+          {
+            "metric": "订单/合同签约量",
+            "reason": "直接反映未来收入可见度与商业化落地程度",
+            "suggest_window": "1月-6月"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "基于提供的公司简介片段，信息量有限，无法得出明确正负结论；整体判定中性。需补充营收/利润/现金流、产销与订单等具体数据及完整治理披露以形成可交易判断。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 133,
+          "truncated_chars": 133,
+          "avg_original_per_item": 133.0,
+          "avg_truncated_per_item": 133.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 709,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "云汉芯城",
+      "symbol": "301563.SZ",
+      "pct_chg": 20.0,
+      "news_count": 7,
+      "report": {
+        "sentiment_score": 1.0,
+        "sentiment_label": "positive",
+        "factors": [
+          {
+            "name": "新闻事件概览",
+            "direction": "中性",
+            "weight": 1.0,
+            "evidence": "标题预览: 云汉芯城（上海）互联网科技股份有限公司 投资者关系活动 ... | 云汉芯城2025年登陆创业板 数字化供应链服务能力全面升级 ... | 云汉芯城加速冲刺创业板 数智化破解产业链效率痛点 - 新华网"
+          }
+        ],
+        "score": 60,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [],
+        "correlation_watch": [],
+        "confidence": 0.35,
+        "summary": "启发式解析：基于标题/摘要关键词。 事件: 新闻事件概览.",
+        "raw": "{\n  \"sentiment_score\": 0.25,\n  \"sentiment_label\": \"positive\",\n  \"factors\": [\n    {\n      \"name\": \"上市/融资驱动\",\n      \"direction\": \"正面\",\n      \"weight\": 0.30,\n      \"evidence\": \"多篇报道与公告显示云汉芯城已获准并登陆创业板，上市将拓宽融资渠道，支持数字化与供应链升级。\"\n    },\n    {\n      \"name\": \"数字化与平台能力提升\",\n      \"direction\": \"正面\",\n      \"weight\": 0.26,\n      \"evidence\": \"公司在数字化平台、原厂合作、现货库存、智能服务与制造产能等核心领域宣布实现突破，",
+        "error": "llm_empty",
+        "llm_fallback": true,
+        "parse_mode": "heuristic",
+        "parse_error": "not dict",
+        "keyword_hits": {
+          "回购": false,
+          "回購": false,
+          "回购股份": false,
+          "回購股份": false,
+          "购回": false,
+          "購回": false,
+          "累计回购": false,
+          "累計回購": false,
+          "增持": false,
+          "增持计划": false,
+          "增持計劃": false,
+          "拟增持": false,
+          "擬增持": false,
+          "减持": false,
+          "減持": false,
+          "拟减持": false,
+          "擬減持": false,
+          "清仓": false,
+          "套现": false,
+          "套現": false,
+          "资金流入": false,
+          "資金流入": false,
+          "主力": false,
+          "淨流入": false,
+          "净流入": false,
+          "大幅流入": false,
+          "资金净流入": false,
+          "資金淨流入": false,
+          "订单": false,
+          "訂單": false,
+          "中标": false,
+          "中標": false,
+          "新签": false,
+          "新簽": false,
+          "签约": false,
+          "簽約": false,
+          "合同": false,
+          "合約": false,
+          "送样": false,
+          "送樣": false,
+          "验证": false,
+          "驗證": false,
+          "试产": false,
+          "試產": false,
+          "量产": false,
+          "量產": false,
+          "交付": false,
+          "砷化镓": false,
+          "砷化鎵": false,
+          "卫星": false,
+          "衛星": false,
+          "在轨": false,
+          "在軌": false,
+          "适合长期": false,
+          "適合長期": false,
+          "技术突破": false,
+          "技術突破": false,
+          "预亏": false,
+          "預虧": false,
+          "下滑": false,
+          "亏损": false,
+          "虧損": false,
+          "不及预期": false,
+          "不及預期": false,
+          "处罚": false,
+          "處罰": false,
+          "调查": false,
+          "調查": false,
+          "立案": false,
+          "监管": false,
+          "監管": false,
+          "诉讼": false,
+          "訴訟": false,
+          "仲裁": false,
+          "纠纷": false,
+          "糾紛": false
+        },
+        "news_titles": [
+          "云汉芯城（上海）互联网科技股份有限公司 投资者关系活动 ...",
+          "云汉芯城2025年登陆创业板 数字化供应链服务能力全面升级 ...",
+          "云汉芯城加速冲刺创业板 数智化破解产业链效率痛点 - 新华网",
+          "云汉芯城-电子元器件采购一站式服务 ICkey.cn",
+          "云汉芯城（上海）互联网科技股份有限公司 - 企查查",
+          "云汉芯城创业板IPO获批",
+          "云汉芯城IPO：元器件“中间商”底色难褪，如何补齐创新能力短 ..."
+        ],
+        "news_truncation_stats": {
+          "item_count": 7,
+          "original_chars": 648,
+          "truncated_chars": 648,
+          "avg_original_per_item": 92.57,
+          "avg_truncated_per_item": 92.57,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 1497
+      }
+    },
+    {
+      "name": "雄塑科技",
+      "symbol": "300599.SZ",
+      "pct_chg": 20.0,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "公司行动：拆股/股息调整",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "新闻提到“收市價已按拆股調整…因拆股和股息及/或資本盈利分派而經過調整”，表明有拆股或分派公司行为但未披露规模与目的。"
+          },
+          {
+            "name": "历史价格与调整后数据可见性",
+            "direction": "正面",
+            "weight": 0.2,
+            "evidence": "来源为Yahoo财经历史数据，提供调整后收市价记录，有助于分析拆股影响与价格连续性。"
+          },
+          {
+            "name": "成交量信息有限",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "新闻仅列出单日或部分日期的成交量/价格片段（如2025-12-19），缺乏连续成交量与交易行为数据，难以判断流动性变化。"
+          },
+          {
+            "name": "数据完整性/时间性风险",
+            "direction": "负面",
+            "weight": 0.1,
+            "evidence": "文本出现未来日期或片段性历史记录，可能为数据截取或显示异常，存在信息准确性与时效性风险。"
+          },
+          {
+            "name": "信息不足（基本面/业绩缺失）",
+            "direction": "不确定",
+            "weight": 0.2,
+            "evidence": "新闻仅为价格/调整提示与链接，未包含公司基本面、业绩、产销或行业信息，需更多资料判断投资影响。"
+          }
+        ],
+        "score": 45,
+        "need_macro": false,
+        "macro_keywords": [],
+        "risk_flags": [
+          "信息不足：缺乏业绩与经营数据",
+          "数据片段/时间标注异常（可能为截取或显示问题）",
+          "拆股后短期波动性与流动性不确定",
+          "历史调整可能影响对比口径"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察拆股后流动性与换手率是否上升或下滑，以判断散户/机构参与程度",
+            "suggest_window": "7-30天"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资动向可反映市场对该股的机构兴趣与资金面支持",
+            "suggest_window": "1-14天"
+          },
+          {
+            "metric": "流通股本/股本变动",
+            "reason": "拆股、分派若伴随股本结构变化，会影响供需平衡与估值口径",
+            "suggest_window": "1-30天"
+          },
+          {
+            "metric": "调整后收盘价与未调整价的价差/波动率",
+            "reason": "验证调整口径是否一致，评估拆股对价格序列与短期波动的影响",
+            "suggest_window": "7-30天"
+          }
+        ],
+        "confidence": 0.35,
+        "summary": "新闻仅为价格历史与调整提示，主要涉及拆股/股息相关的收盘价调整，未提供业绩或行业信息。总体信息量不足，短期影响中性偏不确定，需关注成交量、北向资金及股本变动等可验证数据以评估拆股对流动性与估值的实际影响。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 78,
+          "truncated_chars": 78,
+          "avg_original_per_item": 78.0,
+          "avg_truncated_per_item": 78.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 673,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "熵基科技",
+      "symbol": "301330.SZ",
+      "pct_chg": 20.0,
+      "news_count": 3,
+      "report": {
+        "sentiment_score": -0.12,
+        "sentiment_label": "negative",
+        "factors": [
+          {
+            "name": "2024年归母净利增长",
+            "direction": "正面",
+            "weight": 0.3,
+            "evidence": "公司披露2024年度归母净利1.83亿元，同比增长3.26%"
+          },
+          {
+            "name": "2023年净利润下滑基数",
+            "direction": "负面",
+            "weight": 0.25,
+            "evidence": "公司2023年度净利为1.77亿元，同比下降7.92%，显示业绩波动"
+          },
+          {
+            "name": "涉金融工具/加密相关风险披露",
+            "direction": "负面",
+            "weight": 0.2,
+            "evidence": "新闻附带风险声明指出金融工具及/或加密货币交易属于高风险，可能影响业务或投资者信心"
+          },
+          {
+            "name": "盈利规模与稳定性",
+            "direction": "不确定",
+            "weight": 0.15,
+            "evidence": "归母净利在1.7-1.8亿元区间，虽实现回升但幅度有限，显示盈利弹性与可持续性存在不确定性"
+          },
+          {
+            "name": "价格/成交量与除权调整信息",
+            "direction": "不确定",
+            "weight": 0.1,
+            "evidence": "历史收盘价已按拆股调整并有成交量记录，短期股价可比性与流动性需进一步确认"
+          }
+        ],
+        "score": 48,
+        "need_macro": false,
+        "macro_keywords": [
+          "业绩",
+          "风险暴露"
+        ],
+        "risk_flags": [
+          "盈利波动（2023下降、2024小幅回升）",
+          "存在与金融工具/加密相关的高风险提示",
+          "短期股价可比性受拆股/除权影响",
+          "成交量与流动性未充分披露"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "确认回报是否伴随资金流入与市场关注度变化",
+            "suggest_window": "日/周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "判断外资对公司估值和情绪的影响（适用于沪深通标的）",
+            "suggest_window": "周/月"
+          },
+          {
+            "metric": "季度营收与归母净利同比",
+            "reason": "验证业绩连续性与季节性波动，判断增长可持续性",
+            "suggest_window": "季/年"
+          },
+          {
+            "metric": "毛利率/净利率",
+            "reason": "观察盈利质量变化，识别成本或定价压力",
+            "suggest_window": "季/年"
+          }
+        ],
+        "confidence": 0.6,
+        "summary": "基于公开报道，熵基科技2024年归母净利小幅增长（+3.26%至1.83亿元），较2023年下降后出现回升，表明业绩有一定恢复但幅度有限；同时新闻含关于金融工具/加密货币的风险提示，提示公司或相关业务存在较高风险，短期需关注成交量、外资流向及后续季度业绩验证。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 3,
+          "original_chars": 198,
+          "truncated_chars": 198,
+          "avg_original_per_item": 66.0,
+          "avg_truncated_per_item": 66.0,
+          "ratio_truncated": 1.0,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 914,
+        "parse_mode": "direct"
+      }
+    },
+    {
+      "name": "美好医疗",
+      "symbol": "301363.SZ",
+      "pct_chg": 20.0,
+      "news_count": 1,
+      "report": {
+        "sentiment_score": 0.0,
+        "sentiment_label": "neutral",
+        "factors": [
+          {
+            "name": "信息不足",
+            "direction": "不确定",
+            "weight": 0.3,
+            "evidence": "所给新闻内容为比亚迪/电动车交付数据，未包含美好医疗的任何经营、财务或事件信息，无法直接判断对美好医疗的影响。"
+          },
+          {
+            "name": "行业相关性低（新闻属新能源汽车/车企）",
+            "direction": "不确定",
+            "weight": 0.2375,
+            "evidence": "新闻聚焦比亚迪超过特斯拉的全球交付表现，主题为新能源汽车与汽车市场份额，与医疗服务或医疗器械行业直接关联性低，短期传导不确定。"
+          },
+          {
+            "name": "市场情绪与资金面传导风险",
+            "direction": "负面",
+            "weight": 0.1875,
+            "evidence": "重大行业龙头新闻可能影响整体A股风险偏好和板块轮动（例如资金从高估值板块转移），若出现风险偏好收缩，医药医疗中小市值个股短期承压的风险上升。"
+          },
+          {
+            "name": "需关注宏观/行业外溢影响",
+            "direction": "不确定",
+            "weight": 0.1375,
+            "evidence": "新闻提及'全球'与行业竞争，若后续伴随宏观政策或行业周期性变化（例如刺激或收紧），可能间接影响医疗行业估值与资金流向，当前新闻未给出此类细节。"
+          },
+          {
+            "name": "需验证的公司层面数据缺失",
+            "direction": "不确定",
+            "weight": 0.1375,
+            "evidence": "对美好医疗的判断应依赖订单、营收、毛利率、在手合同、主营业务动态等可验证数据，当前新闻未提供，建议重点跟踪公司披露与行业季度数据。"
+          }
+        ],
+        "score": 40,
+        "need_macro": true,
+        "macro_keywords": [
+          "全球市场",
+          "行业竞争",
+          "新能源汽车"
+        ],
+        "risk_flags": [
+          "信息不足导致判断不确定",
+          "新闻与公司业务无直接关联，存在解读外推风险",
+          "短期市场情绪或资金面波动可能影响股价",
+          "以他行业新闻评估医疗公司存在误判风险"
+        ],
+        "correlation_watch": [
+          {
+            "metric": "成交量",
+            "reason": "观察市场情绪与资金是否对医疗板块产生连带抛压或活跃度变化",
+            "suggest_window": "日/周"
+          },
+          {
+            "metric": "北向资金净流入",
+            "reason": "外资流向可快速影响中大型医疗股估值与板块表现",
+            "suggest_window": "周/月"
+          },
+          {
+            "metric": "订单/在手合同变动",
+            "reason": "直接反映美好医疗经营端是否出现实质性变化，应作为基本面验证项",
+            "suggest_window": "月/季度"
+          },
+          {
+            "metric": "ASP/毛利率",
+            "reason": "反映产品/服务定价与盈利能力，能验证短期业绩质量",
+            "suggest_window": "季度"
+          }
+        ],
+        "confidence": 0.32,
+        "summary": "提供的新闻为比亚迪电动车交付数据，未包含美好医疗相关信息。因信息不足，当前对美好医疗的结论保持中性偏谨慎；建议关注公司自身披露的订单、营收与毛利等可验证数据以及市场成交量和资金流向以评估短期影响。",
+        "parsing_attempts": 1,
+        "news_truncation_stats": {
+          "item_count": 1,
+          "original_chars": 4000,
+          "truncated_chars": 180,
+          "avg_original_per_item": 4000.0,
+          "avg_truncated_per_item": 180.0,
+          "ratio_truncated": 0.045,
+          "max_len_per_item": 180
+        },
+        "prompt_token_est": 749,
+        "parse_mode": "direct"
+      }
+    }
+  ],
+  "macro": {
+    "market_sentiment_index": 55,
+    "risk_index": 50,
+    "industry_heat": [
+      {
+        "industry": "新能源",
+        "heat": 60,
+        "drivers": [
+          "光伏",
+          "锂"
+        ]
+      },
+      {
+        "industry": "半导体",
+        "heat": 45,
+        "drivers": [
+          "芯片",
+          "半导体"
+        ]
+      },
+      {
+        "industry": "人工智能",
+        "heat": 45,
+        "drivers": [
+          "AI",
+          "人工智能"
+        ]
+      },
+      {
+        "industry": "消费复苏",
+        "heat": 30,
+        "drivers": [
+          "消费",
+          "出行"
+        ]
+      },
+      {
+        "industry": "基建",
+        "heat": 30,
+        "drivers": [
+          "基建",
+          "铁路"
+        ]
+      },
+      {
+        "industry": "出海",
+        "heat": 30,
+        "drivers": [
+          "出口",
+          "外需"
+        ]
+      },
+      {
+        "industry": "地产链",
+        "heat": 30,
+        "drivers": [
+          "地产",
+          "物业"
+        ]
+      }
+    ],
+    "policy_tone": {
+      "summary": "启发式：政策信号未充分解析",
+      "bias": "neutral"
+    },
+    "capital_flow_focus": [
+      "新能源",
+      "半导体",
+      "人工智能"
+    ],
+    "macro_factors": [
+      {
+        "name": "新能源",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "半导体",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "人工智能",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "消费复苏",
+        "impact": "中性",
+        "confidence": 0.4
+      },
+      {
+        "name": "基建",
+        "impact": "中性",
+        "confidence": 0.4
+      }
+    ],
+    "actionable_insights": [],
+    "suggest_global_watch": [],
+    "extra_keywords": [],
+    "summary": "主题 新能源 相关信息增量；主题 半导体 相关信息增量；主题 人工智能 相关信息增量",
+    "llm_fallback": true,
+    "raw": "",
+    "error": "macro_llm_empty",
+    "theme_hits": {
+      "半导体": 3,
+      "新能源": 4,
+      "人工智能": 3,
+      "消费复苏": 2,
+      "基建": 2,
+      "出海": 2,
+      "地产链": 2
+    },
+    "macro_truncation_stats": {
+      "item_count": 73,
+      "original_chars": 10159,
+      "truncated_chars": 3988,
+      "avg_original_per_item": 139.16,
+      "avg_truncated_per_item": 54.63,
+      "ratio_truncated": 0.3926,
+      "max_len_per_item": 160
+    },
+    "macro_prompt_token_est": 4245,
+    "parse_mode": "heuristic"
+  },
+  "macro_extra": [],
+  "macro_keywords_used": [
+    "医疗器械监管",
+    "跨境并购",
+    "国际审批",
+    "康复器械行业",
+    "科创板",
+    "脑机接口",
+    "全球市场",
+    "行业竞争",
+    "新能源汽车"
+  ],
+  "analytics": {
+    "sentiment_distribution": {
+      "positive": 4,
+      "neutral": 12,
+      "negative": 4
+    },
+    "top_factor_frequency": [
+      [
+        "信息不足",
+        8
+      ],
+      [
+        "新闻事件概览",
+        2
+      ],
+      [
+        "美国FDA突破性器械认定",
+        1
+      ],
+      [
+        "国内注册被否（COMETIU）",
+        1
+      ],
+      [
+        "业绩与盈利规模偏小且行业排名靠后",
+        1
+      ],
+      [
+        "海外并购与国际化布局",
+        1
+      ],
+      [
+        "产品管线局限与ESG评级",
+        1
+      ],
+      [
+        "产品推进与验证",
+        1
+      ],
+      [
+        "业绩压力",
+        1
+      ],
+      [
+        "专利与认证优势",
+        1
+      ],
+      [
+        "技术拓展与新品（脑机接口赛道）",
+        1
+      ],
+      [
+        "市场化能力与产品线覆盖",
+        1
+      ],
+      [
+        "科创板上市与品牌可信度",
+        1
+      ],
+      [
+        "信息与财务可验证数据不足",
+        1
+      ],
+      [
+        "一季度业绩增长",
+        1
+      ]
+    ],
+    "factor_direction_counts": {
+      "正面": 17,
+      "负面": 11,
+      "不确定": 19
+    }
+  },
+  "config": {
+    "SEARXNG_URL": "http://localhost:10000",
+    "LLM": "azure",
+    "MOVERS_API_URL": "http://localhost:8080/api/movers/live_insight?limit=20",
+    "AZURE_USE_RESPONSES": true,
+    "azure_last_error": null
+  },
+  "diagnostics": {
+    "fallback_stock_count": 4,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 5,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 8,
+    "parse_success_stock_retry": 1,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.2,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 5,
+    "force_no_response_format": true,
+    "azure_fail_count": 0,
+    "parse_mode_counts": {
+      "direct": 8,
+      "no-news": 7,
+      "heuristic": 4,
+      "retry": 1
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2043,
+      "avg": 782.35,
+      "total": 15647,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 63,
+      "sum_original_chars": 15996,
+      "sum_truncated_chars": 6065,
+      "avg_original_per_item": 253.9,
+      "avg_truncated_per_item": 96.27,
+      "overall_ratio_truncated": 0.3792
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4245,
+    "macro_truncation_stats": {
+      "item_count": 73,
+      "original_chars": 10159,
+      "truncated_chars": 3988,
+      "avg_original_per_item": 139.16,
+      "avg_truncated_per_item": 54.63,
+      "ratio_truncated": 0.3926,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 11,
+      "skip_domain": 1960,
+      "requery_relax_time": 25,
+      "skip_not_match_terms": 625,
+      "requery_general": 21,
+      "requery_aug": 134,
+      "skip_low_cjk": 305,
+      "requery_cn_sites": 260,
+      "empty_results": 410,
+      "requery_low_quality": 22,
+      "requery_llm_rewrite": 52,
+      "requery_rewrite_sites": 150,
+      "fallback_relaxed_domain": 12,
+      "db_fallback_try": 12,
+      "extreme_fallback": 22,
+      "skip_duplicate": 24,
+      "skip_blocked_title": 69,
+      "skip_short_title": 4,
+      "skip_generic": 3
+    }
+  }
+}

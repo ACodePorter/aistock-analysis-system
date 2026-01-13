@@ -1,0 +1,71 @@
+{
+  "timestamp": "20251009_160319",
+  "generated_at_utc": "2025-10-09T16:03:19.747219+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 7,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 0,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.35,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 404 Client Error: Resource Not Found for url: https://ai-qiutianyong-3233.openai.azure.com/openai/replies?api-version=20"
+      },
+      {
+        "level": "warning",
+        "message": "所有个股首次解析 JSON 失败 (均依赖重试或回退)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 8,
+    "force_no_response_format": true,
+    "parse_mode_counts": {
+      "heuristic": 7,
+      "no-news": 13
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2297,
+      "avg": 606.9,
+      "total": 12138,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 54,
+      "sum_original_chars": 5432,
+      "sum_truncated_chars": 5432,
+      "avg_original_per_item": 100.59,
+      "avg_truncated_per_item": 100.59,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 5746,
+    "macro_truncation_stats": {
+      "item_count": 54,
+      "original_chars": 5432,
+      "truncated_chars": 5432,
+      "avg_original_per_item": 100.59,
+      "avg_truncated_per_item": 100.59,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "searx_filter_metrics": {
+      "requery_aug": 77,
+      "requery_relax_time": 16,
+      "skip_domain": 1,
+      "requery_general": 29,
+      "skip_old_published": 1,
+      "skip_generic": 3
+    }
+  },
+  "version": 1
+}

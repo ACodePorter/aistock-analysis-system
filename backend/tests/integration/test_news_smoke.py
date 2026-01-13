@@ -45,7 +45,7 @@ def test_metrics_endpoint():
 def test_backfill_dry_run():
     # conservative backfill to avoid side effects; ok if processed=0
     url = (
-        f"{BASE_URL}/api/news/backfill?limit=3&only_missing_content=true&only_missing_summary=true&skip_non_article=true"
+        f"{BASE_URL}/api/news/backfill?limit=3&only_missing_content=true&only_missing_summary=true&skip_non_article=true&use_llm=false"
     )
     _print(f"POST {url}")
     r = requests.post(url, timeout=30)

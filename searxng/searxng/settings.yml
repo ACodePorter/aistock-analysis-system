@@ -65,11 +65,57 @@ engines:
     categories: news
     disabled: false
 
+  - name: reuters
+    engine: reuters
+    shortcut: reu
+    categories: news
+    disabled: false
+
+  - name: duckduckgo news
+    engine: duckduckgo_extra
+    ddg_category: news
+    shortcut: ddn
+    categories: news
+    disabled: false
+
+  - name: qwant news
+    engine: qwant
+    qwant_categ: news
+    network: qwant
+    shortcut: qwn
+    categories: news
+    disabled: false
+
   # Chinese financial news
   - name: baidu news
     engine: baidu_news
     shortcut: bdn
     categories: news
+    disabled: false
+
+  # Web search engines (help discover Chinese finance sites beyond dedicated news feeds)
+  - name: bing
+    engine: bing
+    shortcut: bi
+    categories: general
+    disabled: false
+
+  - name: google
+    engine: google
+    shortcut: go
+    categories: general
+    disabled: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    categories: general
+    disabled: false
+
+  - name: baidu
+    engine: baidu
+    shortcut: bd
+    categories: general
     disabled: false
 
   # Social media for real-time updates

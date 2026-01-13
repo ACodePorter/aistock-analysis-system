@@ -1,0 +1,61 @@
+{
+  "timestamp": "20251009_005406",
+  "generated_at_utc": "2025-10-09T00:54:06.066895",
+  "diagnostics": {
+    "fallback_stock_count": 10,
+    "fallback_macro_used": false,
+    "strict_json_enabled": false,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 10,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.5,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Read timed out. (read timeout=60)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "heuristic": 10,
+      "direct": 10
+    },
+    "stock_prompt_token_summary": {
+      "min": 511,
+      "max": 2300,
+      "avg": 1328.7,
+      "total": 26574,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 80,
+      "sum_original_chars": 12378,
+      "sum_truncated_chars": 12378,
+      "avg_original_per_item": 154.72,
+      "avg_truncated_per_item": 154.72,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 15143,
+    "macro_truncation_stats": {
+      "item_count": 125,
+      "original_chars": 18697,
+      "truncated_chars": 18697,
+      "avg_original_per_item": 149.58,
+      "avg_truncated_per_item": 149.58,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_extra_parse_mode_counts": {
+      "direct": 3
+    },
+    "macro_extra_multi_json_success_count": 0
+  },
+  "version": 1
+}

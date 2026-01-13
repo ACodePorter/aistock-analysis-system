@@ -16,7 +16,11 @@ interface FundFlowRow {
   small_ratio: number | null
 }
 
-export default function FundFlowPanel(){
+type FundFlowPanelProps = {
+  variant?: 'card' | 'content'
+}
+
+export default function FundFlowPanel({ variant = 'card' }: FundFlowPanelProps){
   const [rows, setRows] = useState<FundFlowRow[]>([])
   const [date, setDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -51,60 +55,60 @@ export default function FundFlowPanel(){
   const topInflow = [...rows].sort((a,b)=> (b.main_net??0) - (a.main_net??0)).slice(0,5)
   const topOutflow = [...rows].sort((a,b)=> (a.main_net??0) - (b.main_net??0)).slice(0,5)
 
-  return (
-    <div style={{padding:12, border:'1px solid #e5e7eb', borderRadius:12}}>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
-        <div style={{fontWeight:600}}>大单资金流向榜</div>
-        <div style={{fontSize:12, color:'#6b7280'}}>{date ? `最新交易日：${date}` : '暂无数据'}</div>
-      </div>
+  const body = (
+    <>
       {loading ? (
-        <div style={{fontSize:12, color:'#6b7280'}}>加载中...</div>
+        <div className="muted-text" style={{fontSize:13}}>加载中...</div>
       ) : error ? (
-        <div style={{fontSize:12, color:'#ef4444'}}>加载失败：{error}</div>
+        <div style={{fontSize:13, color:'#ef4444'}}>加载失败：{error}</div>
       ) : rows.length === 0 ? (
-        <div style={{fontSize:12, color:'#6b7280'}}>暂无资金流向数据</div>
+        <div className="empty-state">暂无资金流向数据</div>
       ) : (
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
-          <div>
-            <div style={{fontWeight:600, marginBottom:6}}>主力净流入 TOP5</div>
-            <div style={{border:'1px solid #e5e7eb', borderRadius:8, overflow:'hidden'}}>
-              <table style={{width:'100%', borderCollapse:'collapse', fontSize:12}}>
-                <thead style={{background:'#f9fafb'}}>
+        <div className="section-grid two">
+          <div style={{padding:18}}>
+            <div className="card-panel-header" style={{marginBottom:12}}>
+              <div className="card-panel-title" style={{fontSize:16}}>主力净流入 TOP5</div>
+            </div>
+            <div className="table-wrapper" style={{marginTop:6}}>
+              <table className="table-beauty" style={{fontSize:12}}>
+                <thead>
                   <tr>
-                    <th style={{padding:'6px 8px', textAlign:'left'}}>股票</th>
-                    <th style={{padding:'6px 8px', textAlign:'right'}}>净额（万/亿）</th>
-                    <th style={{padding:'6px 8px', textAlign:'right'}}>净占比(%)</th>
+                    <th>股票</th>
+                    <th style={{textAlign:'right'}}>净额（万/亿）</th>
+                    <th style={{textAlign:'right'}}>净占比(%)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topInflow.map((r)=> (
                     <tr key={`in-${r.symbol}`}>
-                      <td style={{padding:'6px 8px', borderTop:'1px solid #f3f4f6'}}>{r.symbol}</td>
-                      <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid #f3f4f6'}}>{fmtWanYi(r.main_net)}</td>
-                      <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid #f3f4f6'}}>{r.main_ratio!=null? r.main_ratio.toFixed(2) : '-'}</td>
+                      <td>{r.symbol}</td>
+                      <td style={{textAlign:'right'}}>{fmtWanYi(r.main_net)}</td>
+                      <td style={{textAlign:'right'}}>{r.main_ratio!=null? r.main_ratio.toFixed(2) : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-          <div>
-            <div style={{fontWeight:600, marginBottom:6}}>主力净流出 TOP5</div>
-            <div style={{border:'1px solid #e5e7eb', borderRadius:8, overflow:'hidden'}}>
-              <table style={{width:'100%', borderCollapse:'collapse', fontSize:12}}>
-                <thead style={{background:'#f9fafb'}}>
+          <div style={{padding:18}}>
+            <div className="card-panel-header" style={{marginBottom:12}}>
+              <div className="card-panel-title" style={{fontSize:16}}>主力净流出 TOP5</div>
+            </div>
+            <div className="table-wrapper" style={{marginTop:6}}>
+              <table className="table-beauty" style={{fontSize:12}}>
+                <thead>
                   <tr>
-                    <th style={{padding:'6px 8px', textAlign:'left'}}>股票</th>
-                    <th style={{padding:'6px 8px', textAlign:'right'}}>净额（万/亿）</th>
-                    <th style={{padding:'6px 8px', textAlign:'right'}}>净占比(%)</th>
+                    <th>股票</th>
+                    <th style={{textAlign:'right'}}>净额（万/亿）</th>
+                    <th style={{textAlign:'right'}}>净占比(%)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topOutflow.map((r)=> (
                     <tr key={`out-${r.symbol}`}>
-                      <td style={{padding:'6px 8px', borderTop:'1px solid #f3f4f6'}}>{r.symbol}</td>
-                      <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid #f3f4f6'}}>{fmtWanYi(r.main_net)}</td>
-                      <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid #f3f4f6'}}>{r.main_ratio!=null? r.main_ratio.toFixed(2) : '-'}</td>
+                      <td>{r.symbol}</td>
+                      <td style={{textAlign:'right'}}>{fmtWanYi(r.main_net)}</td>
+                      <td style={{textAlign:'right'}}>{r.main_ratio!=null? r.main_ratio.toFixed(2) : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -113,6 +117,30 @@ export default function FundFlowPanel(){
           </div>
         </div>
       )}
+    </>
+  )
+
+  if (variant === 'content') {
+    return (
+      <>
+        <div style={{display:'flex', justifyContent:'flex-end', marginBottom:12}}>
+          <div className="info-pill">{date ? `最新交易日：${date}` : '等待更新'}</div>
+        </div>
+        {body}
+      </>
+    )
+  }
+
+  return (
+    <div className="card-panel">
+      <div className="card-panel-header">
+        <div>
+          <div className="card-panel-title">大单资金流向榜</div>
+          <div className="card-panel-subtitle">追踪主力资金动向，洞察市场资金侧重点</div>
+        </div>
+        <div className="info-pill">{date ? `最新交易日：${date}` : '等待更新'}</div>
+      </div>
+      {body}
     </div>
   )
 }

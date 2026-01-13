@@ -1,7 +1,7 @@
 """
 主应用入口与路由定义（中文说明）
 
-此模块负责构建并暴露完整的 FastAPI 应用：
+此模块负责构建并暴露完整的 FastAPI 应用： 
 - 初始化数据库 schema（init_database）并在启动时根据环境变量选择性挂载调度器（attach_scheduler）。
 - 提供股票数据、观察列表、行情快照、资金流向、技术信号、预测与报告相关的 HTTP API。
 - 包含新闻抓取/处理/去重/质量审计/LLM 分析 等新闻子系统的路由和管理接口。
@@ -20,18 +20,18 @@
 注意：本文件以路由定义为主，复杂业务逻辑（如爬虫、LLM 分析、去重、调度、任务执行）委托给项目内的子模块实现（如 news_service、llm_processor、task_manager、enhanced_news_scheduler 等）。
 """
 
-from .news_service import NewsProcessor
+from .news.news_service import NewsProcessor
 
 import logging
 
 from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request
-from fastapi.responses import ORJSONResponse, JSONResponse
+from fastapi.responses import ORJSONResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from sqlalchemy import select, text, and_
+from pydantic import BaseModel, Field, validator
+from sqlalchemy import select, text, and_, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Any, List, Optional
 import json
 import os
 import random
@@ -40,21 +40,240 @@ import sys
 import time
 import asyncio
 import tushare as ts
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from .db import SessionLocal, init_database, engine
-from .data_source import get_stock_info, search_stocks, get_realtime_stock, fetch_daily, get_spot_snapshot
-from .models import Watchlist, PriceDaily, Forecast, Signal, Task, Report, TaskStatus, TaskType, Stock
-from .forecast import predict_stock_price
-from .report import generate_report_data
-from .task_manager import TaskManager
-from .scheduler import run_daily_pipeline, attach_scheduler
+from .core.db import SessionLocal, init_database, engine
+from .data.data_source import get_stock_info, search_stocks, get_realtime_stock, fetch_daily, get_spot_snapshot
+# 使用数据源中的带缓存的资金流“今日排行”加载器，减少日志与请求频率
+from .data.data_source import _load_fund_flow_rank_today as _ds_load_rank_today
+from .core.models import Watchlist, PriceDaily, Forecast, Signal, Task, Report, TaskStatus, TaskType, Stock, AgentJob, AgentJobStatus, StockDailyFeature, FeatureCorrelation, StockEvent, StockPoolMember, StockProfile
+from .prediction.model_inference import predict_symbol as _predict_symbol  # inference utility
+from .prediction.forecast import predict_stock_price
+from .reports.report import generate_report_data
+from .reports.macro_report import generate_and_store_macro_report
+from .tasks.task_manager import TaskManager
+from .tasks.scheduler import run_daily_pipeline, attach_scheduler
 import pandas as pd
 import httpx
 from urllib.parse import urlparse
+from .routers.news import router as news_router
+from .routers.movers import router as movers_router
+from .routers.movers import warm_live_insight_cache  # 预热实时行情缓存
+from .core import logging_config  # ensure logging configured
+
+# Agent script导入（延迟加载避免启动时耗时）
+from pathlib import Path as _Path
+import threading as _threading
+import uuid as _uuid
+import traceback as _tb
+from collections import deque, Counter
+import math
+
+_AGENT_JOBS: dict[str, dict] = {}  # legacy in-memory cache (will mirror DB subset)
+_AGENT_JOBS_LOCK = _threading.Lock()
+_AGENT_QUEUE: list[str] = []  # store job_id referencing DB rows
+_AGENT_METRICS = {
+    'runs_total': 0,
+    'runs_failed_total': 0,
+    'runs_succeeded_total': 0,
+    'last_run_duration_sec': 0.0,
+    'last_run_finished_at': ''
+}
+_AGENT_DURATION_HISTORY: deque[float] = deque(maxlen=300)
+_AGENT_FAILURE_REASON_COUNTS: Counter = Counter()
+
+def _agent_max_concurrent() -> int:
+    try:
+        return max(1, int(os.getenv('AGENT_MAX_CONCURRENT', '1')))
+    except Exception:
+        return 1
+
+def _dispatch_next_agent_if_possible():
+    """Attempt to start next queued agent job if under concurrency limit (DB-backed)."""
+    with _AGENT_JOBS_LOCK:
+        running = sum(1 for j in _AGENT_JOBS.values() if j.get('status') == 'running')
+        limit = _agent_max_concurrent()
+        if running >= limit:
+            return
+        if not _AGENT_QUEUE:
+            return
+        job_id = _AGENT_QUEUE.pop(0)
+        # mark running in DB
+        with SessionLocal() as session:
+            job_row = session.query(AgentJob).filter(AgentJob.job_id==job_id).first()
+            if not job_row or job_row.status != AgentJobStatus.QUEUED.value:
+                return
+            job_row.status = AgentJobStatus.RUNNING.value
+            job_row.started_at = datetime.utcnow()
+            strict_flag = job_row.strict_mode
+            created_at_value = job_row.created_at  # capture before session closes/commit to avoid expiration
+            session.commit()
+        _AGENT_JOBS[job_id] = {
+            'status': 'running',
+            'strict': strict_flag,
+            'created_at': created_at_value.isoformat() if created_at_value else None
+        }
+    t = _threading.Thread(target=_run_agent_job, args=(job_id, strict_flag), daemon=True)
+    t.start()
+_AGENT_SCRIPT_PATH = _Path(__file__).resolve().parent / "scripts" / "top20_llm_agent_full.py"
+
+def _run_agent_job(job_id: str, strict: bool):
+    start_ts = time.time()
+    env_backup = os.environ.get('AGENT_STRICT_JSON')
+    try:
+        if strict:
+            os.environ['AGENT_STRICT_JSON'] = '1'
+        cmd = [sys.executable, str(_AGENT_SCRIPT_PATH)]
+        import subprocess, json as _json
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        stdout, stderr = proc.communicate()
+        rc = proc.returncode
+        report_paths = []
+        # 解析 stdout 中出现的生成路径提示
+        for line in stdout.splitlines()[-30:]:
+            if 'agent_report_' in line and ('.json' in line or '.md' in line):
+                report_paths.append(line.strip())
+        status_final = 'finished' if rc == 0 else 'failed'
+        duration = round(time.time() - start_ts,2)
+        stdout_tail = stdout.splitlines()[-80:]
+        stderr_tail = stderr.splitlines()[-80:]
+        with SessionLocal() as session:
+            row = session.query(AgentJob).filter(AgentJob.job_id==job_id).first()
+            if row:
+                row.status = AgentJobStatus.FINISHED.value if status_final=='finished' else AgentJobStatus.FAILED.value
+                row.finished_at = datetime.utcnow()
+                row.return_code = rc
+                row.stdout_tail = "\n".join(stdout_tail)
+                row.stderr_tail = "\n".join(stderr_tail)
+                row.reports_json = json.dumps(report_paths, ensure_ascii=False)
+                row.duration_sec = duration
+                session.commit()
+        with _AGENT_JOBS_LOCK:
+            existing = _AGENT_JOBS.get(job_id, {})
+            existing.update({
+                'status': status_final,
+                'return_code': rc,
+                'stdout_tail': stdout_tail,
+                'stderr_tail': stderr_tail,
+                'duration_sec': duration,
+                'reports_detected': report_paths
+            })
+            _AGENT_JOBS[job_id] = existing
+            _AGENT_METRICS['runs_total'] += 1
+            if status_final == 'failed':
+                _AGENT_METRICS['runs_failed_total'] += 1
+                # classify failure reason
+                fail_reason = 'nonzero_exit' if rc != 0 else 'unknown'
+                # simple heuristic from stderr tail
+                joined_err = '\n'.join(stderr_tail).lower()
+                if 'timeout' in joined_err:
+                    fail_reason = 'timeout'
+                elif 'azure' in joined_err and 'error' in joined_err:
+                    fail_reason = 'azure_llm'
+                elif 'connection' in joined_err or 'network' in joined_err:
+                    fail_reason = 'network'
+                _AGENT_FAILURE_REASON_COUNTS[fail_reason] += 1
+            else:
+                _AGENT_METRICS['runs_succeeded_total'] += 1
+                # Trigger feature extraction in a background thread (non-blocking)
+                def _bg_build_features():
+                    try:
+                        import subprocess, sys as _sys, shlex
+                        script_path = _Path(__file__).resolve().parent.parent / 'scripts' / 'build_daily_features.py'
+                        if script_path.exists():
+                            # date param omitted to infer from report
+                            subprocess.Popen([_sys.executable, str(script_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        # trigger stock pool update (will call enrichment for new symbols)
+                        try:
+                            pool_script = _Path(__file__).resolve().parent.parent / 'scripts' / 'update_stock_pool.py'
+                            if pool_script.exists():
+                                subprocess.Popen([_sys.executable, str(pool_script)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except Exception as e2:
+                            logger.warning("auto update_stock_pool failed: %s", e2, exc_info=True)
+                        # Persist daily agent report (best-effort)
+                        try:
+                            from .utils.agent_persistence import persist_agent_report
+                            # Attempt to parse the last JSON file path from report_paths lines
+                            json_path = None
+                            md_path = None
+                            for p_line in reversed(report_paths):
+                                # lines like 'JSON: D:\\...agent_report_2025....json'
+                                if '.json' in p_line and 'agent_report_' in p_line:
+                                    # extract path after 'JSON:' or whole token
+                                    part = p_line.split('JSON:')[-1].strip()
+                                    if part.endswith('.json'):
+                                        json_path = _Path(part)
+                                        md_candidate = json_path.with_suffix('.md')
+                                        if md_candidate.exists():
+                                            md_path = md_candidate
+                                        break
+                            if json_path and json_path.exists():
+                                persist_agent_report(json_path, md_path, job_id=job_id)
+                        except Exception as pe:
+                            logger.warning("persist_agent_report failed: %s", pe, exc_info=True)
+                    except Exception as e:
+                        logger.warning("auto build_daily_features failed: %s", e, exc_info=True)
+                _threading.Thread(target=_bg_build_features, daemon=True).start()
+            _AGENT_METRICS['last_run_duration_sec'] = duration
+            _AGENT_METRICS['last_run_finished_at'] = datetime.utcnow().isoformat()
+            _AGENT_DURATION_HISTORY.append(duration)
+        _dispatch_next_agent_if_possible()
+    except Exception as e:
+        duration = round(time.time() - start_ts,2)
+        # 在异常路径也使用 with，避免连接泄漏；如遇连接池/瞬时故障，短暂等待后重试一次
+        try:
+            with SessionLocal() as session:
+                row = session.query(AgentJob).filter(AgentJob.job_id==job_id).first()
+                if row:
+                    row.status = AgentJobStatus.FAILED.value
+                    row.finished_at = datetime.utcnow()
+                    row.error_message = str(e)
+                    row.traceback = _tb.format_exc()
+                    row.duration_sec = duration
+                    session.commit()
+        except Exception:
+            try:
+                time.sleep(0.2)
+                with SessionLocal() as session:
+                    row = session.query(AgentJob).filter(AgentJob.job_id==job_id).first()
+                    if row:
+                        row.status = AgentJobStatus.FAILED.value
+                        row.finished_at = datetime.utcnow()
+                        row.error_message = str(e)
+                        row.traceback = _tb.format_exc()
+                        row.duration_sec = duration
+                        session.commit()
+            except Exception:
+                pass
+        with _AGENT_JOBS_LOCK:
+            existing = _AGENT_JOBS.get(job_id, {})
+            existing.update({
+                'status': 'failed',
+                'error': str(e),
+                'traceback': _tb.format_exc(),
+                'duration_sec': duration
+            })
+            _AGENT_JOBS[job_id] = existing
+            _AGENT_METRICS['runs_total'] += 1
+            _AGENT_METRICS['runs_failed_total'] += 1
+            _AGENT_METRICS['last_run_duration_sec'] = duration
+            _AGENT_METRICS['last_run_finished_at'] = datetime.utcnow().isoformat()
+            _AGENT_DURATION_HISTORY.append(duration)
+            # classify exception reason
+            reason = type(e).__name__.lower()
+            if 'timeout' in reason:
+                reason = 'timeout'
+            _AGENT_FAILURE_REASON_COUNTS[reason] += 1
+        _dispatch_next_agent_if_possible()
+    finally:
+        # 还原环境（确保异常时也执行）
+        if env_backup is None:
+            os.environ.pop('AGENT_STRICT_JSON', None)
+        else:
+            os.environ['AGENT_STRICT_JSON'] = env_backup
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +288,710 @@ else:
     DefaultResponse = JSONResponse
 
 app = FastAPI(title="AI Stock API", version="1.1", default_response_class=DefaultResponse)
+app.include_router(news_router)
+app.include_router(movers_router)
+
+# === Persisted Agent Daily Reports API ===
+from sqlalchemy import select as _select
+from .core.models import AgentDailyReport as _AgentDailyReport
+
+@app.get('/api/agent/daily/latest')
+async def get_agent_daily_latest(with_markdown: bool = Query(True), prefer_filesystem: bool = Query(False, description="当为 true 时跳过数据库，优先读取 agent_reports 的最新文件，避免持久化副本滞后")):
+    # 1) 首选持久化表（除非显式要求优先文件）
+    if not prefer_filesystem:
+        with SessionLocal() as session:
+            row = session.execute(
+                _select(_AgentDailyReport).order_by(_AgentDailyReport.report_date.desc())
+            ).scalars().first()
+            if row:
+                return {
+                    'report_date': row.report_date.isoformat(),
+                    'generated_at': row.generated_at.isoformat() if row.generated_at else None,
+                    'job_id': row.job_id,
+                    'top20_count': row.top20_count,
+                    'version': row.version,
+                    'stock_reports': json.loads(row.stock_reports_json) if row.stock_reports_json else None,
+                    'macro': json.loads(row.macro_json) if row.macro_json else None,
+                    'analytics': json.loads(row.analytics_json) if row.analytics_json else None,
+                    'diagnostics': json.loads(row.diagnostics_json) if row.diagnostics_json else None,
+                    'markdown': row.markdown if with_markdown else None,
+                }
+    # 2) 回退到磁盘上的最新 agent_reports 文件
+    try:
+        reports_dir = _Path(__file__).resolve().parent.parent.parent / "agent_reports"
+        files = []
+        if reports_dir.exists():
+            files = sorted(reports_dir.glob("agent_report_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not files:
+            raise HTTPException(status_code=404, detail='no persisted agent daily report')
+        f = files[0]
+        rpt = json.loads(f.read_text('utf-8'))
+        # 字段自适应映射
+        report_date = None
+        gen_at = None
+        try:
+            if isinstance(rpt.get('report_date'), str):
+                # 可能是 'YYYY-MM-DD' 或 ISO 字符串
+                try:
+                    report_date = datetime.fromisoformat(rpt['report_date']).date().isoformat()
+                except Exception:
+                    report_date = rpt['report_date']
+            elif isinstance(rpt.get('finished_at'), str):
+                report_date = datetime.fromisoformat(rpt['finished_at']).date().isoformat()
+        except Exception:
+            report_date = datetime.utcnow().date().isoformat()
+        try:
+            if isinstance(rpt.get('finished_at'), str):
+                gen_at = datetime.fromisoformat(rpt['finished_at']).isoformat()
+        except Exception:
+            gen_at = datetime.utcnow().isoformat()
+
+        stock_reports = rpt.get('stock_reports') or rpt.get('top10') or rpt.get('top20')
+        top20_count = len(stock_reports) if isinstance(stock_reports, list) else (rpt.get('top20_count') or 0)
+        version = rpt.get('version') or 1
+        entry = {
+            'report_date': report_date,
+            'generated_at': gen_at,
+            'job_id': rpt.get('job_id'),
+            'top20_count': top20_count,
+            'version': version,
+            'stock_reports': stock_reports,
+            'macro': rpt.get('macro'),
+            'analytics': rpt.get('analytics'),
+            'diagnostics': rpt.get('diagnostics'),
+        }
+        if with_markdown:
+            md_candidate = f.with_suffix('.md')
+            if md_candidate.exists():
+                try:
+                    entry['markdown'] = md_candidate.read_text('utf-8')
+                except Exception:
+                    entry['markdown_error'] = 'failed to read markdown file'
+        return entry
+    except HTTPException:
+        raise
+    except Exception as e:
+        # 3) 最终兜底：返回 404 + 简述错误，避免前端空指针
+        raise HTTPException(status_code=404, detail=f'no persisted agent daily report (fallback failed: {str(e)})')
+
+@app.get('/api/agent/daily/{report_date}')
+async def get_agent_daily_by_date(report_date: str, with_markdown: bool = Query(True)):
+    try:
+        d = datetime.fromisoformat(report_date).date()
+    except Exception:
+        raise HTTPException(status_code=400, detail='invalid date format (YYYY-MM-DD)')
+    with SessionLocal() as session:
+        row = session.execute(
+            _select(_AgentDailyReport).where(_AgentDailyReport.report_date==d)
+        ).scalars().first()
+        if not row:
+            raise HTTPException(status_code=404, detail='report not found')
+        return {
+            'report_date': row.report_date.isoformat(),
+            'generated_at': row.generated_at.isoformat() if row.generated_at else None,
+            'job_id': row.job_id,
+            'top20_count': row.top20_count,
+            'version': row.version,
+            'stock_reports': json.loads(row.stock_reports_json) if row.stock_reports_json else None,
+            'macro': json.loads(row.macro_json) if row.macro_json else None,
+            'analytics': json.loads(row.analytics_json) if row.analytics_json else None,
+            'diagnostics': json.loads(row.diagnostics_json) if row.diagnostics_json else None,
+            'markdown': row.markdown if with_markdown else None,
+        }
+
+@app.get('/api/agent/daily/list')
+async def list_agent_daily_reports(limit: int = Query(7, ge=1, le=30), with_markdown: bool = Query(False)):
+    with SessionLocal() as session:
+        rows = session.execute(
+            _select(_AgentDailyReport).order_by(_AgentDailyReport.report_date.desc()).limit(limit)
+        ).scalars().all()
+        out = []
+        for r in rows:
+            out.append({
+                'report_date': r.report_date.isoformat(),
+                'generated_at': r.generated_at.isoformat() if r.generated_at else None,
+                'job_id': r.job_id,
+                'top20_count': r.top20_count,
+                'version': r.version,
+                'macro': json.loads(r.macro_json) if r.macro_json else None,
+                'analytics': json.loads(r.analytics_json) if r.analytics_json else None,
+                'diagnostics': json.loads(r.diagnostics_json) if r.diagnostics_json else None,
+                'markdown': r.markdown if with_markdown else None,
+            })
+        return out
+
+@app.get('/metrics', response_class=PlainTextResponse)
+async def metrics():
+    """Prometheus metrics for agent runs and queue state."""
+    with _AGENT_JOBS_LOCK:
+        running = sum(1 for j in _AGENT_JOBS.values() if j.get('status') == 'running')
+        queued = sum(1 for j in _AGENT_JOBS.values() if j.get('status') == 'queued')
+    # compute avg & p95
+    if _AGENT_DURATION_HISTORY:
+        durations_sorted = sorted(_AGENT_DURATION_HISTORY)
+        avg_dur = sum(_AGENT_DURATION_HISTORY)/len(_AGENT_DURATION_HISTORY)
+        idx = max(0, int(math.ceil(0.95 * len(durations_sorted))) - 1)
+        p95 = durations_sorted[idx]
+    else:
+        avg_dur = 0.0
+        p95 = 0.0
+    lines = [
+        f"agent_runs_total {_AGENT_METRICS['runs_total']}",
+        f"agent_runs_failed_total {_AGENT_METRICS['runs_failed_total']}",
+        f"agent_runs_succeeded_total {_AGENT_METRICS['runs_succeeded_total']}",
+        f"agent_last_run_duration_seconds {_AGENT_METRICS['last_run_duration_sec']}",
+        f"agent_duration_avg_seconds {avg_dur:.3f}",
+        f"agent_duration_p95_seconds {p95:.3f}",
+        f"agent_running {running}",
+        f"agent_queued {queued}"
+    ]
+    for reason, cnt in _AGENT_FAILURE_REASON_COUNTS.items():
+        safe_reason = re.sub(r'[^a-zA-Z0-9_]', '_', reason)
+        lines.append(f'agent_failure_reason_total{{reason="{safe_reason}"}} {cnt}')
+    return "\n".join(lines) + "\n"
+
+@app.post("/api/agent/run")
+async def run_agent(strict_json: bool = False):
+    """启动一次 Top20 智能分析 Agent 运行（异步）。
+
+    参数：
+    - strict_json: 是否强制启用严格 JSON 模式（覆盖当前进程环境变量）。
+
+    返回：job_id 用于后续查询状态。
+    """
+    if not _AGENT_SCRIPT_PATH.exists():
+        raise HTTPException(status_code=500, detail="Agent script not found")
+    job_id = _uuid.uuid4().hex
+    limit = _agent_max_concurrent()
+    with _AGENT_JOBS_LOCK:
+        running_now = sum(1 for j in _AGENT_JOBS.values() if j.get('status') == 'running')
+        queued_status = AgentJobStatus.QUEUED.value
+        running_status = AgentJobStatus.RUNNING.value
+        if running_now >= limit:
+            # create queued row
+            with SessionLocal() as session:
+                row = AgentJob(job_id=job_id, status=queued_status, strict_mode=strict_json)
+                session.add(row)
+                session.commit()
+            _AGENT_JOBS[job_id] = {'status': 'queued', 'strict': strict_json, 'created_at': datetime.utcnow().isoformat()}
+            _AGENT_QUEUE.append(job_id)
+            position = len(_AGENT_QUEUE)
+            return {"job_id": job_id, "status": "queued", "queue_position": position, "concurrency_limit": limit}
+        else:
+            with SessionLocal() as session:
+                row = AgentJob(job_id=job_id, status=running_status, strict_mode=strict_json, started_at=datetime.utcnow())
+                session.add(row)
+                session.commit()
+            _AGENT_JOBS[job_id] = {'status': 'running', 'strict': strict_json, 'created_at': datetime.utcnow().isoformat()}
+    t = _threading.Thread(target=_run_agent_job, args=(job_id, strict_json), daemon=True)
+    t.start()
+    return {"job_id": job_id, "status": "running", "concurrency_limit": limit}
+
+@app.get("/api/agent/status/{job_id}")
+async def get_agent_status(job_id: str):
+    # prefer DB row for canonical state
+    with SessionLocal() as session:
+        row = session.query(AgentJob).filter(AgentJob.job_id==job_id).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="job not found")
+        data = {
+            'status': row.status,
+            'job_id': row.job_id,
+            'strict': row.strict_mode,
+            'created_at': row.created_at.isoformat() if row.created_at else None,
+            'started_at': row.started_at.isoformat() if row.started_at else None,
+            'finished_at': row.finished_at.isoformat() if row.finished_at else None,
+            'return_code': row.return_code,
+            'stdout_tail': row.stdout_tail.split('\n') if row.stdout_tail else [],
+            'stderr_tail': row.stderr_tail.split('\n') if row.stderr_tail else [],
+            'reports_detected': json.loads(row.reports_json) if row.reports_json else [],
+            'error': row.error_message,
+            'traceback': row.traceback,
+            'duration_sec': row.duration_sec
+        }
+    return data
+
+@app.get("/api/agent/latest")
+async def get_latest_agent_report(limit: int = Query(1, ge=1, le=20), with_markdown: bool = Query(False)):
+    """返回最近生成的智能分析报告（JSON）。
+
+    参数:
+    - limit: 返回最近 N 份报告的 JSON 内容；=1 时仅返回最新；>1 返回数组。
+
+    说明:
+    - 扫描 `agent_reports/agent_report_*.json` 按修改时间倒序。
+    - 若无报告，返回 404。
+    - limit=1: {"report": {...}, "path": "..."}
+    - limit>1: {"reports": [{"path": "...", "report": {...}}, ...]}
+    """
+    reports_dir = _Path(__file__).resolve().parent.parent.parent / "agent_reports"
+    files = []
+    if reports_dir.exists():
+        files = sorted(reports_dir.glob("agent_report_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not files:
+        # Graceful fallback: attempt to use latest AgentJob summary
+        try:
+            with SessionLocal() as session:
+                job = session.query(AgentJob).order_by(AgentJob.created_at.desc()).first()
+                if job:
+                    skeleton = {
+                        'path': None,
+                        'report': {
+                            'job_id': job.job_id,
+                            'status': job.status,
+                            'created_at': job.created_at.isoformat() if job.created_at else None,
+                            'finished_at': job.finished_at.isoformat() if job.finished_at else None,
+                            'duration_sec': job.duration_sec,
+                            'stdout_tail': job.stdout_tail.split('\n') if job.stdout_tail else [],
+                            'stderr_tail': job.stderr_tail.split('\n') if job.stderr_tail else [],
+                            'fallback': 'agent_job_row_no_report_files'
+                        }
+                    }
+                    if limit == 1:
+                        return skeleton
+                    return {"reports": [skeleton], "count": 1, "fallback": True}
+        except Exception:
+            pass
+        # ultimate fallback empty structure
+        empty = {'path': None, 'report': {'message': 'no reports yet', 'fallback': 'empty'}}
+        if limit == 1:
+            return empty
+        return {"reports": [empty], "count": 1, "fallback": True}
+    selected = files[:limit]
+    out = []
+    for f in selected:
+        try:
+            data = json.loads(f.read_text("utf-8"))
+        except Exception as e:
+            data = {"error": str(e)}
+        entry = {"path": str(f.name), "report": data}
+        if with_markdown:
+            md_candidate = f.with_suffix('.md')
+            if md_candidate.exists():
+                try:
+                    entry['markdown'] = md_candidate.read_text('utf-8')
+                except Exception as e:
+                    entry['markdown_error'] = str(e)
+        out.append(entry)
+    if limit == 1:
+        return out[0]
+    return {"reports": out, "count": len(out)}
+
+@app.get("/api/agent/metrics/latest")
+async def get_latest_agent_metrics():
+    """返回最新的 agent 诊断指标 (JSON)。
+
+    优先读取 agent_reports/agent_metrics_latest.json (原子替换保证无部分写入)。
+    如果不存在，则扫描 agent_metrics_*.json 最新一个。
+    若均不存在，尝试回退到最新 report 的 diagnostics 字段。
+    """
+    reports_dir = _Path(__file__).resolve().parent.parent.parent / "agent_reports"
+    if not reports_dir.exists():
+        raise HTTPException(status_code=404, detail="no reports directory")
+    latest_path = reports_dir / "agent_metrics_latest.json"
+    if latest_path.exists():
+        try:
+            return json.loads(latest_path.read_text('utf-8'))
+        except Exception as e:
+            logger.warning("failed reading metrics_latest: %s", e, exc_info=True)
+    # fallback: scan timestamped metrics
+    metric_files = sorted(reports_dir.glob("agent_metrics_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for mf in metric_files:
+        try:
+            return json.loads(mf.read_text('utf-8'))
+        except Exception:
+            continue
+    # final fallback: latest report diagnostics
+    report_files = sorted(reports_dir.glob("agent_report_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for rf in report_files:
+        try:
+            rpt = json.loads(rf.read_text('utf-8'))
+            if isinstance(rpt, dict) and rpt.get('diagnostics'):
+                return {
+                    'timestamp': rpt.get('finished_at'),
+                    'generated_from': rf.name,
+                    'diagnostics': rpt['diagnostics'],
+                    'version': 1,
+                    'fallback': 'from_report'
+                }
+        except Exception:
+            continue
+    raise HTTPException(status_code=404, detail="no metrics found")
+
+# =========================
+# Knowledge Base Endpoints
+# =========================
+
+@app.get("/api/stock-pool")
+def get_stock_pool(
+    active: bool = Query(True, description="仅显示当前在池中的标的"),
+    limit: int = Query(100, le=500),
+    offset: int = Query(0, ge=0),
+    since: Optional[str] = Query(None, description="first_seen_date >= since (YYYY-MM-DD)"),
+    industry: Optional[str] = Query(None, description="按行业过滤 (exact match)"),
+    sort: str = Query("first_seen_date", description="排序字段: first_seen_date|last_seen_date|symbol|days_active"),
+    order: str = Query("asc", description="asc|desc")
+):
+    if sort not in {"first_seen_date", "last_seen_date", "symbol", "days_active"}:
+        raise HTTPException(status_code=400, detail="invalid sort field")
+    if order not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail="invalid order param")
+    with SessionLocal() as session:
+        from sqlalchemy import func, case, literal_column
+        # 基础查询
+        q = session.query(StockPoolMember)
+        if active:
+            q = q.filter(StockPoolMember.exit_date.is_(None))
+        if since:
+            try:
+                d = date.fromisoformat(since)
+                q = q.filter(StockPoolMember.first_seen_date >= d)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="since 格式需 YYYY-MM-DD")
+        if industry:
+            # join profiles to filter by industry
+            q = q.join(StockProfile, StockProfile.symbol==StockPoolMember.symbol).filter(StockProfile.industry==industry)
+        # total before pagination
+        total = q.count()
+        if sort == 'days_active':
+            # days_active 定义：若 exit_date 为空，则使用 (current_date - first_seen_date)；否则 (exit_date - first_seen_date)
+            # 兼容 PostgreSQL 的日期差（返回整数天）。对于历史已退出的标的，保持固定天数；对于仍在池中的，实时增长。
+            today = func.current_date()
+            sort_col = case(
+                (StockPoolMember.exit_date.is_(None), today - StockPoolMember.first_seen_date),
+                else_=StockPoolMember.exit_date - StockPoolMember.first_seen_date
+            )
+        else:
+            sort_col = getattr(StockPoolMember, sort)
+        if order == 'desc':
+            sort_col = sort_col.desc()
+        q = q.order_by(sort_col).offset(offset).limit(limit)
+        rows = q.all()
+        symbols = [r.symbol for r in rows]
+        profiles = {}
+        if symbols:
+            prof_rows = session.query(StockProfile).filter(StockProfile.symbol.in_(symbols)).all()
+            for p in prof_rows:
+                profiles[p.symbol] = p
+        out = []
+        for r in rows:
+            if sort == 'days_active':
+                # 计算 days_active 值（以返回值增强前端可见性）
+                ref_end = r.exit_date or date.today()
+                try:
+                    days_active_val = (ref_end - r.first_seen_date).days if r.first_seen_date else None
+                except Exception:
+                    days_active_val = None
+            prof = profiles.get(r.symbol)
+            out.append({
+                'symbol': r.symbol,
+                'company_name': prof.company_name if prof else None,
+                'first_seen_date': r.first_seen_date.isoformat() if r.first_seen_date else None,
+                'last_seen_date': r.last_seen_date.isoformat() if r.last_seen_date else None,
+                'exit_date': r.exit_date.isoformat() if r.exit_date else None,
+                'industry': prof.industry if prof else None,
+                **({'days_active': days_active_val} if sort == 'days_active' else {})
+            })
+        return {'count': len(out), 'total': total, 'rows': out, 'limit': limit, 'offset': offset}
+
+@app.get("/api/stock-profile/{symbol}")
+def get_stock_profile(symbol: str):
+    with SessionLocal() as session:
+        prof = session.query(StockProfile).filter(StockProfile.symbol==symbol).first()
+        if not prof:
+            raise HTTPException(status_code=404, detail="profile not found")
+        return {
+            'symbol': prof.symbol,
+            'company_name': prof.company_name,
+            'industry': prof.industry,
+            'sub_industry': prof.sub_industry,
+            'products': prof.core_products,
+            'competitors': prof.competitors,
+            'risk_factors': prof.risk_factors,
+            'business_summary': prof.business_summary,
+            'strategic_keywords': prof.strategic_keywords if hasattr(prof, 'strategic_keywords') else None,
+            'last_refreshed': prof.last_refreshed.isoformat() if prof.last_refreshed else None
+        }
+
+@app.get("/api/stock-profile/{symbol}/details")
+def get_stock_profile_details(symbol: str):
+    """获取完整的公司画像详情，包含数据分析和统计信息"""
+    with SessionLocal() as session:
+        prof = session.query(StockProfile).filter(StockProfile.symbol==symbol).first()
+        if not prof:
+            raise HTTPException(status_code=404, detail="profile not found")
+        
+        # 计算数据完整度
+        fields = [
+            prof.company_name,
+            prof.industry,
+            prof.sub_industry,
+            prof.business_summary,
+            prof.core_products,
+            prof.competitors,
+            prof.risk_factors,
+        ]
+        completeness = sum(1 for f in fields if f) / len(fields) * 100
+        
+        # 统计关键词、产品、竞争对手等数量
+        products = [p.strip() for p in prof.core_products.split(',') if p.strip()] if prof.core_products else []
+        competitors = [c.strip() for c in prof.competitors.split(',') if c.strip()] if prof.competitors else []
+        risk_factors = [r.strip() for r in prof.risk_factors.split(',') if r.strip()] if prof.risk_factors else []
+        keywords = [k.strip() for k in prof.strategic_keywords.split(',') if k.strip()] if hasattr(prof, 'strategic_keywords') and prof.strategic_keywords else []
+        
+        return {
+            'symbol': prof.symbol,
+            'company_name': prof.company_name,
+            'industry': prof.industry,
+            'sub_industry': prof.sub_industry,
+            'business_summary': prof.business_summary,
+            'strategic_keywords': prof.strategic_keywords if hasattr(prof, 'strategic_keywords') else None,
+            'products': prof.core_products,
+            'competitors': prof.competitors,
+            'risk_factors': prof.risk_factors,
+            'last_refreshed': prof.last_refreshed.isoformat() if prof.last_refreshed else None,
+            
+            # 数据分析
+            'analysis': {
+                'profile_completeness': round(completeness),
+                'products_count': len(products),
+                'competitors_count': len(competitors),
+                'risk_factors_count': len(risk_factors),
+                'keywords_count': len(keywords),
+                'quality_score': round(50 + completeness / 2),  # 质量评分 50-100
+                'data_sources': ['Company databases', 'Public records'],
+            },
+            
+            # 行业分析（基于现有数据）
+            'industry_analysis': {
+                'industry': prof.industry,
+                'market_position': 'Mid-market' if len(competitors) > 3 else 'Niche',
+                'competition_level': len(competitors),
+            }
+        }
+
+@app.post("/api/stock-profile/{symbol}/enrich")
+async def enrich_stock_profile(
+    symbol: str,
+    force_refresh: bool = Query(False, description="是否强制刷新（忽略24小时缓存）")
+):
+    """
+    异步富化股票画像 - 通过 SearXNG 搜索新闻 + LLM 分析
+    
+    流程：
+    1. 搜索该股票/公司的相关新闻
+    2. 使用 LLM 对新闻进行分析和结构化
+    3. 存储结果到 StockProfile 表
+    
+    返回：
+    {
+        "status": "success|processing|failed",
+        "symbol": "...",
+        "company_name": "...",
+        "industry": "...",
+        "business_summary": "...",
+        "analysis": {...},  # LLM 分析结果
+        "last_refreshed": "ISO datetime"
+    }
+    """
+    try:
+        from .utils.stock_profile_enrichment import StockProfileEnricher
+        
+        db = SessionLocal()
+        
+        try:
+            # 获取公司名称
+            profile = db.query(StockProfile).filter_by(symbol=symbol).first()
+            company_name = profile.company_name if profile else None
+            
+            if not company_name:
+                # 尝试从 Watchlist 获取
+                watch = db.query(Watchlist).filter_by(symbol=symbol).first()
+                company_name = watch.name if watch else symbol
+            
+            # 执行富化
+            enricher = StockProfileEnricher()
+            updated_profile = await enricher.enrich_stock_profile(
+                symbol=symbol,
+                company_name=company_name,
+                db=db,
+                force_refresh=force_refresh
+            )
+            
+            if not updated_profile:
+                return {
+                    "status": "failed",
+                    "symbol": symbol,
+                    "message": "Failed to enrich profile"
+                }
+            
+            # 解析 profile_json 如果存在
+            analysis = {}
+            if updated_profile.profile_json:
+                try:
+                    analysis = json.loads(updated_profile.profile_json)
+                except:
+                    pass
+            
+            return {
+                "status": "success",
+                "symbol": updated_profile.symbol,
+                "company_name": updated_profile.company_name,
+                "industry": updated_profile.industry,
+                "sub_industry": updated_profile.sub_industry,
+                "business_summary": updated_profile.business_summary,
+                "core_products": updated_profile.core_products,
+                "competitors": updated_profile.competitors,
+                "risk_factors": updated_profile.risk_factors,
+                "strategic_keywords": updated_profile.strategic_keywords,
+                "analysis": analysis,
+                "last_refreshed": updated_profile.last_refreshed.isoformat() if updated_profile.last_refreshed else None
+            }
+        
+        finally:
+            db.close()
+    
+    except Exception as e:
+        logger.error(f"Error enriching profile for {symbol}: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "failed",
+            "symbol": symbol,
+            "message": str(e)
+        }
+
+@app.post("/api/stock-profile/{symbol}/refresh")
+def refresh_stock_profile(symbol: str):
+    # Invoke enrichment script synchronously (placeholder) to refresh timestamp / create if missing
+    import subprocess, sys as _sys
+    script_path = _Path(__file__).resolve().parent.parent / 'scripts' / 'enrich_stock_profile.py'
+    if not script_path.exists():
+        raise HTTPException(status_code=500, detail="enrichment script missing")
+    rc = subprocess.call([_sys.executable, str(script_path), '--symbol', symbol])
+    if rc != 0:
+        raise HTTPException(status_code=500, detail=f"enrichment script failed rc={rc}")
+    # Return updated profile
+    with SessionLocal() as session:
+        prof = session.query(StockProfile).filter(StockProfile.symbol==symbol).first()
+        if not prof:
+            raise HTTPException(status_code=500, detail="enrichment produced no profile")
+        return {
+            'symbol': prof.symbol,
+            'company_name': prof.company_name,
+            'industry': prof.industry,
+            'last_refreshed': prof.last_refreshed.isoformat() if prof.last_refreshed else None
+        }
+
+@app.get("/api/features/daily")
+def get_daily_features(symbol: str = Query(...), start: Optional[str] = Query(None), end: Optional[str] = Query(None), limit: int = Query(500, le=2000)):
+    with SessionLocal() as session:
+        q = session.query(StockDailyFeature).filter(StockDailyFeature.symbol==symbol)
+        if start:
+            q = q.filter(StockDailyFeature.trade_date >= date.fromisoformat(start))
+        if end:
+            q = q.filter(StockDailyFeature.trade_date <= date.fromisoformat(end))
+        q = q.order_by(StockDailyFeature.trade_date.desc()).limit(limit)
+        rows = q.all()
+        def row_to_dict(r: StockDailyFeature):
+            return {
+                'trade_date': r.trade_date.isoformat(),
+                'pct_chg': r.pct_chg,
+                'ret_1d_prev': r.ret_1d_prev,
+                'ret_5d_prev': r.ret_5d_prev,
+                'vol_5d_prev': r.vol_5d_prev,
+                'fwd_ret_1d': r.fwd_ret_1d,
+                'fwd_ret_5d': r.fwd_ret_5d,
+                'fwd_ret_10d': r.fwd_ret_10d,
+                'fwd_ret_20d': r.fwd_ret_20d,
+                'news_count': r.news_count,
+                'agent_score': r.agent_score,
+                'agent_factor_count': r.agent_factor_count,
+                'agent_risk_factors_count': r.agent_risk_factors_count,
+                'agent_parse_mode': r.agent_parse_mode,
+                'agent_sentiment_label': r.agent_sentiment_label,
+                'macro_sentiment_index': r.macro_sentiment_index,
+                'macro_risk_index': r.macro_risk_index,
+            }
+        return {'symbol': symbol, 'rows': [row_to_dict(r) for r in rows]}
+
+@app.get("/api/features/correlations")
+def get_feature_correlations(feature: Optional[str] = None, horizon: Optional[str] = None, metric_type: Optional[str] = None, limit: int = Query(200, le=1000)):
+    with SessionLocal() as session:
+        q = session.query(FeatureCorrelation).order_by(FeatureCorrelation.computed_at.desc())
+        if feature:
+            q = q.filter(FeatureCorrelation.feature_name==feature)
+        if horizon:
+            q = q.filter(FeatureCorrelation.horizon==horizon)
+        if metric_type:
+            q = q.filter(FeatureCorrelation.metric_type==metric_type)
+        q = q.limit(limit)
+        rows = q.all()
+        return {'count': len(rows), 'rows': [
+            {
+                'feature': r.feature_name,
+                'horizon': r.horizon,
+                'metric_type': r.metric_type,
+                'value': r.value,
+                'sample_size': r.sample_size,
+                'window': r.rolling_window,
+                'computed_at': r.computed_at.isoformat()
+            } for r in rows
+        ]}
+
+@app.get("/api/events")
+def get_events(symbol: Optional[str] = None, event_type: Optional[str] = None, start: Optional[str] = None, end: Optional[str] = None, limit: int = Query(300, le=1000)):
+    with SessionLocal() as session:
+        q = session.query(StockEvent).order_by(StockEvent.trade_date.desc())
+        if symbol:
+            q = q.filter(StockEvent.symbol==symbol)
+        if event_type:
+            q = q.filter(StockEvent.event_type==event_type)
+        if start:
+            q = q.filter(StockEvent.trade_date >= date.fromisoformat(start))
+        if end:
+            q = q.filter(StockEvent.trade_date <= date.fromisoformat(end))
+        q = q.limit(limit)
+        rows = q.all()
+        out = []
+        for r in rows:
+            out.append({
+                'symbol': r.symbol,
+                'trade_date': r.trade_date.isoformat(),
+                'event_type': r.event_type,
+                'severity': r.severity,
+                'trigger_features': r.trigger_features,
+                'description': r.description,
+                'source': r.source,
+            })
+        return {'count': len(out), 'rows': out}
+
+@app.get("/api/models/predict")
+def model_predict(symbol: str = Query(..., description="股票代码，如 600519.SH"), horizons: str = Query("1d,5d", description="预测周期列表，逗号分隔: 1d,5d,10d,20d"), trade_date: Optional[str] = Query(None, description="可选，使用该交易日的特征行；为空时取最新")):
+    """在线预测接口：
+
+    返回：
+    - direction_prob_up_1d: 下一交易日上涨概率（若分类模型激活）
+    - expected_return_{hz}: 各 horizon 预期收益（若对应回归模型激活）
+    - symbol, trade_date
+
+    说明：
+    - horizons 参数形如 1d,5d,10d,20d（任意子集）
+    - 若模型尚未训练/激活，对应字段缺失。
+    - trade_date 指定时必须已有特征行；否则返回最新可用行。
+    """
+    hz_list = [h.strip() for h in horizons.split(',') if h.strip()]
+    tdate = None
+    if trade_date:
+        try:
+            tdate = date.fromisoformat(trade_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="trade_date 格式需 YYYY-MM-DD")
+    with SessionLocal() as session:
+        result = _predict_symbol(session, symbol, hz_list, tdate)
+    if 'error' in result:
+        raise HTTPException(status_code=404, detail=result['error'])
+    return result
 
 
 @app.middleware("http")
@@ -111,7 +1034,7 @@ async def _startup_attach_scheduler():
             attach_scheduler(app)
         else:
             logger.warning("Scheduler disabled by ENABLE_SCHEDULER env var")
-        # Pre-warm snapshot cache in background so first request is not empty/null
+    # Pre-warm snapshot cache in background so first request is not empty/null
         async def _prewarm_snapshot():
             try:
                 # tiny delay to ensure app ready
@@ -139,7 +1062,8 @@ async def _startup_attach_scheduler():
             import threading
             def _bg_prewarm():
                 try:
-                    time.sleep(0.5)
+                    time.sleep(0.4)
+                    # 预热 watchlist snapshot
                     with SessionLocal() as session:
                         watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
                         symbols = [w.symbol for w in watches]
@@ -152,6 +1076,11 @@ async def _startup_attach_scheduler():
                                 _ = get_spot_snapshot(symbols)
                             except Exception:
                                 pass
+                    # 预热 live_insight （全市场实时涨跌榜）
+                    try:
+                        warm_live_insight_cache()
+                    except Exception:
+                        pass
                 except Exception:
                     pass
             threading.Thread(target=_bg_prewarm, daemon=True).start()
@@ -159,6 +1088,39 @@ async def _startup_attach_scheduler():
             pass
     except Exception as e:
         logger.exception("Scheduler initialization failed on startup: %s", e)
+
+
+# 启动后台任务调度器（每周自动更新股票数据）
+@app.on_event("startup")
+async def _startup_init_task_scheduler():
+    """应用启动时初始化后台任务调度器
+    
+    功能：
+    - 每周一 02:00 自动更新所有股票的公司画像数据
+    - 无需用户手动刷新
+    - 记录任务执行日志和统计
+    """
+    try:
+        from .tasks.task_scheduler import init_task_scheduler
+        init_task_scheduler()
+        logger.info("✅ 后台任务调度器已初始化")
+    except ImportError:
+        logger.warning("⚠️ APScheduler 未安装，跳过后台任务调度器初始化")
+        logger.info("   请运行: pip install apscheduler")
+    except Exception as e:
+        logger.error(f"❌ 初始化后台任务调度器失败: {e}")
+
+
+# 应用关闭时停止任务调度器
+@app.on_event("shutdown")
+async def _shutdown_task_scheduler():
+    """应用关闭时关闭任务调度器"""
+    try:
+        from .tasks.task_scheduler import shutdown_task_scheduler
+        shutdown_task_scheduler()
+        logger.info("✅ 后台任务调度器已关闭")
+    except Exception as e:
+        logger.error(f"❌ 关闭任务调度器失败: {e}")
 
 
 # CORS middleware
@@ -169,6 +1131,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.on_event("startup")
+def _agent_queue_recover():
+    """Recover persisted agent jobs into in-memory mirrors and re-queue unfinished ones.
+    - Any RUNNING jobs on previous shutdown become QUEUED again (they were interrupted).
+    - Any QUEUED jobs are appended preserving created_at ordering.
+    Then we dispatch up to concurrency limit.
+    """
+    try:
+        with SessionLocal() as session:
+            rows = session.query(AgentJob).order_by(AgentJob.created_at.asc()).all()
+            with _AGENT_JOBS_LOCK:
+                for r in rows:
+                    if r.status in (AgentJobStatus.RUNNING.value, AgentJobStatus.QUEUED.value):
+                        # reset RUNNING -> QUEUED
+                        if r.status == AgentJobStatus.RUNNING.value:
+                            r.status = AgentJobStatus.QUEUED.value
+                            r.started_at = None
+                            session.add(r)
+                        _AGENT_QUEUE.append(r.job_id)
+                        _AGENT_JOBS[r.job_id] = {
+                            'status': 'queued',
+                            'strict': r.strict_mode,
+                            'created_at': r.created_at.isoformat() if r.created_at else None
+                        }
+                    elif r.status in (AgentJobStatus.FINISHED.value, AgentJobStatus.FAILED.value):
+                        _AGENT_JOBS[r.job_id] = {
+                            'status': 'finished' if r.status==AgentJobStatus.FINISHED.value else 'failed',
+                            'strict': r.strict_mode,
+                            'created_at': r.created_at.isoformat() if r.created_at else None,
+                            'started_at': r.started_at.isoformat() if r.started_at else None,
+                            'finished_at': r.finished_at.isoformat() if r.finished_at else None,
+                            'return_code': r.return_code,
+                            'duration_sec': r.duration_sec,
+                        }
+                session.commit()
+        # After populating, attempt dispatch within concurrency limit
+        _dispatch_next_agent_if_possible()
+    except Exception:
+        logger.exception("Agent queue recovery failed")
 
 # Dependency
 def get_db():
@@ -275,151 +1276,43 @@ def search_stock(q: str = Query(..., description="股票代码或名称")):
     - 对正则/特殊字符使用安全匹配
     """
     logger.info("Received stock search query: %s", q)
-    
-    # 输入验证
-    if not q or len(q.strip()) < 1:
-        raise HTTPException(status_code=400, detail="查询参数不能为空")
-    
-    q = q.strip()
-    
     try:
-        # 尝试获取股票基础数据（已包含重试机制）
-        df = get_stock_basic()
-        
-        # pandas contains 支持正则，特殊字符需转义，中文需 lower 兼容
-        import re
-        def safe_contains(s, pat):
-            try:
-                escaped_pat = re.escape(pat)
-                return s.str.contains(escaped_pat, case=False, na=False)
-            except Exception:
-                try:
-                    return s.str.contains(pat, case=False, na=False)
-                except Exception:
-                    return s == s  # 返回全 False 的布尔索引
-        
-        result = df[
-            safe_contains(df['ts_code'], q)
-            | safe_contains(df['symbol'], q)
-            | safe_contains(df['name'], q)
-        ]
-        
-        # 限制返回结果数量，避免过多结果
-        result = result.head(20)
+        # 输入验证：如果没有有效查询，则刷新缓存并返回状态
+        if not q or len(q.strip()) < 1:
+            data = get_stock_basic()
+            return {
+                "ok": True,
+                "message": f"Stock cache refreshed successfully. Loaded {len(data)} stocks.",
+                "data_source": os.getenv("DATA_SOURCE", "akshare")
+            }
 
-        logger.info("Search stock query %s returned %d results", q, len(result))
-
-        # 转换为列表字典格式，使用字典索引避免 iterrows 的问题
-        new_result = []
-        for _, row in result.iterrows():
-            new_result.append({
-                "ts_code": str(row['ts_code']),
-                "symbol": str(row['symbol']),
-                "name": str(row['name']),
-                "market": str(row['market'])
-            })
-
-        return new_result
-        
-    except HTTPException as exc:
-        # 重新抛出 HTTPException，保持原有错误信息
-        logger.warning("Stock search failed with HTTPException for query %s: %s", q, getattr(exc, "detail", exc))
-        raise
-    except Exception as e:
-        error_msg = f"Stock search failed: {str(e)}"
-        logger.exception("Stock search failed for query %s", q)
-        
-        # 对于网络相关错误，提供更友好的错误信息
-        if any(keyword in str(e).lower() for keyword in ['timeout', 'connection', 'network', 'dns']):
-            error_msg = "网络连接超时，请稍后重试。如果问题持续存在，请检查网络连接。"
-        elif 'read timed out' in str(e).lower():
-            error_msg = "数据读取超时，请稍后重试。"
-        
-        raise HTTPException(status_code=500, detail=error_msg)
-
-@app.get("/health")
-def health():
-    """健康检查：返回服务存活状态。"""
-    return {"status":"ok"}
-
-@app.post("/admin/db/init")
-def admin_db_init():
-    """初始化或更新数据库 schema（幂等）。
-
-    - 调用 db.init_database()，内部执行 create_all/轻量迁移
-    - 可用于 Kubernetes/Lambda 等启动前的准备步骤
-    """
-    try:
-        init_database()
-        return {"ok": True, "message": "Database schema ensured (create_all)"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"DB init failed: {e}")
-
-@app.get("/api/llm/health")
-async def llm_health_check():
-    """LLM 轻量健康检查。
-
-    - 若配置了 Azure OpenAI（Responses API），以超小提示词执行一次探测
-    - 返回服务可达状态、关键配置与响应片段（避免消耗过多 token）
-    """
-    from .llm_processor import LLMNewsProcessor
-    info = {
-        "service": None,
-        "ok": False,
-        "endpoint": os.getenv("AZURE_OPENAI_ENDPOINT"),
-        "api_version": os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-01-preview"),
-        "model": os.getenv("AZURE_OPENAI_DEPLOYMENT") or os.getenv("AZURE_OPENAI_MODEL"),
-        "max_tokens": int(os.getenv("AZURE_OPENAI_MAX_COMPLETION_TOKENS", "16384")),
-        "message": None,
-        "output_preview": None,
-    }
-    try:
-        async with LLMNewsProcessor() as llm:
-            info["service"] = llm.llm_service
-            if llm.llm_service == "none":
-                info["message"] = "No LLM configured"
-                return info
-            # Minimal prompt to validate pipeline; avoid heavy token usage
-            prompt = "Return the single word OK."
-            try:
-                # Call the same internal path used by analysis, but minimal workload
-                if llm.llm_service == "azure":
-                    text = await llm._call_azure_openai_responses(prompt)  # noqa: SLF001 (intentional internal call)
-                elif llm.llm_service == "local":
-                    text = await llm._call_local_llm(prompt)  # noqa: SLF001
-                else:
-                    text = None
-            except Exception as e:
-                info["message"] = f"Call failed: {e}"
-                return info
-
-            if isinstance(text, str) and text.strip():
-                info["ok"] = True
-                info["output_preview"] = text.strip()[:80]
-                info["message"] = "LLM reachable"
-            else:
-                info["ok"] = False
-                info["message"] = "Empty or invalid response"
-            return info
-    except Exception as e:
-        return {**info, "ok": False, "message": f"Health check error: {e}"}
-
-# 清除股票基础数据缓存并重新加载
-@app.post("/cache/refresh")
-def refresh_stock_cache():
-    """清空并重新加载股票基础信息缓存。"""
-    global _stock_basic_cache
-    _stock_basic_cache = None
-    try:
-        # 重新获取数据
         data = get_stock_basic()
-        return {
-            "ok": True, 
-            "message": f"Stock cache refreshed successfully. Loaded {len(data)} stocks.",
-            "data_source": os.getenv("DATA_SOURCE", "akshare")
-        }
+        q_norm = q.strip().lower()
+        # 将 DataFrame 转为列表（预期 fetch_stock_basic_with_retry 返回 DataFrame）
+        try:
+            records = data.to_dict(orient='records')  # type: ignore
+        except AttributeError:
+            # 如果已经是列表
+            records = list(data)
+
+        results = []
+        for r in records:
+            name = str(r.get('name', '')).lower()
+            symbol = str(r.get('symbol', '')).lower()
+            ts_code = str(r.get('ts_code', '')).lower()
+            if q_norm in name or q_norm in symbol or q_norm in ts_code:
+                results.append({
+                    "symbol": r.get('symbol'),
+                    "name": r.get('name'),
+                    "ts_code": r.get('ts_code'),
+                    "market": r.get('market')
+                })
+            if len(results) >= 20:
+                break
+
+        return results
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to refresh cache: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to search stock: {str(e)}")
 
 # 获取缓存状态
 @app.get("/cache/status")
@@ -468,6 +1361,62 @@ def add_watch(item: WatchItem):
         session.commit()
     return {"ok": True}
 
+
+@app.get("/api/agent/report/latest.md")
+async def download_latest_markdown():
+    """Download latest finished agent markdown report."""
+    with SessionLocal() as session:
+        row = session.query(AgentJob).filter(AgentJob.status==AgentJobStatus.FINISHED.value).order_by(AgentJob.finished_at.desc()).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="no finished report")
+        paths = json.loads(row.reports_json) if row.reports_json else []
+    md_path = None
+    for p in paths:
+        if p.endswith('.md'):
+            md_path = p
+            break
+    if not md_path:
+        raise HTTPException(status_code=404, detail="markdown report not found")
+    reports_dir = _Path(__file__).resolve().parent.parent.parent / "agent_reports"
+    from pathlib import Path as _P
+    p_obj = _P(md_path)
+    if not p_obj.is_absolute():
+        p_obj = reports_dir / p_obj.name
+    try:
+        content = p_obj.read_text('utf-8')
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="file missing on disk")
+    return Response(content=content, media_type='text/markdown')
+
+
+@app.get("/api/agent/report/{job_id}.md")
+async def download_job_markdown(job_id: str):
+    """Download markdown report for a specific job id."""
+    with SessionLocal() as session:
+        row = session.query(AgentJob).filter(AgentJob.job_id==job_id).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="job not found")
+        if row.status != AgentJobStatus.FINISHED.value:
+            raise HTTPException(status_code=400, detail="job not finished")
+        paths = json.loads(row.reports_json) if row.reports_json else []
+    md_path = None
+    for p in paths:
+        if p.endswith('.md'):
+            md_path = p
+            break
+    if not md_path:
+        raise HTTPException(status_code=404, detail="markdown report not found")
+    reports_dir = _Path(__file__).resolve().parent.parent.parent / "agent_reports"
+    from pathlib import Path as _P
+    p_obj = _P(md_path)
+    if not p_obj.is_absolute():
+        p_obj = reports_dir / p_obj.name
+    try:
+        content = p_obj.read_text('utf-8')
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="file missing on disk")
+    return Response(content=content, media_type='text/markdown')
+
 # 删除自选股接口
 @app.delete("/watchlist/{symbol}")
 def delete_watch(symbol: str):
@@ -505,6 +1454,321 @@ def scheduler_status():
         "jobs": jobs
     }
 
+
+@app.post("/admin/scheduler/run-now")
+def run_update_now(delay_between_stocks: float = 2.0):
+    """
+    立即执行一次股票信息更新任务（异步后台执行）
+    
+    参数：
+        delay_between_stocks: 相邻两只股票更新之间的延迟时间（秒），默认 2 秒，避免爬虫被ban
+    
+    功能：
+    - 立即在后台启动一次异步更新任务
+    - 无需等待计划时间，可用于手动触发更新
+    - 爬虫速率受限于 delay_between_stocks 参数（避免 IP 被ban）
+    - 单个任务完成后下次任务才能执行
+    
+    示例：
+        POST /admin/scheduler/run-now?delay_between_stocks=3.0
+    """
+    try:
+        from .tasks.task_scheduler import get_task_manager
+        
+        manager = get_task_manager()
+        
+        if delay_between_stocks < 0.5:
+            logger.warning(f"⚠️ 爬虫延迟过短 ({delay_between_stocks}s)，调整为最小值 0.5s 以避免被ban")
+            delay_between_stocks = 0.5
+        elif delay_between_stocks > 10:
+            logger.warning(f"⚠️ 爬虫延迟过长 ({delay_between_stocks}s)，调整为最大值 10s")
+            delay_between_stocks = 10
+        
+        result = manager.run_now_async(delay_between_stocks=delay_between_stocks)
+        return result
+    
+    except Exception as e:
+        logger.error(f"❌ 触发异步更新失败: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': str(e),
+            'message': '执行异步更新任务失败'
+        }
+
+
+@app.get("/admin/scheduler/task-stats")
+def get_task_stats():
+    """获取最后一次任务的执行统计信息"""
+    try:
+        from .tasks.task_scheduler import get_task_manager
+        
+        manager = get_task_manager()
+        stats = manager.get_stats()
+        
+        return {
+            'success': True,
+            'stats': stats,
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ 获取任务统计失败: {str(e)}", exc_info=True)
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@app.get("/api/profile/update-progress")
+def get_profile_update_progress():
+    """
+    获取实时的 Profile 更新进度
+    
+    返回当前任务的实时统计（如果任务正在运行）或最后一次任务的统计
+    
+    响应格式:
+    {
+        "is_running": bool,           # 是否正在运行
+        "current_stock_index": int,   # 当前处理的股票序号
+        "total_stocks": int,          # 总股票数
+        "processed": int,             # 已处理数
+        "successful": int,            # 成功数
+        "failed": int,                # 失败数
+        "progress_percentage": float, # 处理进度百分比
+        "current_stock": str,         # 当前正在处理的股票代码
+        "elapsed_time_seconds": int,  # 已耗时（秒）
+        "estimated_remaining_seconds": int,  # 预计剩余时间（秒）
+        "speed_stocks_per_minute": float,    # 处理速度（股/分钟）
+        "last_update_at": str,        # 最后更新时间
+        "timestamp": str              # 当前服务器时间 ISO 格式
+        "queue_status": {             # 后台任务队列状态
+            "queue_size": int,        # 队列中待处理任务数
+            "running_tasks": int,     # 正在执行的任务数
+            "max_workers": int        # 最大并发工作线程数
+        }
+    }
+    """
+    try:
+        from .tasks.task_scheduler import get_task_manager
+        from .utils.background_task_queue import get_background_queue
+        
+        manager = get_task_manager()
+        progress = manager.get_progress()
+        progress['timestamp'] = datetime.now().isoformat()
+        
+        # 添加任务队列状态
+        task_queue = get_background_queue()
+        progress['queue_status'] = task_queue.get_queue_status()
+        
+        # 返回 JSONResponse 并设置缓存控制头（确保总是获取最新进度）
+        return JSONResponse(
+            progress,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    
+    except Exception as e:
+        logger.error(f"❌ 获取 Profile 更新进度失败: {str(e)}", exc_info=True)
+        # 返回初始状态
+        result = {
+            'is_running': False,
+            'current_stock_index': 0,
+            'total_stocks': 0,
+            'processed': 0,
+            'successful': 0,
+            'failed': 0,
+            'progress_percentage': 0,
+            'current_stock': None,
+            'elapsed_time_seconds': 0,
+            'estimated_remaining_seconds': 0,
+            'speed_stocks_per_minute': 0,
+            'last_update_at': None,
+            'timestamp': datetime.now().isoformat(),
+            'queue_status': {
+                'is_running': False,
+                'queue_size': 0,
+                'running_tasks': 0,
+                'max_workers': 0
+            },
+            'error': str(e)
+        }
+        
+        return JSONResponse(
+            result,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+
+
+def _parse_observation_date(value: Any) -> Optional[date]:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value).date()
+        except ValueError:
+            return None
+    return None
+
+
+@app.get("/api/macro/overview")
+async def macro_overview(limit: int = 8, model_limit: int = 5):
+    """返回最新的宏观新闻观测摘要与模型训练结果。"""
+    storage = await get_storage()
+    if storage is None:
+        raise HTTPException(status_code=503, detail="Macro storage not configured")
+
+    observations = await storage.get_macro_observations(limit=limit)
+    latest_by_topic: dict[str, dict[str, Any]] = {}
+    latest_date: Optional[date] = None
+
+    for item in observations:
+        topic_key = item.get("topic") or "unknown"
+        observation_date = _parse_observation_date(item.get("observation_date"))
+        if observation_date and (latest_date is None or observation_date > latest_date):
+            latest_date = observation_date
+
+        existing = latest_by_topic.get(topic_key)
+        if existing is None:
+            latest_by_topic[topic_key] = item
+            continue
+
+        existing_date = _parse_observation_date(existing.get("observation_date"))
+        if observation_date and (existing_date is None or observation_date >= existing_date):
+            latest_by_topic[topic_key] = item
+
+    topics_summary: list[dict[str, Any]] = []
+    for topic_key, item in sorted(
+        latest_by_topic.items(),
+        key=lambda kv: kv[1].get("observation_date", ""),
+        reverse=True,
+    ):
+        features = item.get("features", {}) or {}
+        topics_summary.append(
+            {
+                "topic": topic_key,
+                "topic_display": item.get("topic_display") or topic_key,
+                "observation_date": item.get("observation_date"),
+                "article_count": item.get("article_count"),
+                "avg_sentiment": features.get("avg_sentiment"),
+                "positive_ratio": features.get("positive_ratio"),
+                "negative_ratio": features.get("negative_ratio"),
+                "neutral_ratio": features.get("neutral_ratio"),
+                "relevance_mean": features.get("relevance_mean"),
+                "top_keywords": (item.get("top_keywords") or [])[:10],
+                "top_entities": item.get("top_entities") or {},
+                "summaries": (item.get("summaries") or [])[:5],
+                "references": (item.get("references") or [])[:5],
+            }
+        )
+
+    model_runs = await storage.get_macro_model_runs(limit=model_limit)
+    model_summary: list[dict[str, Any]] = []
+    for run in model_runs:
+        run_date = run.get("run_date")
+        if isinstance(run_date, datetime):
+            run_iso = run_date.isoformat()
+        elif isinstance(run_date, str):
+            run_iso = run_date
+        else:
+            run_iso = None
+
+        model_summary.append(
+            {
+                "model_name": run.get("model_name"),
+                "run_date": run_iso,
+                "metrics": run.get("metrics", {}),
+                "coefficients": run.get("coefficients", {}),
+                "calibration": run.get("calibration", {}),
+                "notes": run.get("notes", []),
+            }
+        )
+
+    return {
+        "storage_available": True,
+        "latest_observation_date": latest_date.isoformat() if latest_date else None,
+        "topics": topics_summary,
+        "model_runs": model_summary,
+    }
+
+
+@app.get("/api/macro/report")
+async def macro_report(
+    report_date: Optional[str] = Query(
+        None,
+        description="报告日期，ISO 格式 (YYYY-MM-DD)。留空时返回最新日报",
+    ),
+    refresh: bool = Query(
+        False,
+        description="如果没有现成的快照，是否尝试即时生成",
+    ),
+):
+    """获取宏观日报快照，可按日期查询或请求最新报告。"""
+
+    storage = await get_storage()
+    if storage is None:
+        raise HTTPException(status_code=503, detail="Macro storage not configured")
+
+    target_date: Optional[date] = None
+    report: Optional[dict[str, Any]] = None
+
+    if report_date:
+        try:
+            target_date = datetime.fromisoformat(report_date).date()
+        except ValueError as exc:  # noqa: PERF203 - explicit message for client
+            raise HTTPException(status_code=400, detail="report_date must be ISO format YYYY-MM-DD") from exc
+        report = await storage.get_macro_report_by_date(target_date)
+    else:
+        report = await storage.get_latest_macro_report()
+
+    if report is None and refresh:
+        refreshed = await generate_and_store_macro_report(target_date=target_date)
+        report = refreshed or (
+            await storage.get_macro_report_by_date(target_date)
+            if target_date
+            else await storage.get_latest_macro_report()
+        )
+
+    if report is None:
+        raise HTTPException(status_code=404, detail="Macro report not found")
+
+    cleaned_report = dict(report)
+    cleaned_report.pop("_id", None)
+
+    generated_at = cleaned_report.get("generated_at")
+    if isinstance(generated_at, datetime):
+        cleaned_report["generated_at"] = generated_at.isoformat()
+
+    report_date_val = cleaned_report.get("report_date")
+    if isinstance(report_date_val, datetime):
+        cleaned_report["report_date"] = report_date_val.date().isoformat()
+
+    available_reports = await storage.get_macro_reports(limit=10)
+    available_dates = []
+    for item in available_reports:
+        date_value = item.get("report_date") or item.get("_id")
+        if isinstance(date_value, datetime):
+            date_value = date_value.date().isoformat()
+        elif hasattr(date_value, "isoformat"):
+            date_value = date_value.isoformat()  # type: ignore[assignment]
+        if isinstance(date_value, str):
+            available_dates.append(date_value)
+
+    return {
+        "report": cleaned_report,
+        "available_dates": available_dates,
+    }
+
 @app.get("/api/fundflow/latest")
 def latest_fundflow(limit: int = 50):
     """获取最新交易日的个股资金流向 Top 列表。
@@ -512,7 +1776,7 @@ def latest_fundflow(limit: int = 50):
     - limit: 限制行数（默认 50）
     - 输出字段单位为元/百分比；前端按需换算万/亿
     """
-    from .models import FundFlowDaily
+    from .core.models import FundFlowDaily
     with SessionLocal() as session:
         # 最新交易日
         latest_date = session.execute(text("SELECT max(trade_date) FROM fundflow_daily")).scalar()
@@ -568,7 +1832,7 @@ def watchlist_snapshot(
       auto：优先 DB（EOD），不足则回退到当日排行或东方财富
     """
     from sqlalchemy import func
-    from .models import FundFlowDaily
+    from .core.models import FundFlowDaily
     with SessionLocal() as session:
         # Get enabled watchlist
         watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
@@ -586,35 +1850,36 @@ def watchlist_snapshot(
             if rank_today_map is not None:
                 return rank_today_map, rank_today_date
             try:
-                import akshare as ak
-                rdf = ak.stock_individual_fund_flow_rank(indicator="今日")
+                rdf = _ds_load_rank_today()
                 if rdf is None or rdf.empty:
                     rank_today_map = {}
                     rank_today_date = None
                     return rank_today_map, rank_today_date
-                # Build map base_code -> main_net (yuan)
-                # Columns may be "代码" and one of ["今日主力净流入-净额","主力净流入-净额"] in 万元
                 code_col = "代码" if "代码" in rdf.columns else ("symbol" if "symbol" in rdf.columns else None)
                 if not code_col:
                     rank_today_map = {}
                     rank_today_date = None
                     return rank_today_map, rank_today_date
-                def pick(row, names):
-                    for n in names:
-                        if n in rdf.columns:
-                            return row.get(n)
-                    return None
                 m = {}
+                # 兼容不同列名
+                name_candidates = ["今日主力净流入-净额","主力净流入-净额","main_net"]
                 for _, r in rdf.iterrows():
                     base = str(r[code_col])
-                    val = pick(r, ["今日主力净流入-净额","主力净流入-净额"])
+                    val = None
+                    for n in name_candidates:
+                        if n in rdf.columns:
+                            try:
+                                val = r.get(n)
+                            except Exception:
+                                val = None
+                            if val is not None:
+                                break
                     try:
-                        v = float(val) * 1e4 if val is not None else None  # 万元 -> 元
+                        v = float(val) * 1e4 if (val is not None and n != "main_net") else (float(val) if val is not None else None)
                     except Exception:
                         v = None
                     m[base] = v
                 rank_today_map = m
-                # Date is "today" by definition; include server's local date
                 from datetime import datetime as _dt
                 rank_today_date = _dt.now().date().isoformat()
             except Exception:
@@ -708,37 +1973,43 @@ def watchlist_snapshot(
             # YTD: first close of this year
             ytd = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s AND EXTRACT(YEAR FROM trade_date)=EXTRACT(YEAR FROM CURRENT_DATE) ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).scalar()
             latest_row = session.execute(text("SELECT trade_date, main_net FROM fundflow_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
-            # 优先获取实时资金流数据，失败则回退
+            # 资金流选择策略：优先使用 DB（EOD），必要时按偏好回退到“今日排行”或东方财富
             ff_val = None
             ff_date = None
             ff_source = None
-            
-            try:
-                from .data_source import fetch_fund_flow_daily
-                # 调用 data_source 中的函数，它封装了主/备用逻辑
-                # include_today_rank=True 允许它在主接口失败时回退到“今日排行”
-                df_ff = fetch_fund_flow_daily(sym, include_today_rank=True)
-                
-                if df_ff is not None and not df_ff.empty:
-                    # 获取最新一条记录
-                    latest_ff_record = df_ff.iloc[-1]
-                    ff_val = float(latest_ff_record["main_net"]) if pd.notna(latest_ff_record["main_net"]) else None
-                    ff_date = latest_ff_record["trade_date"].isoformat() if pd.notna(latest_ff_record["trade_date"]) else datetime.now().date().isoformat()
-                    ff_source = "realtime" # 标记为实时来源
-                else:
-                    # 如果实时数据为空，则尝试从数据库获取
-                    if latest_row and latest_row.main_net is not None:
+
+            base = sym.replace('.SH','').replace('.SZ','')
+
+            # 1) DB 优先（auto/db）
+            if fundflow_prefer in ("auto", "db"):
+                if latest_row and (latest_row.main_net is not None):
+                    try:
                         ff_val = float(latest_row.main_net)
                         ff_date = latest_row.trade_date.isoformat() if latest_row.trade_date else None
                         ff_source = "db_latest"
+                    except Exception:
+                        ff_val = None
 
-            except Exception as e:
-                # 如果实时获取过程中出现任何异常，安全回退到数据库
-                print(f"Fundflow fetch failed for {sym}, falling back to DB. Error: {e}")
-                if latest_row and latest_row.main_net is not None:
-                    ff_val = float(latest_row.main_net)
-                    ff_date = latest_row.trade_date.isoformat() if latest_row.trade_date else None
-                    ff_source = "db_fallback"
+            # 2) 今日排行（akshare）作为回退（auto/ak_today）
+            if ff_val is None and fundflow_prefer in ("auto", "ak_today"):
+                rank_map, rank_date = get_today_rank_map()
+                if rank_map:
+                    v = rank_map.get(base)
+                    if v is not None:
+                        try:
+                            ff_val = float(v)
+                            ff_date = rank_date or datetime.now().date().isoformat()
+                            ff_source = "ak_today"
+                        except Exception:
+                            ff_val = None
+
+            # 3) 东方财富 push2（auto/eastmoney）
+            if ff_val is None and fundflow_prefer in ("auto", "eastmoney"):
+                em = get_eastmoney_intraday(sym, base)
+                if em is not None:
+                    ff_val = em
+                    ff_date = datetime.now().date().isoformat()
+                    ff_source = "eastmoney"
 
             sp = spot.get(sym, {})
             # non-null helper
@@ -1054,7 +2325,7 @@ class AnalysisRequest(BaseModel):
 @app.post("/api/watchlist/analysis")
 def watchlist_analysis(req: AnalysisRequest):
     """Compute 1-2 week analysis per symbol: basic momentum, volatility, RSI and simple heuristic advice."""
-    from .signals import compute_signals
+    from .analysis.signals import compute_signals
     with SessionLocal() as session:
         watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
         out = []
@@ -1330,7 +2601,12 @@ async def get_articles_by_host(
         raise HTTPException(status_code=500, detail=f"host refs inspection failed: {e}")
 
 @app.get("/api/report/{symbol}/full")
-async def get_full_report(symbol: str, timeRange: str = Query('5d', description="时间区间: 5d, 1m, 3m, 6m, 1y, all")):
+async def get_full_report(
+    symbol: str,
+    timeRange: str = Query('5d', description="时间区间: 5d, 1m, 3m, 6m, 1y, all"),
+    showDiagnostics: bool = Query(False, description="返回诊断信息"),
+    allowStale: bool = Query(True, description="若窗口内无数据，允许返回更旧的最近数据")
+):
     """
     获取完整的股票报告，包含历史价格走势和预测数据
     支持不同时间区间：5d, 1m, 3m, 6m, 1y, all
@@ -1380,8 +2656,87 @@ async def get_full_report(symbol: str, timeRange: str = Query('5d', description=
                     {"sym": sym}
                 ).mappings().all()
             
+            diagnostics: dict | None = {"time_range": timeRange} if showDiagnostics else None
+            # On-demand fetch if empty
             if not historical_prices:
-                raise HTTPException(status_code=404, detail=f"No data found for {sym}")
+                if diagnostics is not None:
+                    diagnostics.update({"pre_fetch_rows": 0})
+                try:
+                    from .data.data_source import fetch_daily as _fetch_daily
+                    import pandas as _pd
+                    df = _fetch_daily(sym)
+                    if diagnostics is not None:
+                        diagnostics["external_fetch_rows"] = int(len(df)) if df is not None else 0
+                    if df is not None and not df.empty:
+                        df = df.sort_values('trade_date').tail(180)
+                        existing_dates = set(r[0] for r in session.execute(
+                            text("SELECT trade_date FROM prices_daily WHERE symbol=:sym AND trade_date >= :start"),
+                            {"sym": sym, "start": df['trade_date'].min()}
+                        ).fetchall())
+                        to_insert = [
+                            {
+                                'symbol': sym,
+                                'trade_date': r.trade_date,
+                                'open': r.open,
+                                'high': r.high,
+                                'low': r.low,
+                                'close': r.close,
+                                'pct_chg': r.pct_chg,
+                                'vol': int(r.vol) if _pd.notna(r.vol) else None,
+                                'amount': r.amount
+                            }
+                            for r in df.itertuples() if r.trade_date not in existing_dates
+                        ]
+                        if to_insert:
+                            session.execute(text(
+                                "INSERT INTO prices_daily (symbol, trade_date, open, high, low, close, pct_chg, vol, amount) VALUES (:symbol, :trade_date, :open, :high, :low, :close, :pct_chg, :vol, :amount)"
+                            ), to_insert)
+                            session.commit()
+                        if diagnostics is not None:
+                            diagnostics["inserted_rows"] = len(to_insert)
+                        # re-query
+                        if timeRange == 'all':
+                            historical_prices = session.execute(text(
+                                "SELECT trade_date, open, high, low, close, vol, pct_chg FROM prices_daily WHERE symbol=:sym ORDER BY trade_date DESC"
+                            ), {"sym": sym}).mappings().all()
+                        else:
+                            historical_prices = session.execute(text(
+                                "SELECT trade_date, open, high, low, close, vol, pct_chg FROM prices_daily WHERE symbol=:sym AND trade_date >= CURRENT_DATE - INTERVAL '{} days' ORDER BY trade_date DESC".format(days_back)
+                            ), {"sym": sym}).mappings().all()
+                except Exception as _e_fd:
+                    if diagnostics is not None:
+                        diagnostics["fetch_error"] = str(_e_fd)
+                    logger.warning("on-demand price fetch fallback failed for %s: %s", sym, _e_fd, exc_info=True)
+            # Stale fallback: if still empty but allowStale, try latest older rows
+            stale_used = False
+            if not historical_prices and allowStale:
+                older = session.execute(text(
+                    "SELECT trade_date, open, high, low, close, vol, pct_chg FROM prices_daily WHERE symbol=:sym ORDER BY trade_date DESC LIMIT 30"
+                ), {"sym": sym}).mappings().all()
+                if older:
+                    historical_prices = older
+                    stale_used = True
+            if diagnostics is not None:
+                diagnostics["final_row_count"] = len(historical_prices) if historical_prices else 0
+                diagnostics["stale_used"] = stale_used
+            if not historical_prices:
+                out_diag = diagnostics if diagnostics is not None else None
+                base = {
+                    "symbol": sym,
+                    "price_data": [],
+                    "predictions": [],
+                    "dates": [],
+                    "predictions_mean": [],
+                    "predictions_upper": [],
+                    "predictions_lower": [],
+                    "latest_price": None,
+                    "latest": None,
+                    "data_updated": None,
+                    "analysis_summary": f"No price data available for {sym}",
+                }
+                if out_diag is not None:
+                    base["diagnostics"] = out_diag | {"reason": "no_price_data"}
+                return base
             
             # 转换历史价格数据
             price_data = []
@@ -1405,7 +2760,9 @@ async def get_full_report(symbol: str, timeRange: str = Query('5d', description=
             prediction_upper = []
             prediction_lower = []
             
-            if report and report.forecast_data and historical_prices:
+            # 兼容旧数据库：有些旧的 reports 行可能尚未添加 forecast_data 等列，使用 getattr 安全访问
+            forecast_data_loaded = False
+            if report and getattr(report, "forecast_data", None) and historical_prices:
                 try:
                     forecast_data = json.loads(report.forecast_data)
                     # forecast_data 是一个列表，直接处理
@@ -1433,6 +2790,7 @@ async def get_full_report(symbol: str, timeRange: str = Query('5d', description=
                                 "lower_bound": pred["yhat_lower"],
                                 "type": "prediction"
                             })
+                        forecast_data_loaded = True
                     # 兼容旧格式（包含 "predictions" 键的格式）
                     elif isinstance(forecast_data, dict) and "predictions" in forecast_data:
                         from datetime import datetime, timedelta
@@ -1457,9 +2815,44 @@ async def get_full_report(symbol: str, timeRange: str = Query('5d', description=
                                 "lower_bound": pred["lower_bound"],
                                 "type": "prediction"
                             })
+                        forecast_data_loaded = True
                 except Exception as e:
                     print(f"Error parsing forecast data: {e}")
                     # 即使预测数据解析失败，也要继续返回历史数据
+            
+            # 如果 Report 中没有 forecast_data，直接从 Forecast 表查询
+            if not forecast_data_loaded:
+                try:
+                    # 获取最新批次的预测数据
+                    latest_run = session.execute(
+                        select(func.max(Forecast.run_at)).where(Forecast.symbol == sym)
+                    ).scalar()
+                    
+                    if latest_run:
+                        forecasts = session.execute(
+                            select(Forecast).where(
+                                and_(
+                                    Forecast.symbol == sym,
+                                    Forecast.run_at == latest_run
+                                )
+                            ).order_by(Forecast.target_date)
+                        ).scalars().all()
+                        
+                        for f in forecasts:
+                            pred_item = {
+                                "date": f.target_date.isoformat(),
+                                "predicted_price": float(f.yhat) if f.yhat is not None else None,
+                                "upper_bound": float(f.yhat_upper) if f.yhat_upper is not None else None,
+                                "lower_bound": float(f.yhat_lower) if f.yhat_lower is not None else None,
+                                "type": "prediction"
+                            }
+                            predictions.append(pred_item)
+                            prediction_dates.append(f.target_date.isoformat())
+                            prediction_mean.append(float(f.yhat) if f.yhat is not None else None)
+                            prediction_upper.append(float(f.yhat_upper) if f.yhat_upper is not None else None)
+                            prediction_lower.append(float(f.yhat_lower) if f.yhat_lower is not None else None)
+                except Exception as e:
+                    print(f"Error loading forecasts from Forecast table: {e}")
             
             # 构建响应
             result = {
@@ -1487,13 +2880,41 @@ async def get_full_report(symbol: str, timeRange: str = Query('5d', description=
             }
             
             # 添加技术指标信号
-            if report and report.signal_data:
+            signal_loaded = False
+            if report and getattr(report, "signal_data", None):
                 try:
                     signal_data = json.loads(report.signal_data)
                     result["signal"] = signal_data
+                    signal_loaded = True
                 except Exception as e:
                     print(f"Error parsing signal data: {e}")
             
+            # 如果 Report 中没有 signal_data，直接从 Signal 表查询最新信号
+            if not signal_loaded:
+                try:
+                    latest_signal = session.execute(
+                        select(Signal).where(Signal.symbol == sym)
+                        .order_by(Signal.trade_date.desc())
+                        .limit(1)
+                    ).scalar_one_or_none()
+                    
+                    if latest_signal:
+                        result["signal"] = {
+                            "trade_date": latest_signal.trade_date.isoformat(),
+                            "ma_short": float(latest_signal.ma_short) if latest_signal.ma_short is not None else None,
+                            "ma_long": float(latest_signal.ma_long) if latest_signal.ma_long is not None else None,
+                            "rsi": float(latest_signal.rsi) if latest_signal.rsi is not None else None,
+                            "macd": float(latest_signal.macd) if latest_signal.macd is not None else None,
+                            "signal_score": float(latest_signal.signal_score) if latest_signal.signal_score is not None else None,
+                            "action": latest_signal.action
+                        }
+                except Exception as e:
+                    print(f"Error loading signal from Signal table: {e}")
+            
+            if stale_used:
+                result["stale"] = True
+            if diagnostics is not None:
+                result["diagnostics"] = diagnostics
             return result
             
         except HTTPException:
@@ -1754,14 +3175,14 @@ def list_tasks_api(status: Optional[str] = None, symbol: Optional[str] = None, d
 
 # ================ NEWS API ENDPOINTS ================
 
-from .news_service import NewsSearchService, NewsProcessor, NewsScheduler
-from .models import NewsArticle, NewsSource, SearchLog, NewsCategory, SentimentType, NewsURLPattern
-from .stock_manager import StockListManager
-from .enhanced_news_scheduler import EnhancedNewsScheduler
-from .news_deduplication import NewsDeduplicator
-from .llm_processor import LLMNewsProcessor
-from .mongo_storage import get_storage
-from .metrics import NewsMetrics
+from .news.news_service import NewsSearchService, NewsProcessor, NewsScheduler
+from .core.models import NewsArticle, NewsSource, SearchLog, NewsCategory, SentimentType, NewsURLPattern
+from .analysis.stock_manager import StockListManager
+from .news.enhanced_news_scheduler import EnhancedNewsScheduler
+from .news.news_deduplication import NewsDeduplicator
+from .news.llm_processor import LLMNewsProcessor
+from .utils.mongo_storage import get_storage
+from .utils.metrics import NewsMetrics
 
 # Initialize news services
 news_search_service = NewsSearchService()
@@ -1785,6 +3206,86 @@ class NewsResponse(BaseModel):
 class StockManagementRequest(BaseModel):
     symbol: str
     name: Optional[str] = None
+
+# --- Ensure-min per symbol API for immediate top-up ---
+@app.post('/api/news/collect/ensure_min/{symbol}')
+async def api_news_topup_symbol(symbol: str, min_required: int = Query(5, ge=1, le=50), wait_seconds: int = Query(0, ge=0, le=60)):
+    """对指定股票执行补齐，确保当天至少 min_required 条。可选等待 wait_seconds 观察是否达标。
+    返回：{"symbol","status","today_saved","needed","saved_total"}
+    """
+    try:
+        scheduler = EnhancedNewsScheduler()
+        result = await scheduler.run_topup_for_symbol(symbol, min_required=min_required)
+        # 可选短等待以提高达标概率
+        if wait_seconds > 0 and isinstance(result, dict) and int(result.get('needed', 0) or 0) > 0:
+            import asyncio as _aio
+            await _aio.sleep(min(wait_seconds, 60))
+            result = await scheduler.run_topup_for_symbol(symbol, min_required=min_required, max_attempts=1)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error ensuring min news for {symbol}: {str(e)}")
+
+# --- Proxy stock news with optional ensure_min before returning ---
+@app.get('/api/news/stock_with_ensure/{symbol}')
+async def api_get_stock_news_with_ensure(
+    symbol: str,
+    ensure_min: int = Query(5, ge=0, le=50),
+    fallback_days: int = Query(60, ge=1, le=365),
+    min_content: int = Query(0, ge=0, le=10000),
+    limit: int = Query(20, ge=1, le=100),
+    wait_seconds: int = Query(5, ge=0, le=30),
+    trigger_topup: bool = Query(True, description="If true, trigger top-up when below ensure_min"),
+    allow_placeholder: bool = Query(True, description="Allow synthesizing placeholder items when sources are scarce to reach ensure_min"),
+    extra_keywords: Optional[str] = Query(None, description="Comma-separated extra keywords to expand search"),
+):
+    """在返回个股新闻前，若数量不足 ensure_min 则尝试立即补齐并短暂等待，尽量避免 0 新闻。"""
+    try:
+        # 先调用基础 DB 查询（避免完全空）—正确注入 DB 会话，避免直接调用带 Depends 的默认参数
+        from .routers.news import get_stock_news as _get_stock_news
+        # Open session explicitly for direct function invocation
+        with SessionLocal() as session:
+            base = await _get_stock_news(
+                symbol=symbol,
+                limit=limit,
+                days=7,
+                ensure_min=max(0, ensure_min),
+                fallback_days=fallback_days,
+                include_content=True,
+                min_content=min_content,
+                trigger_topup=trigger_topup,
+                wait_seconds=wait_seconds,
+                extra_keywords=extra_keywords,
+                allow_placeholder=allow_placeholder,
+                db=session,
+            )
+        count0 = int(base.get('total_count', 0) or 0)
+        if ensure_min > 0 and count0 < ensure_min:
+            scheduler = EnhancedNewsScheduler()
+            await scheduler.run_topup_for_symbol(symbol, min_required=ensure_min)
+            if wait_seconds > 0:
+                import asyncio as _aio
+                await _aio.sleep(wait_seconds)
+            # 再取一次（仍需注入 DB 会话）
+            with SessionLocal() as session:
+                base = await _get_stock_news(
+                    symbol=symbol,
+                    limit=limit,
+                    days=7,
+                    ensure_min=max(0, ensure_min),
+                    fallback_days=fallback_days,
+                    include_content=True,
+                    min_content=min_content,
+                    trigger_topup=False,
+                    wait_seconds=0,
+                    extra_keywords=extra_keywords,
+                    allow_placeholder=allow_placeholder,
+                    db=session,
+                )
+        return base
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching ensured stock news: {str(e)}")
     sector: Optional[str] = None
     enabled: bool = True
 
@@ -1865,6 +3366,475 @@ async def search_news(request: NewsSearchRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"News search failed: {str(e)}")
+
+
+@app.get("/api/news/stocks")
+async def get_stocks_news_list(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    获取股票资讯列表 - 返回所有股票和其最新资讯状态
+    
+    参数：
+        page: 页码（从1开始）
+        page_size: 每页数量
+        q: 搜索关键词（按代码或名称）
+    
+    返回：
+        {
+            "items": [
+                {
+                    "symbol": "600519.SH",
+                    "name": "贵州茅台",
+                    "start_date": "2025-01-01",
+                    "article_count": 42,
+                    "last_updated_at": "2025-10-17T15:30:45",
+                    "is_updated": true  // 根据 last_updated_at 判断：14天内为true
+                }
+            ],
+            "total": 150,
+            "page": 1,
+            "page_size": 20
+        }
+    """
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import func
+        
+        # 获取所有 Watchlist 中的股票
+        query = db.query(Watchlist)
+        
+        # 搜索过滤
+        if q:
+            q_lower = q.lower()
+            query = query.filter(
+                (Watchlist.symbol.ilike(f"%{q}%")) |
+                (Watchlist.name.ilike(f"%{q}%"))
+            )
+        
+        # 获取总数
+        total = query.count()
+        
+        # 分页
+        offset = (page - 1) * page_size
+        stocks = query.offset(offset).limit(page_size).all()
+        
+        # 获取新闻文章统计（从 NewsArticle 表统计）
+        news_counts = {}
+        try:
+            if stocks:
+                symbols = [s.symbol for s in stocks]
+                # 统计每只股票的新闻数量
+                article_counts = db.query(
+                    NewsArticle.related_stocks,
+                    func.count(NewsArticle.id)
+                ).filter(
+                    NewsArticle.related_stocks.isnot(None)
+                ).group_by(
+                    NewsArticle.related_stocks
+                ).all()
+                
+                for related_stocks, count in article_counts:
+                    if related_stocks and isinstance(related_stocks, list):
+                        for symbol in related_stocks:
+                            if symbol not in news_counts:
+                                news_counts[symbol] = 0
+                            news_counts[symbol] += count
+        except Exception as e:
+            logger.warning(f"⚠️  获取新闻统计失败: {e}")
+        
+        # 构建返回数据
+        items = []
+        now = datetime.now()
+        fourteen_days_ago = now - timedelta(days=14)
+        
+        for stock in stocks:
+            last_updated_at = stock.last_updated_at
+            article_count = news_counts.get(stock.symbol, 0)
+            
+            # 判断是否已更新：
+            # 1. 如果 last_updated_at 不为空且在14天内，则为已更新
+            # 2. 或者如果有文章且 last_updated_at 为空（迁移期间的历史数据），则认为已更新
+            is_updated = (
+                (last_updated_at is not None and last_updated_at >= fourteen_days_ago) or
+                (last_updated_at is None and article_count > 0)  # 有文章但未记录时间戳，认为已更新
+            )
+            
+            items.append({
+                "symbol": stock.symbol,
+                "name": stock.name or "-",
+                "start_date": stock.added_at.date().isoformat() if stock.added_at else None,
+                "article_count": article_count,
+                "last_updated_at": last_updated_at.isoformat() if last_updated_at else None,
+                "is_updated": is_updated
+            })
+        
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取股票新闻列表失败: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to get stocks news list: {str(e)}")
+
+
+def infer_market_from_symbol(symbol: str) -> str:
+    """
+    根据股票符号的格式推断其所属市场
+    
+    逻辑：
+    - 以 .SH 结尾 -> A股（上海）
+    - 以 .SZ 结尾 -> A股（深圳）
+    - 6 位纯数字 (000xxx, 002xxx, 300xxx) -> A股（中国证券交易所标准编码）
+    - 以 .HK 结尾或 5 位数字、$开头 -> 港股
+    - 全是字母 (3-6 位) -> 美股
+    - profile.market 非空且有效 -> 返回 profile.market
+    
+    Args:
+        symbol: 股票代码（如 '600000.SH', '000858.SZ', '002268', 'WMT', '05', etc）
+    
+    Returns:
+        市场标签: 'A股'|'港股'|'美股'
+    """
+    if not symbol:
+        return "美股"  # 默认
+    
+    symbol = symbol.strip().upper()
+    
+    # A股：以 .SH 或 .SZ 结尾
+    if symbol.endswith(".SH") or symbol.endswith(".SZ"):
+        return "A股"
+    
+    # A股：6 位数字（中国证券代码标准格式）
+    # 000xxx / 001xxx (深圳) 或 600xxx / 605xxx (上海)
+    if len(symbol) == 6 and symbol.isdigit():
+        first_three = symbol[:3]
+        # 深圳：000-003, 030, 039, 08, 09, 12, 16-19, 200-203, 300, 301, 834-837, 900-903, 916-919, 930-939
+        # 上海：600-605, 606-607, 673-679, 811-819
+        if first_three in ("000", "001", "002", "003", "030", "039") or first_three.startswith(("08", "09", "12", "16", "17", "18", "19")):
+            return "A股"
+        if first_three in ("600", "601", "602", "603", "604", "605", "606", "607") or first_three.startswith(("673", "674", "675", "676", "677", "678", "679", "811", "812", "813", "814", "815", "816", "817", "818", "819")):
+            return "A股"
+        # 其他6位数字可能是基金等，也算 A股
+        return "A股"
+    
+    # 港股：以 .HK 结尾、5 位数字、$ 开头等特征
+    if symbol.endswith(".HK") or symbol.startswith("$"):
+        return "港股"
+    
+    # 港股的5位数字代码（如 01810, 09988）
+    if len(symbol) == 5 and symbol.isdigit():
+        return "港股"
+    
+    # 美股：3-6 位字母（如 AAPL, WMT, QCOM, NVDA）
+    if 1 <= len(symbol) <= 6 and symbol.isalpha():
+        return "美股"
+    
+    # 其他：默认美股
+    return "美股"
+
+@app.get("/api/news/stocks/progress")
+async def get_stocks_update_progress(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    show_invalid: bool = Query(False),
+    q: str = Query(None),
+    market: str = Query("A股", description="股票市场过滤：A股/港股/美股/全部"),
+    db: Session = Depends(get_db)
+):
+    """
+    获取资讯列表中所有股票的 Profile 完成度进度
+    
+    参数:
+    - show_invalid: 是否显示被标记为无效的股票（默认 false）
+    - q: 搜索关键词（按代码或公司名搜索）
+    - market: 股票市场过滤（A股/港股/美股/全部，默认 A股）
+    
+    优化：使用批量查询和缓存策略来避免N+1查询问题
+    """
+    try:
+        import json
+        from sqlalchemy import func, case
+        
+        # 定义 Profile 字段
+        profile_fields = [
+            'industry', 'business_summary', 'core_products', 'competitive_position',
+            'competitors', 'strategic_keywords', 'risk_factors', 'history_highlights', 'profile_json'
+        ]
+
+        total_profile_fields = len(profile_fields)
+        
+        # ✨ 优化第一步：直接查询 NewsArticle，提取所有不同的股票符号
+        all_articles = db.query(NewsArticle.related_stocks).filter(
+            NewsArticle.related_stocks.isnot(None)
+        ).all()
+        
+        all_symbols = set()
+        for row in all_articles:
+            if row[0]:
+                try:
+                    if isinstance(row[0], str):
+                        stocks = json.loads(row[0])
+                    else:
+                        stocks = row[0]
+                    if isinstance(stocks, list):
+                        all_symbols.update(stocks)
+                except:
+                    pass
+        
+        all_symbols_list = sorted(list(all_symbols))
+        total_stocks = len(all_symbols_list)
+        
+        if total_stocks == 0:
+            return {
+                "total_stocks": 0,
+                "completed_profiles": 0,
+                "progress_percentage": 0.0,
+                "average_completion": 0.0,
+                "stocks_detail": [],
+                "page": page,
+                "page_size": page_size,
+                "total_pages": 0
+            }
+        
+        # ✨ 优化第二步：批量查询所有相关的 StockProfile
+        # 而不是逐个查询
+        all_profiles = db.query(StockProfile).filter(
+            StockProfile.symbol.in_(all_symbols_list)
+        ).all()
+        
+        profile_map = {p.symbol: p for p in all_profiles}
+        
+        # 🔧 过滤：只保留有有效Profile的symbols
+        # 如果show_invalid=False，进一步过滤掉标记为无效的profiles
+        # 🔧 市场过滤：根据符号格式推断市场，使用 infer_market_from_symbol()
+        valid_symbols = []
+        for symbol in all_symbols_list:
+            profile = profile_map.get(symbol)
+            # 必须有profile存在
+            if not profile:
+                continue
+            # 如果show_invalid=False，还要检查is_valid标志
+            if not show_invalid and not profile.is_valid:
+                continue
+            # 市场过滤：根据符号格式推断市场
+            # 注意：profile.market 默认值是 "A股"，所以我们优先使用 infer_market_from_symbol()
+            # 这样才能正确识别美股、港股等
+            inferred_market = infer_market_from_symbol(symbol)
+            if market != "全部" and inferred_market != market:
+                continue
+            valid_symbols.append(symbol)
+        
+        all_symbols_list = valid_symbols
+        total_stocks = len(all_symbols_list)
+        
+        # ✨ 优化第三步：计算完成度（在内存中）
+        all_stocks_completion = {}
+        global_completed_count = 0
+        global_total_completion = 0.0
+        
+        for symbol in all_symbols_list:
+            profile = profile_map.get(symbol)
+            filled_count = 0
+            
+            if profile:
+                for field in profile_fields:
+                    value = getattr(profile, field, None)
+                    if value and (isinstance(value, str) and value.strip() or isinstance(value, dict)):
+                        filled_count += 1
+            
+            completion_pct = (filled_count / total_profile_fields) * 100 if total_profile_fields > 0 else 0
+            global_total_completion += completion_pct
+            all_stocks_completion[symbol] = {
+                "filled": filled_count,
+                "completion_pct": completion_pct
+            }
+            
+            if completion_pct >= 50:
+                global_completed_count += 1
+        
+        # ✨ 优化第四步：排序
+        # 🔍 搜索过滤：如果提供了搜索关键词 q
+        if q:
+            q_lower = q.lower().strip()
+            # 首先按符号过滤
+            filtered_symbols = [s for s in all_symbols_list if q_lower in s.lower()]
+            
+            # 如果按符号没有找到，查询 Profile 表按公司名过滤
+            if not filtered_symbols:
+                profiles_for_search = db.query(StockProfile).filter(
+                    StockProfile.symbol.in_(all_symbols_list)
+                ).all()
+                profile_name_dict = {p.symbol: p.company_name.lower() if p.company_name else "" for p in profiles_for_search}
+                filtered_symbols = [
+                    s for s in all_symbols_list 
+                    if q_lower in profile_name_dict.get(s, "")
+                ]
+            
+            all_symbols_list = filtered_symbols
+        
+        sorted_symbols = sorted(
+            all_symbols_list,
+            key=lambda s: (all_stocks_completion[s]["completion_pct"], s),
+            reverse=True
+        )
+        
+        # ✨ 优化第五步：分页 + 批量获取名称
+        offset = (page - 1) * page_size
+        end_offset = offset + page_size
+        page_symbols = sorted_symbols[offset:end_offset]
+        
+        # 批量查询 Watchlist 和 StockProfile 名称
+        watchlist_items = db.query(Watchlist.symbol, Watchlist.name).filter(
+            Watchlist.symbol.in_(page_symbols)
+        ).all()
+        watchlist_map = {item[0]: item[1] for item in watchlist_items}
+        
+        # 批量计算每个股票的文章数
+        # 方式：对每个相关股票符号，计算包含该符号的文章数
+        article_count_map = {}
+        news_articles = db.query(NewsArticle.related_stocks).filter(
+            NewsArticle.related_stocks.isnot(None)
+        ).all()
+        
+        for symbol in page_symbols:
+            count = 0
+            for row in news_articles:
+                if row[0]:
+                    try:
+                        if isinstance(row[0], str):
+                            stocks = json.loads(row[0])
+                        else:
+                            stocks = row[0]
+                        if isinstance(stocks, list) and symbol in stocks:
+                            count += 1
+                    except:
+                        pass
+            article_count_map[symbol] = count
+        
+        stocks_detail = []
+        # 使用 naive datetime 以避免时区比较问题
+        fourteen_days_ago = datetime.now() - timedelta(days=14)
+        
+        # 批量查询 NewsArticle 的最早发布时间和最后更新时间
+        # 为每个符号获取其关联新闻的时间范围
+        if page_symbols:
+            news_articles = db.query(NewsArticle.related_stocks, NewsArticle.published_at).filter(
+                NewsArticle.related_stocks.isnot(None)
+            ).all()
+            
+            # 为每个符号计算时间范围
+            symbol_times = {}  # {symbol: {"min_date": ..., "max_date": ...}}
+            for article in news_articles:
+                if article[0]:
+                    try:
+                        if isinstance(article[0], str):
+                            stocks = json.loads(article[0])
+                        else:
+                            stocks = article[0]
+                        
+                        pub_date = article[1]
+                        if isinstance(stocks, list):
+                            for stock_sym in stocks:
+                                if stock_sym in page_symbols:
+                                    if stock_sym not in symbol_times:
+                                        symbol_times[stock_sym] = {"min_date": pub_date, "max_date": pub_date}
+                                    else:
+                                        if pub_date and (symbol_times[stock_sym]["min_date"] is None or pub_date < symbol_times[stock_sym]["min_date"]):
+                                            symbol_times[stock_sym]["min_date"] = pub_date
+                                        if pub_date and (symbol_times[stock_sym]["max_date"] is None or pub_date > symbol_times[stock_sym]["max_date"]):
+                                            symbol_times[stock_sym]["max_date"] = pub_date
+                    except:
+                        pass
+        else:
+            symbol_times = {}
+        
+        for symbol in page_symbols:
+            profile = profile_map.get(symbol)
+            
+            # profile 应该始终存在（已在前面过滤过）
+            if not profile:
+                continue
+            
+            # ✅ 防御性检查：company_name 可能为空
+            if profile.company_name:
+                stock_name = profile.company_name
+            else:
+                # 回退方案：从 Watchlist 或使用符号
+                stock_name = watchlist_map.get(symbol, symbol)
+                logger.warning(f"⚠️ Profile {symbol} 缺少 company_name，使用回退值: {stock_name}")
+            
+            comp_data = all_stocks_completion[symbol]
+            completion_pct = comp_data["completion_pct"]
+            filled_count = comp_data["filled"]
+            status = "completed" if completion_pct >= 50 else "incomplete"
+            
+            # 从新闻文章中获取时间戳
+            times_info = symbol_times.get(symbol, {})
+            start_date = times_info.get("min_date").date().isoformat() if times_info.get("min_date") else None
+            last_updated_at = times_info.get("max_date")
+            article_count = article_count_map.get(symbol, 0)
+            
+            # 移除时区信息以进行比较
+            cmp_last_updated = last_updated_at.replace(tzinfo=None) if last_updated_at else None
+            
+            # 1. 如果 last_updated_at 不为空且在14天内，则为已更新
+            # 2. 或者如果有文章且 last_updated_at 为空，则认为已更新
+            is_updated = (
+                (cmp_last_updated is not None and cmp_last_updated >= fourteen_days_ago) or
+                (cmp_last_updated is None and article_count > 0)
+
+            )
+            
+            stocks_detail.append({
+                "symbol": symbol,
+                "name": stock_name or 'N/A',
+                "market": profile.market,  # ✨ 添加市场字段
+                "completion_percentage": round(completion_pct, 1),
+                "fields_filled": filled_count,
+                "total_fields": total_profile_fields,
+                "status": status,
+                "article_count": article_count_map.get(symbol, 0),  # 文章数
+                "start_date": start_date,
+                "last_updated_at": last_updated_at.isoformat() if last_updated_at else None,
+                "is_updated": is_updated
+            })
+        
+        # 计算全局进度
+        progress_percentage = (global_completed_count / total_stocks * 100) if total_stocks > 0 else 0
+        average_completion = (global_total_completion / total_stocks) if total_stocks > 0 else 0
+        total_pages = (total_stocks + page_size - 1) // page_size
+        
+        result = {
+            "total_stocks": total_stocks,
+            "completed_profiles": global_completed_count,
+            "progress_percentage": round(progress_percentage, 1),
+            "average_completion": round(average_completion, 1),
+            "stocks_detail": stocks_detail,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }
+        
+        return JSONResponse(
+            result,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ 获取Profile完成度进度失败: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to get profile progress: {str(e)}")
+
 
 @app.get("/api/news/stock/{symbol}")
 async def get_stock_news(symbol: str, limit: int = Query(20, ge=1, le=100)):
@@ -2270,6 +4240,19 @@ async def run_daily_news_collection():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error running daily news collection: {str(e)}")
 
+@app.post("/api/news/collect/ensure_min")
+async def run_news_topup_ensure_min():
+    """
+    Trigger rolling top-up to ensure minimum per-stock daily articles.
+    Uses NEWS_DAILY_MIN_PER_STOCK (default 5).
+    """
+    try:
+        scheduler = EnhancedNewsScheduler()
+        result = await scheduler.run_rolling_topup_collection()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error running news top-up ensure_min: {str(e)}")
+
 @app.get("/api/news/collection/status")
 async def get_news_collection_status():
     """
@@ -2565,6 +4548,10 @@ async def backfill_news_content(
     short_content_threshold: int = Query(60, ge=20, le=300, description="如果正文长度低于该值将视为需要重抓"),
     ids: Optional[str] = Query(None, description="可选，逗号分隔的文章ID列表，仅处理这些ID"),
     skip_non_article: bool = Query(True, description="跳过非新闻文章URL（如/quote、/equities等）。设为false则强制尝试处理"),
+    use_llm: bool = Query(False, description="是否在补齐时调用 LLM 生成摘要与结构化分析（默认关闭以加速并避免请求超时）"),
+    # 控制整体执行时长与 HTTP 超时，避免长时间阻塞
+    max_duration_sec: int = Query(20, ge=5, le=120, description="本次补齐的最大执行时长（秒），达到后提前返回"),
+    request_timeout_sec: float = Query(10.0, ge=3.0, le=60.0, description="抓取单条内容时的 HTTP 请求超时（秒）")
 ):
     """
     Backfill existing news articles with missing content/summary using crawler + LLM (if enabled).
@@ -2603,7 +4590,19 @@ async def backfill_news_content(
         if not articles:
             return {"status": "ok", "processed": 0, "message": "没有需要补充的文章"}
 
+        # 配置本次处理的 HTTP 超时
         processor = NewsProcessor()
+        try:
+            processor._http_timeout = float(request_timeout_sec)
+        except Exception:
+            pass
+        # 覆盖默认的 LLM 行为：本端点缺省不使用 LLM，除非显式传入 use_llm=true
+        try:
+            processor._use_llm = bool(use_llm)
+        except Exception:
+            pass
+        import time as _time
+        started_ts = _time.time()
 
         # Helpers for mismatch detection
         def _bigrams(text: str) -> set:
@@ -2641,6 +4640,10 @@ async def backfill_news_content(
             nonlocal updated_content, updated_summary, processed, skipped
             async with sem:
                 try:
+                    # 退出条件：达到本次最大执行时长
+                    import time as __t
+                    if (__t.time() - started_ts) >= max_duration_sec:
+                        return
                     # Skip non-article-like URLs to avoid empty content/summary loops
                     if skip_non_article and not processor._is_article_like_url(art.url or ""):
                         skipped += 1
@@ -2693,7 +4696,7 @@ async def backfill_news_content(
                         llm_summary = None
                         if getattr(processor, "_use_llm", False):
                             try:
-                                from .llm_processor import LLMNewsProcessor
+                                from .news.llm_processor import LLMNewsProcessor
                                 async with LLMNewsProcessor() as llm:
                                     res = await llm.analyze_news(title=art.title or "", content=art.content or "", url=art.url)
                                     if res:
@@ -3028,7 +5031,7 @@ async def cleanup_news(payload: CleanupRequest, db: Session = Depends(get_db)):
                         llm_summary = None
                         if getattr(processor, "_use_llm", False):
                             try:
-                                from .llm_processor import LLMNewsProcessor
+                                from .news.llm_processor import LLMNewsProcessor
                                 async with LLMNewsProcessor() as llm:
                                     res = await llm.analyze_news(title=title, content=a.content or new_content or "", url=url)
                                     if res:
@@ -3115,7 +5118,7 @@ async def test_strategies():
     Test endpoint for strategies generation
     """
     try:
-        from .news_strategy import IntelligentNewsCollector
+        from .news.news_strategy import IntelligentNewsCollector
         
         collector = IntelligentNewsCollector()
         strategies = await collector.generate_strategies()
@@ -3139,7 +5142,7 @@ async def get_news_strategies():
     Get available news collection strategies
     """
     try:
-        from .news_strategy import IntelligentNewsCollector
+        from .news.news_strategy import IntelligentNewsCollector
         
         collector = IntelligentNewsCollector()
         strategies = await collector.generate_strategies()
@@ -3168,7 +5171,7 @@ async def execute_news_strategy(strategy_name: str):
     Execute a specific news strategy by name
     """
     try:
-        from .news_strategy import IntelligentNewsCollector
+        from .news.news_strategy import IntelligentNewsCollector
         
         collector = IntelligentNewsCollector()
         strategies = await collector.generate_strategies()
@@ -3413,252 +5416,311 @@ async def check_news_duplicate(
         raise HTTPException(status_code=500, detail=f"Error checking duplicate: {str(e)}")
 
 
-# 新闻管理API端点
-@app.get("/api/news/stats")
-async def get_news_stats(db: Session = Depends(get_db)):
-    """
-    获取新闻统计信息
-    """
-    try:
-        # 获取总文章数
-        total_result = db.execute(text("SELECT COUNT(*) as count FROM news_articles")).first()
-        total_articles = total_result.count if total_result else 0
+# ========================
+# Stock Profile 验证 API
+# ========================
 
-        # 获取今日文章数
-        today = datetime.now().date()
-        today_result = db.execute(
-            text("SELECT COUNT(*) as count FROM news_articles WHERE DATE(crawled_at) = :today"),
-            {"today": today}
-        ).first()
-        today_articles = today_result.count if today_result else 0
-
-        # 获取情感统计
-        sentiment_result = db.execute(text("""
-            SELECT sentiment_type, COUNT(*) as count
-            FROM news_articles
-            WHERE sentiment_type IS NOT NULL
-            GROUP BY sentiment_type
-        """)).all()
-
-        positive_sentiment = 0
-        negative_sentiment = 0
-        neutral_sentiment = 0
-
-        for row in sentiment_result:
-            if row.sentiment_type == 'positive':
-                positive_sentiment = row.count
-            elif row.sentiment_type == 'negative':
-                negative_sentiment = row.count
-            elif row.sentiment_type == 'neutral':
-                neutral_sentiment = row.count
-
-        # 计算百分比
-        total_sentiment = positive_sentiment + negative_sentiment + neutral_sentiment
-        if total_sentiment > 0:
-            positive_sentiment = round((positive_sentiment / total_sentiment) * 100)
-            negative_sentiment = round((negative_sentiment / total_sentiment) * 100)
-            neutral_sentiment = round((neutral_sentiment / total_sentiment) * 100)
-
-        # 获取热门来源
-        sources_result = db.execute(text("""
-            SELECT ns.name as source, COUNT(*) as count
-            FROM news_articles na
-            JOIN news_sources ns ON na.source_id = ns.id
-            WHERE na.source_id IS NOT NULL
-            GROUP BY ns.name
-            ORDER BY count DESC
-            LIMIT 10
-        """)).all()
-        top_sources = [{"source": row.source, "count": row.count} for row in sources_result]
-
-        # 获取热门股票（仅在 related_stocks 为数组且长度>0 时展开）
-        stocks_result = db.execute(text("""
-            SELECT stock, COUNT(*) as count
-            FROM (
-                SELECT jsonb_array_elements_text(related_stocks) AS stock
-                FROM news_articles
-                WHERE COALESCE(
-                    CASE
-                        WHEN related_stocks IS NOT NULL AND jsonb_typeof(related_stocks) = 'array'
-                        THEN jsonb_array_length(related_stocks)
-                    END,
-                    0
-                ) > 0
-            ) t
-            WHERE stock ~ '^[0-9]{6}\.(SH|SZ)$'
-            GROUP BY stock
-            ORDER BY count DESC
-            LIMIT 10
-        """)).all()
-
-        top_stocks = [{"stock": row.stock, "count": row.count} for row in stocks_result]
-
-        return {
-            "total_articles": total_articles,
-            "today_articles": today_articles,
-            "positive_sentiment": positive_sentiment,
-            "negative_sentiment": negative_sentiment,
-            "neutral_sentiment": neutral_sentiment,
-            "top_sources": top_sources,
-            "top_stocks": top_stocks
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting news stats: {str(e)}")
-
-
-@app.post("/api/news/{article_id}/bookmark")
-async def toggle_bookmark(article_id: int, db: Session = Depends(get_db)):
-    """
-    切换新闻书签状态
-    """
-    try:
-        # 检查文章是否存在
-        article = db.execute(
-            text("SELECT id, is_bookmarked FROM news_articles WHERE id = :article_id"),
-            {"article_id": article_id}
-        ).first()
-
-        if not article:
-            raise HTTPException(status_code=404, detail="Article not found")
-
-        # 切换书签状态
-        new_bookmark_status = not article.is_bookmarked
-
-        db.execute(
-            text("UPDATE news_articles SET is_bookmarked = :status WHERE id = :article_id"),
-            {"status": new_bookmark_status, "article_id": article_id}
-        )
-
-        db.commit()
-
-        return {
-            "status": "success",
-            "article_id": article_id,
-            "is_bookmarked": new_bookmark_status
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error toggling bookmark: {str(e)}")
-
-
-@app.post("/api/news/{article_id}/read")
-async def toggle_read_status(article_id: int, db: Session = Depends(get_db)):
-    """
-    切换新闻已读状态
-    """
-    try:
-        # 检查文章是否存在
-        article = db.execute(
-            text("SELECT id, is_read FROM news_articles WHERE id = :article_id"),
-            {"article_id": article_id}
-        ).first()
-
-        if not article:
-            raise HTTPException(status_code=404, detail="Article not found")
-
-        # 切换已读状态
-        new_read_status = not article.is_read
-
-        db.execute(
-            text("UPDATE news_articles SET is_read = :status WHERE id = :article_id"),
-            {"status": new_read_status, "article_id": article_id}
-        )
-
-        db.commit()
-
-        return {
-            "status": "success",
-            "article_id": article_id,
-            "is_read": new_read_status
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error toggling read status: {str(e)}")
-
-
-@app.post("/api/news/batch-update")
-async def batch_update_news(
-    article_ids: List[int],
-    action: str = Query(..., description="Action to perform: bookmark, unbookmark, mark_read, mark_unread"),
+@app.get("/api/profile/validate/{symbol}")
+async def validate_stock_profile(
+    symbol: str,
     db: Session = Depends(get_db)
 ):
     """
-    批量更新新闻状态
+    验证单个股票的 Profile
+    检查公司是否仍存在、是否正常运营、是否存在风险
     """
     try:
-        if not article_ids:
-            raise HTTPException(status_code=400, detail="No article IDs provided")
-
-        if action not in ['bookmark', 'unbookmark', 'mark_read', 'mark_unread']:
-            raise HTTPException(status_code=400, detail="Invalid action")
-
-        # 构建更新语句
-        if action == 'bookmark':
-            update_sql = "UPDATE news_articles SET is_bookmarked = true WHERE id = ANY(:ids)"
-        elif action == 'unbookmark':
-            update_sql = "UPDATE news_articles SET is_bookmarked = false WHERE id = ANY(:ids)"
-        elif action == 'mark_read':
-            update_sql = "UPDATE news_articles SET is_read = true WHERE id = ANY(:ids)"
-        elif action == 'mark_unread':
-            update_sql = "UPDATE news_articles SET is_read = false WHERE id = ANY(:ids)"
-
-        # 执行批量更新
-        db.execute(text(update_sql), {"ids": article_ids})
+        from backend.app.stock_profile_validator import StockProfileValidator
+        
+        # 查询 Profile
+        query = select(StockProfile).where(StockProfile.symbol == symbol)
+        profile = db.execute(query).scalar_one_or_none()
+        
+        if not profile:
+            raise HTTPException(status_code=404, detail=f"Profile not found for {symbol}")
+        
+        # 执行验证
+        validator = StockProfileValidator(db)
+        status, reason = validator.validate_profile(profile)
+        
+        # 更新数据库
+        profile.validation_status = status
+        profile.validation_reason = reason
+        profile.last_validated_at = datetime.utcnow()
+        profile.is_valid = (status == "valid")
+        
+        db.add(profile)
         db.commit()
-
+        
         return {
             "status": "success",
-            "updated_count": len(article_ids),
-            "action": action
+            "symbol": symbol,
+            "validation_status": status,
+            "is_valid": profile.is_valid,
+            "validation_reason": reason
         }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Profile 验证失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Validation error: {str(e)}")
 
+
+@app.post("/api/profile/validate-batch")
+async def validate_batch_profiles(
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
+    """
+    批量验证 Profiles
+    可指定验证数量和起始位置
+    """
+    try:
+        from backend.app.stock_profile_validator import StockProfileValidator
+        
+        # 查询需要验证的 Profiles
+        query = select(StockProfile).limit(limit).offset(offset)
+        profiles = db.execute(query).scalars().all()
+        
+        if not profiles:
+            raise HTTPException(status_code=404, detail="No profiles found")
+        
+        # 批量验证
+        validator = StockProfileValidator(db)
+        results = validator.batch_validate_profiles(profiles, update_db=True)
+        
+        return {
+            "status": "success",
+            "results": results,
+            "profiles_validated": len(profiles)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 批量验证失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Batch validation error: {str(e)}")
+
+
+@app.get("/api/profile/invalid-list")
+async def get_invalid_profiles(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    获取所有被标记为无效（is_valid=false）的 Profiles
+    用于前端展示需要清理的股票列表
+    """
+    try:
+        from sqlalchemy import func
+        
+        # 查询无效的 Profiles
+        query = select(StockProfile).where(StockProfile.is_valid == False)
+        
+        # 获取总数
+        total_query = select(func.count(StockProfile.id)).where(StockProfile.is_valid == False)
+        total = db.execute(total_query).scalar() or 0
+        
+        # 分页查询
+        offset = (page - 1) * page_size
+        profiles = db.execute(query.offset(offset).limit(page_size)).scalars().all()
+        
+        invalid_list = []
+        for profile in profiles:
+            invalid_list.append({
+                "symbol": profile.symbol,
+                "company_name": profile.company_name,
+                "validation_status": profile.validation_status,
+                "validation_reason": profile.validation_reason,
+                "last_validated_at": profile.last_validated_at.isoformat() if profile.last_validated_at else None,
+                "industry": profile.industry
+            })
+        
+        return {
+            "status": "success",
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "count": len(profiles),
+            "invalid_profiles": invalid_list
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取无效 Profiles 失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.post("/api/profile/mark-invalid")
+async def mark_profile_invalid(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    手动标记一个或多个 Profile 为无效
+    
+    请求体:
+    {
+        "symbols": ["600519.SH", "000001.SZ", ...],
+        "reason": "公司已停止运营"
+    }
+    """
+    try:
+        from backend.app.stock_profile_validator import StockProfileValidator
+        
+        symbols = request.get("symbols", [])
+        reason = request.get("reason", "未指定原因")
+        
+        if not symbols:
+            raise HTTPException(status_code=400, detail="symbols list is required")
+        
+        validator = StockProfileValidator(db)
+        results = {
+            "success": [],
+            "failed": []
+        }
+        
+        for symbol in symbols:
+            try:
+                success = validator.mark_invalid(symbol, reason)
+                if success:
+                    results["success"].append(symbol)
+                else:
+                    results["failed"].append({"symbol": symbol, "error": "Profile not found"})
+            except Exception as e:
+                results["failed"].append({"symbol": symbol, "error": str(e)})
+        
+        return {
+            "status": "success",
+            "marked_invalid": len(results["success"]),
+            "failed": len(results["failed"]),
+            "results": results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 标记失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.post("/api/profile/restore")
+async def restore_profile(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    恢复被标记为无效的 Profile
+    
+    请求体:
+    {
+        "symbols": ["600519.SH", "000001.SZ", ...]
+    }
+    """
+    try:
+        from backend.app.stock_profile_validator import StockProfileValidator
+        
+        symbols = request.get("symbols", [])
+        
+        if not symbols:
+            raise HTTPException(status_code=400, detail="symbols list is required")
+        
+        validator = StockProfileValidator(db)
+        results = {
+            "success": [],
+            "failed": []
+        }
+        
+        for symbol in symbols:
+            try:
+                success = validator.restore_profile(symbol)
+                if success:
+                    results["success"].append(symbol)
+                else:
+                    results["failed"].append({"symbol": symbol, "error": "Profile not found"})
+            except Exception as e:
+                results["failed"].append({"symbol": symbol, "error": str(e)})
+        
+        return {
+            "status": "success",
+            "restored": len(results["success"]),
+            "failed": len(results["failed"]),
+            "results": results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 恢复失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.delete("/api/profile/delete-invalid")
+async def delete_invalid_profiles(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    删除被标记为无效的 Profiles（只能删除 is_valid=false 的）
+    只有标记为无效的 Profile 才可以被删除
+    
+    请求体:
+    {
+        "symbols": ["600519.SH", "000001.SZ", ...],
+        "confirm": true  // 必须明确确认
+    }
+    """
+    try:
+        symbols = request.get("symbols", [])
+        confirm = request.get("confirm", False)
+        
+        if not symbols or not confirm:
+            raise HTTPException(status_code=400, detail="symbols list and confirm flag are required")
+        
+        deleted_count = 0
+        failed_list = []
+        
+        for symbol in symbols:
+            try:
+                # 查询 Profile
+                query = select(StockProfile).where(StockProfile.symbol == symbol)
+                profile = db.execute(query).scalar_one_or_none()
+                
+                if not profile:
+                    failed_list.append({"symbol": symbol, "error": "Profile not found"})
+                    continue
+                
+                # 检查是否为无效状态
+                if profile.is_valid:
+                    failed_list.append({"symbol": symbol, "error": "Profile is still valid, cannot delete"})
+                    continue
+                
+                # 删除 Profile
+                db.delete(profile)
+                deleted_count += 1
+                
+            except Exception as e:
+                failed_list.append({"symbol": symbol, "error": str(e)})
+        
+        # 提交删除
+        db.commit()
+        
+        return {
+            "status": "success",
+            "deleted": deleted_count,
+            "failed": len(failed_list),
+            "failed_list": failed_list,
+            "message": f"Successfully deleted {deleted_count} profiles"
+        }
+        
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error batch updating news: {str(e)}")
-
-
-@app.delete("/api/news/{article_id}")
-async def delete_news_article(article_id: int, db: Session = Depends(get_db)):
-    """
-    删除新闻文章
-    """
-    try:
-        # 检查文章是否存在
-        article = db.execute(
-            text("SELECT id FROM news_articles WHERE id = :article_id"),
-            {"article_id": article_id}
-        ).first()
-
-        if not article:
-            raise HTTPException(status_code=404, detail="Article not found")
-
-        # 删除文章
-        db.execute(
-            text("DELETE FROM news_articles WHERE id = :article_id"),
-            {"article_id": article_id}
-        )
-
-        db.commit()
-
-        return {
-            "status": "success",
-            "deleted_article_id": article_id
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting article: {str(e)}")
+        logger.error(f"❌ 删除失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 if __name__ == "__main__":

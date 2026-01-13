@@ -1,0 +1,66 @@
+{
+  "timestamp": "20251009_065238",
+  "generated_at_utc": "2025-10-09T06:52:38.866958",
+  "diagnostics": {
+    "fallback_stock_count": 6,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 11,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 9,
+    "parse_success_stock_retry": 5,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.3,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', Non"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "direct": 9,
+      "heuristic": 6,
+      "retry": 5
+    },
+    "stock_prompt_token_summary": {
+      "min": 552,
+      "max": 1707,
+      "avg": 960.0,
+      "total": 19200,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 42,
+      "sum_original_chars": 5902,
+      "sum_truncated_chars": 5856,
+      "avg_original_per_item": 140.52,
+      "avg_truncated_per_item": 139.43,
+      "overall_ratio_truncated": 0.9922
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 10234,
+    "macro_truncation_stats": {
+      "item_count": 81,
+      "original_chars": 11733,
+      "truncated_chars": 11700,
+      "avg_original_per_item": 144.85,
+      "avg_truncated_per_item": 144.44,
+      "ratio_truncated": 0.9972,
+      "max_len_per_item": 300
+    },
+    "macro_extra_parse_mode_counts": {
+      "heuristic": 3
+    },
+    "macro_extra_multi_json_success_count": 0
+  },
+  "version": 1
+}

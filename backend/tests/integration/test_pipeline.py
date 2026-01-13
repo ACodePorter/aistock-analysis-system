@@ -9,10 +9,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import asyncio
 from datetime import datetime, timedelta
-from app.db import SessionLocal
-from app.models import Watchlist, PriceDaily, Signal, Forecast
-from app.scheduler import run_daily_pipeline
-from app.data_source import fetch_daily
+from app.core.db import SessionLocal
+from app.core.models import Watchlist, PriceDaily, Signal, Forecast
+from app.tasks.scheduler import run_daily_pipeline
+from app.data.data_source import fetch_daily
 from sqlalchemy import select, func
 
 class PipelineTester:

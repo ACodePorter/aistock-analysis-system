@@ -1,0 +1,75 @@
+{
+  "timestamp": "20260102_124246",
+  "generated_at_utc": "2026-01-02T12:42:46.585764+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 5,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 3,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 12,
+    "parse_success_stock_retry": 2,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.25,
+    "warnings": [
+      {
+        "level": "info",
+        "message": "严格 JSON 模式触发了重试，模型格式一致性需关注"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 13,
+    "force_no_response_format": true,
+    "azure_fail_count": 0,
+    "parse_mode_counts": {
+      "direct": 12,
+      "heuristic": 5,
+      "retry": 2,
+      "no-news": 1
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 2134,
+      "avg": 1304.5,
+      "total": 26090,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 100,
+      "sum_original_chars": 15982,
+      "sum_truncated_chars": 10858,
+      "avg_original_per_item": 159.82,
+      "avg_truncated_per_item": 108.58,
+      "overall_ratio_truncated": 0.6794
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4285,
+    "macro_truncation_stats": {
+      "item_count": 134,
+      "original_chars": 9271,
+      "truncated_chars": 4243,
+      "avg_original_per_item": 69.19,
+      "avg_truncated_per_item": 31.66,
+      "ratio_truncated": 0.4577,
+      "max_len_per_item": 160
+    },
+    "searx_filter_metrics": {
+      "db_first_added": 8,
+      "empty_results": 531,
+      "requery_relax_time": 33,
+      "requery_general": 56,
+      "requery_aug": 125,
+      "skip_domain": 9,
+      "skip_duplicate": 7,
+      "requery_cn_sites": 250,
+      "db_fallback_try": 11,
+      "extreme_fallback": 21,
+      "skip_old_published": 8
+    }
+  },
+  "version": 1
+}

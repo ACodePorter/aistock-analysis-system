@@ -1,0 +1,73 @@
+{
+  "timestamp": "20251010_044755",
+  "generated_at_utc": "2025-10-10T04:47:55.624282+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 6,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 0,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.3,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 400 Client Error: Bad Request for url: https://ai-qiutianyong-3233.openai.azure.com/openai/deployments/gpt-5-mini/chat/c"
+      },
+      {
+        "level": "warning",
+        "message": "所有个股首次解析 JSON 失败 (均依赖重试或回退)"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 6,
+    "force_no_response_format": true,
+    "azure_fail_count": 4,
+    "parse_mode_counts": {
+      "heuristic": 6,
+      "low-news": 14
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1758,
+      "avg": 354.85,
+      "total": 7097,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 42,
+      "sum_original_chars": 3647,
+      "sum_truncated_chars": 3647,
+      "avg_original_per_item": 86.83,
+      "avg_truncated_per_item": 86.83,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 3563,
+    "macro_truncation_stats": {
+      "item_count": 42,
+      "original_chars": 3439,
+      "truncated_chars": 3439,
+      "avg_original_per_item": 81.88,
+      "avg_truncated_per_item": 81.88,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "searx_filter_metrics": {
+      "requery_relax_time": 18,
+      "skip_domain": 5,
+      "requery_general": 36,
+      "requery_aug": 100,
+      "requery_cn_sites": 120,
+      "extreme_fallback": 15,
+      "skip_duplicate": 1
+    }
+  },
+  "version": 1
+}

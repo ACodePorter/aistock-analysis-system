@@ -7,8 +7,8 @@ from pathlib import Path
 backend_root = str(Path(__file__).parent.parent.parent)
 sys.path.insert(0, backend_root)
 
-from app.news_service import NewsSearchService, NewsProcessor
-from app.data_source import get_stock_info
+from app.news.news_service import NewsSearchService, NewsProcessor
+from app.data.data_source import get_stock_info
 
 async def test_news_search():
     """测试新闻搜索功能"""

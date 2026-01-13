@@ -1,0 +1,65 @@
+{
+  "timestamp": "20251009_030831",
+  "generated_at_utc": "2025-10-09T03:08:31.992279",
+  "diagnostics": {
+    "fallback_stock_count": 12,
+    "fallback_macro_used": true,
+    "strict_json_enabled": false,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 8,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.6,
+    "warnings": [
+      {
+        "level": "warning",
+        "message": "高回退比例: 60.0% (LLM 输出稳定性较差)"
+      },
+      {
+        "level": "error",
+        "message": "Azure 最近错误: HTTPSConnectionPool(host='ai-qiutianyong-3233.openai.azure.com', port=443): Max retries exceeded with url: /openai/respo"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "parse_mode_counts": {
+      "direct": 8,
+      "heuristic": 12
+    },
+    "stock_prompt_token_summary": {
+      "min": 511,
+      "max": 2127,
+      "avg": 1323.1,
+      "total": 26462,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 86,
+      "sum_original_chars": 12022,
+      "sum_truncated_chars": 12022,
+      "avg_original_per_item": 139.79,
+      "avg_truncated_per_item": 139.79,
+      "overall_ratio_truncated": 1.0
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 15211,
+    "macro_truncation_stats": {
+      "item_count": 128,
+      "original_chars": 18446,
+      "truncated_chars": 18446,
+      "avg_original_per_item": 144.11,
+      "avg_truncated_per_item": 144.11,
+      "ratio_truncated": 1.0,
+      "max_len_per_item": 300
+    },
+    "macro_extra_parse_mode_counts": {
+      "heuristic": 3
+    },
+    "macro_extra_multi_json_success_count": 0
+  },
+  "version": 1
+}

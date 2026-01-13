@@ -1,0 +1,6 @@
+{
+  "error": "name 'cjk_count' is not defined",
+  "traceback": "Traceback (most recent call last):\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3676, in <module>\n    agent_main()\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3476, in agent_main\n    {**sr, 'report': _public_stock_report(sr.get('report'))}\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3389, in _public_stock_report\n    'name': _ensure_report_zh((f.get('name') or '').strip(), max_len=40),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 3357, in _ensure_report_zh\n    if cjk_count(s) >= min_cjk_report:\n       ^^^^^^^^^\nNameError: name 'cjk_count' is not defined\n",
+  "finished_at": "2026-01-06T07:15:07.785160+00:00",
+  "fallback": "error"
+}

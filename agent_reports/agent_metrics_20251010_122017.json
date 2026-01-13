@@ -1,0 +1,72 @@
+{
+  "timestamp": "20251010_122017",
+  "generated_at_utc": "2025-10-10T12:20:17.013573+00:00",
+  "diagnostics": {
+    "fallback_stock_count": 0,
+    "fallback_macro_used": true,
+    "strict_json_enabled": true,
+    "strict_retry_stock": 0,
+    "strict_retry_macro": 0,
+    "parse_success_stock_first": 5,
+    "parse_success_stock_retry": 0,
+    "parse_success_macro_first": 0,
+    "parse_success_macro_retry": 0,
+    "fallback_ratio": 0.0,
+    "warnings": [
+      {
+        "level": "error",
+        "message": "Azure 最近错误: 404 Client Error: Resource Not Found for url: https://ai-qiutianyong-3233.openai.azure.com/openai/replies?api-version=20"
+      },
+      {
+        "level": "warning",
+        "message": "宏观分析首次解析 JSON 失败"
+      }
+    ],
+    "chat_empty_count": 1,
+    "force_no_response_format": false,
+    "azure_fail_count": 2,
+    "parse_mode_counts": {
+      "direct": 5,
+      "low-news": 15
+    },
+    "stock_prompt_token_summary": {
+      "min": 0,
+      "max": 1785,
+      "avg": 306.7,
+      "total": 6134,
+      "count": 20
+    },
+    "stock_truncation_summary": {
+      "total_items": 39,
+      "sum_original_chars": 3665,
+      "sum_truncated_chars": 3482,
+      "avg_original_per_item": 93.97,
+      "avg_truncated_per_item": 89.28,
+      "overall_ratio_truncated": 0.9501
+    },
+    "multi_json_success_count": 0,
+    "macro_prompt_token_est": 4986,
+    "macro_truncation_stats": {
+      "item_count": 57,
+      "original_chars": 5181,
+      "truncated_chars": 5038,
+      "avg_original_per_item": 90.89,
+      "avg_truncated_per_item": 88.39,
+      "ratio_truncated": 0.9724,
+      "max_len_per_item": 220
+    },
+    "searx_filter_metrics": {
+      "empty_results": 452,
+      "requery_relax_time": 22,
+      "skip_domain": 3,
+      "requery_aug": 127,
+      "requery_general": 43,
+      "skip_duplicate": 4,
+      "requery_cn_sites": 150,
+      "db_fallback_try": 15,
+      "extreme_fallback": 19,
+      "http_timeout": 1
+    }
+  },
+  "version": 1
+}

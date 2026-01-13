@@ -11,7 +11,7 @@ import asyncio
 backend_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, backend_root)
 
-from app.news_deduplication import NewsDeduplicator  # type: ignore
+from app.news.news_deduplication import NewsDeduplicator  # type: ignore
 
 
 class TestDedup(unittest.TestCase):
