@@ -42,6 +42,16 @@ user_agents:
   - "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0"
   - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15"
 
+# 推荐 RSS 财经源（可由 RSSHub 转换或直接订阅）
+rss_feeds:
+  caixin: "https://rsshub.app/caixin/article/latest"
+  yicai: "https://rsshub.app/yicai/brief"
+  cls: "https://rsshub.app/cls/telegraph"
+  wallstreetcn: "https://rsshub.app/wallstreetcn/live/global"
+  eastmoney_report: "https://rsshub.app/eastmoney/report"
+  xueqiu_hot: "https://rsshub.app/xueqiu/hots"
+  sina_finance: "https://feedx.net/rss/sinafinance.xml"
+
 # Proxies (optional)
 proxies: []
   # - "http://user:pass@ip:port"

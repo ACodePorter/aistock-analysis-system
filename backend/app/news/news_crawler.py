@@ -78,6 +78,11 @@ try:
     READABILITY_AVAILABLE = True
 except ImportError:
     READABILITY_AVAILABLE = False
+try:
+    import trafilatura
+    TRAFILATURA_AVAILABLE = True
+except Exception:
+    TRAFILATURA_AVAILABLE = False
     
 try:
     import chardet
@@ -129,7 +134,12 @@ class NewsContentCrawler:
             'xueqiu': ['.article__content', '.article__bd__detail', '.detail', '.content', '#content'],
             'eastmoney': ['.content', '.newsContent', '.article-content'],
             # 东方财富股吧（guba）页面经常使用以下容器
-            'guba': ['#zw_body', '#zwcon', '#zwcontentbody', '.zw_content', '.stockcodec', '#newsContent', '.newsContent', '.article-content'],
+            'guba': [
+                '#zw_body', '#zwcon', '#zwcontentbody', '.zw_content', '.stockcodec',
+                '#newsContent', '.newsContent', '.article-content',
+                'div[id^="zw_"]', 'div[id^="zwcon"]', 'div[id*="zwcon"]',
+                '.post', '.post-content', '.article', '.article-body', '.bbs-article'
+            ],
             'cnbc': ['.InlineArticleBody-container', '.ArticleBody-articleBody'],
             'reuters': ['.StandardArticleBody_body', '.ArticleBodyWrapper'],
             'bloomberg': ['.body-copy', '.story-body'],
@@ -304,6 +314,45 @@ class NewsContentCrawler:
                 else:
                     logging.error(f"All attempts failed for {url}")
                     debug["hint"] = "Check if site blocks bots (403/429), requires JavaScript, or needs proxy. Configure NEWS_HTTP_PROXY if needed."
+                    # Playwright fallback if enabled
+                    try:
+                        if os.getenv('PLAYWRIGHT_ENABLED', '0') in ('1', 'true', 'True'):
+                            logging.info(f"Attempting Playwright fallback for {url}")
+                            # run Playwright in thread to avoid blocking event loop if only sync API available
+                            from functools import partial
+                            def _render_with_playwright(u: str, headless: bool=True) -> Optional[str]:
+                                try:
+                                    from playwright.sync_api import sync_playwright
+                                except Exception:
+                                    return None
+                                try:
+                                    with sync_playwright() as p:
+                                        browser = p.chromium.launch(headless=headless)
+                                        page = browser.new_page()
+                                        page.goto(u, timeout=30000)
+                                        # wait for network to be idle briefly
+                                        page.wait_for_load_state('networkidle', timeout=10000)
+                                        content = page.content()
+                                        browser.close()
+                                        return content
+                                except Exception:
+                                    try:
+                                        browser.close()
+                                    except Exception:
+                                        pass
+                                    return None
+
+                            headless_flag = os.getenv('PLAYWRIGHT_HEADLESS', '1') in ('1', 'true', 'True')
+                            loop = asyncio.get_event_loop()
+                            rendered = await loop.run_in_executor(None, partial(_render_with_playwright, url, headless_flag))
+                            if rendered:
+                                debug["last_status"] = 'playwright'
+                                debug["hint"] = "Rendered via Playwright fallback"
+                                return rendered, debug
+                            else:
+                                debug["hint"] = debug.get("hint") + "; Playwright fallback failed or not installed."
+                    except Exception as pw_e:
+                        logging.warning(f"Playwright fallback raised: {pw_e}")
                     return None, debug
         
         return None, debug
@@ -363,6 +412,15 @@ class NewsContentCrawler:
         # 使用readability作为备选方案
         if not content or len(content.strip()) < 100:
             content = self._extract_content_with_readability(html_content)
+
+        # 如果仍然提取不足，尝试使用 trafilatura（更强的正文抽取）
+        if (not content or len(content.strip()) < 200) and TRAFILATURA_AVAILABLE:
+            try:
+                extracted = trafilatura.extract(html_content, favour_precision=True, include_comments=False)
+                if extracted and len(extracted.strip()) > len(content or ""):
+                    content = extracted.strip()
+            except Exception:
+                pass
 
         # 针对特定站点做增强提取（例如雪球的脚本JSON、页面内隐藏正文）
         if (not content or len(content.strip()) < 100) and ('xueqiu.com' in domain):

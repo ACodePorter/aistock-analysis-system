@@ -47,50 +47,18 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
   }
 
   return (
-    <div style={{
-      fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
-      background: '#f9fafb',
-      minHeight: '100vh',
-      color: '#111827',
-      padding: '16px'
-    }}>
-      <div style={{maxWidth: '1600px', margin: '0 auto'}}>
+    <div>
+      <div className="page-container" style={{maxWidth: '1600px', margin: '0 auto'}}>
         {/* 返回按钮 */}
         <div style={{marginBottom: '16px'}}>
-          <button 
-            onClick={onBack} 
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              background: '#fff',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#374151',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#f3f4f6';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#fff';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
-            }}
-          >
-            ← 返回
-          </button>
+          <button onClick={onBack} className="dark-btn dark-btn-secondary">← 返回</button>
         </div>
 
         <div style={{marginBottom: '20px'}}>
-          <h1 style={{margin: '0 0 8px 0', fontSize: '28px', fontWeight: 700}}>
+          <h1 style={{margin: '0 0 8px 0', fontSize: '28px', fontWeight: 700, color: 'var(--text)'}}>
             📊 {symbol}
           </h1>
-          <p style={{margin: 0, color: '#6b7280', fontSize: '14px'}}>
+          <p style={{margin: 0, color: 'var(--text-muted)', fontSize: '14px'}}>
             股票详情 · 公司画像与相关资讯
           </p>
         </div>
@@ -109,15 +77,15 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
 
           {/* 右侧：相关文章 */}
           <div style={{
-            background: '#fff',
+            background: 'var(--surface-dark)',
             borderRadius: '12px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid var(--border)',
             overflow: 'hidden'
           }}>
             {/* 文章头部 */}
             <div style={{
               padding: '24px',
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid var(--border)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
@@ -126,16 +94,16 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
                 <h2 style={{margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700}}>
                   📰 相关资讯
                 </h2>
-                <p style={{margin: 0, fontSize: '13px', color: '#6b7280'}}>
+                <p style={{margin: 0, fontSize: '13px', color: 'var(--text-muted)'}}>
                   共 {articles.length} 条资讯
                 </p>
               </div>
-              <label style={{fontSize: '13px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <label style={{fontSize: '13px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px'}}>
                 <input 
                   type='checkbox' 
                   checked={includeContent} 
                   onChange={e=> setIncludeContent(e.target.checked)}
-                  style={{cursor: 'pointer'}}
+                  className="app-search"
                 />
                 <span>显示完整内容</span>
               </label>
@@ -144,62 +112,20 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
             {/* 文章列表 */}
             <div style={{padding: '20px'}}>
               {loading ? (
-                <div style={{textAlign: 'center', padding: '40px 20px', color: '#9ca3af'}}>
+                <div style={{textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)'}}>
                   ⏳ 加载中...
                 </div>
               ) : articles.length === 0 ? (
-                <div style={{textAlign: 'center', padding: '40px 20px', color: '#9ca3af'}}>
+                <div style={{textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)'}}>
                   <div style={{fontSize: '32px', marginBottom: '12px'}}>📭</div>
                   暂无相关资讯
                 </div>
               ) : (
                 <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                   {articles.map((article, idx) => (
-                    <div
-                      key={`${article.id}-${idx}`}
-                      style={{
-                        padding: '16px',
-                        background: '#f9fafb',
-                        borderRadius: '10px',
-                        border: '1px solid #e5e7eb',
-                        transition: 'all 0.2s',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.background = '#f0f9ff';
-                        (e.currentTarget as HTMLDivElement).style.borderColor = '#0ea5e9';
-                        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(6,182,212,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.background = '#f9fafb';
-                        (e.currentTarget as HTMLDivElement).style.borderColor = '#e5e7eb';
-                        (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
-                      }}
-                    >
+                      <div key={`${article.id}-${idx}`} className="card-panel article-card">
                       {/* 文章标题 */}
-                      <a
-                        href={article.url}
-                        target='_blank'
-                        rel='noreferrer'
-                        style={{
-                          textDecoration: 'none',
-                          color: '#1f2937',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          lineHeight: '1.5',
-                          display: 'block',
-                          marginBottom: '8px',
-                          transition: 'color 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLAnchorElement).style.color = '#0ea5e9';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLAnchorElement).style.color = '#1f2937';
-                        }}
-                      >
-                        {article.title}
-                      </a>
+                      <a href={article.url} target='_blank' rel='noreferrer' className="article-link">{article.title}</a>
 
                       {/* 摘要 */}
                       {(article.summary || (includeContent && article.content)) && (
@@ -207,52 +133,19 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
                           margin: '8px 0',
                           fontSize: '12px',
                           lineHeight: '1.5',
-                          color: '#6b7280'
+                          color: 'var(--text-muted)'
                         }}>
                           {article.summary || article.content?.slice(0, 150)}...
                         </p>
                       )}
 
                       {/* 元数据 */}
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginTop: '10px',
-                        paddingTop: '10px',
-                        borderTop: '1px solid #e5e7eb',
-                        fontSize: '11px',
-                        color: '#9ca3af'
-                      }}>
-                        <div style={{display: 'flex', gap: '12px'}}>
+                      <div className="article-meta">
+                        <div className="meta-left">
                           {article.source && <span>📌 {article.source}</span>}
-                          {article.published_at && (
-                            <span>🕐 {new Date(article.published_at).toLocaleDateString('zh-CN')}</span>
-                          )}
+                          {article.published_at && <span>🕐 {new Date(article.published_at).toLocaleDateString('zh-CN')}</span>}
                         </div>
-                        <button
-                          onClick={() => sendFeedback(article.url)}
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            border: '1px solid #d1d5db',
-                            background: '#fff',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            color: '#6b7280',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#f3f4f6';
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = '#9ca3af';
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#fff';
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = '#d1d5db';
-                          }}
-                        >
-                          报错
-                        </button>
+                        <button onClick={() => sendFeedback(article.url)} className="dark-btn dark-btn-secondary">报错</button>
                       </div>
                     </div>
                   ))}
@@ -264,7 +157,7 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
             {articles.length > 0 && (
               <div style={{
                 padding: '20px',
-                borderTop: '1px solid #e5e7eb',
+                borderTop: '1px solid var(--border)',
                 display: 'flex',
                 justifyContent: 'center',
                 gap: '8px',
@@ -273,31 +166,20 @@ export default function StockNewsDetail({ symbol, onBack }: { symbol: string; on
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
+                  className="dark-btn dark-btn-secondary"
                   style={{
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    background: page === 1 ? '#f3f4f6' : '#fff',
-                    cursor: page === 1 ? 'not-allowed' : 'pointer',
-                    opacity: page === 1 ? 0.5 : 1
+                    opacity: page === 1 ? 0.5 : 1,
+                    cursor: page === 1 ? 'not-allowed' : 'pointer'
                   }}
                 >
                   ← 上一页
                 </button>
-                <span style={{fontSize: '13px', color: '#6b7280'}}>
+                <span style={{fontSize: '13px', color: 'var(--text-muted)'}}>
                   第 {page} 页
                 </span>
                 <button
                   onClick={() => setPage(page + 1)}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    background: '#fff',
-                    cursor: 'pointer'
-                  }}
+                  className="dark-btn dark-btn-secondary"
                 >
                   下一页 →
                 </button>

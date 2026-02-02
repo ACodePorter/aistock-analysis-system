@@ -9,6 +9,8 @@
 """
 from __future__ import annotations
 import json, os
+import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import datetime, timezone, date
 from typing import Optional
@@ -17,6 +19,23 @@ from ..core.db import SessionLocal
 from ..core.models import AgentDailyReport
 
 REPORTS_DIR = Path(__file__).resolve().parent.parent / 'agent_reports'
+
+logger = logging.getLogger(__name__)
+# Ensure a dedicated rotating file handler for agent persistence diagnostics
+try:
+    project_root = Path(__file__).resolve().parents[3]
+    logs_dir = project_root / 'logs'
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_file = logs_dir / 'agent_persistence.log'
+    # Add handler only once
+    if not any(getattr(h, 'baseFilename', None) == str(log_file) for h in logger.handlers):
+        fh = RotatingFileHandler(str(log_file), maxBytes=5 * 1024 * 1024, backupCount=5, encoding='utf-8')
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        logger.addHandler(fh)
+except Exception:
+    # Fail quietly—do not break application startup if logging setup fails
+    pass
 
 
 def _infer_report_date(payload: dict) -> date:
@@ -110,12 +129,17 @@ def _maybe_upsert_mongo(report_date: date, job_id: Optional[str], payload: dict,
 
     Controlled by env AGENT_MONGO_ENABLE (default: '1'). Safe no-op on import/connection errors.
     """
-    if os.getenv("AGENT_MONGO_ENABLE", "1").lower() not in ("1","true","yes"):  # feature flag
+    enabled = os.getenv("AGENT_MONGO_ENABLE", "1").lower() in ("1", "true", "yes")
+    if not enabled:
+        logger.info("AGENT_MONGO_ENABLE disabled; skipping Mongo upsert")
         return
+
     try:
         from pymongo import MongoClient
-    except Exception:
+    except Exception as e:
+        logger.warning("pymongo not available; cannot upsert to MongoDB: %s", e)
         return
+
     mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     db_name = os.getenv("MONGO_DB_NAME", os.getenv("MONGO_DB", "aistock_news"))
     coll_name = os.getenv("AGENT_MONGO_COLLECTION", "agent_daily_reports")
@@ -134,10 +158,19 @@ def _maybe_upsert_mongo(report_date: date, job_id: Optional[str], payload: dict,
         "source": "agent",
     }
     try:
-        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=2000, connectTimeoutMS=2000)
+        logger.info("Attempting Mongo upsert: uri=%s db=%s coll=%s report_date=%s", mongo_uri, db_name, coll_name, doc["report_date"])
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000, connectTimeoutMS=2000)
         db = client[db_name]
         coll = db[coll_name]
-        coll.update_one({"report_date": doc["report_date"]}, {"$set": doc, "$setOnInsert": {"created_at": datetime.utcnow()}}, upsert=True)
+        result = coll.update_one({"report_date": doc["report_date"]}, {"$set": doc, "$setOnInsert": {"created_at": datetime.utcnow()}}, upsert=True)
+        if result.acknowledged:
+            logger.info("Mongo upsert acknowledged. matched=%s modified=%s upserted_id=%s", getattr(result, 'matched_count', None), getattr(result, 'modified_count', None), getattr(result, 'upserted_id', None))
+        else:
+            logger.warning("Mongo upsert not acknowledged for report_date=%s", doc["report_date"])
     except Exception:
-        # Do not propagate Mongo errors; SQL is the source of truth
-        pass
+        logger.exception("Exception during Mongo upsert for report_date=%s", doc["report_date"]) 
+    finally:
+        try:
+            client.close()
+        except Exception:
+            pass

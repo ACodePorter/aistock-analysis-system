@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI A股市场监控大盘中心 | 专业智能投资平台</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#116574",
+                        "background-light": "#f6f7f9",
+                        "background-dark": "#0a0c10",
+                        "card-dark": "#161b22",
+                        "accent-lime": "#6EE7B7",
+                        "accent-orange": "#fa5f38"
+                    },
+                    fontFamily: {
+                        "display": ["PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "sans-serif"],
+                        "technical": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .k-line-grid {
+            background-image: linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased selection:bg-primary/30">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 border-r border-slate-200 dark:border-white/10 flex flex-col bg-white dark:bg-background-dark shrink-0">
+<div class="p-6 flex items-center gap-3">
+<div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">query_stats</span>
+</div>
+<div>
+<h1 class="font-bold text-lg leading-tight tracking-tight">AI 监控中心</h1>
+<p class="text-[10px] text-primary font-bold tracking-widest uppercase">A-Share Intelligence</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-semibold">市场总览</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">深度分析</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">strategy</span>
+<span class="text-sm font-medium">策略中心</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">radar</span>
+<span class="text-sm font-medium">情报监控</span>
+</a>
+<div class="mt-8 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">数据报告</div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm font-medium">每日复盘</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">平台设置</span>
+</a>
+</nav>
+<div class="p-4 mt-auto border-t border-slate-200 dark:border-white/10">
+<div class="bg-slate-100 dark:bg-card-dark p-4 rounded-xl flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-300 overflow-hidden shrink-0 border border-white/20">
+<img alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9nAMupIHwOqgbhjaKFxlYx_1SyltEjeqSEysyENskJi8K3Byx6bTeaWx3dZgrdWDiwXV7n-fr1DwNgwiaLLisEXc4bJubVEU1s_uqUK2FQIMGAJcSffufka2JD62WkSSmdylRqf0hoGU81ElAIbbPE8LGNTiyyDNfFdZekr1lTKTijJwJAbDqovI4MVyA9Oafj1JgmQCacGkeNO6TQFhc7ZFEL0ZTH6rMvQ6x0O1HZD8aNWwVJBqGQc_S9ZvfSeFgKj63pZkC6tI"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">高级研究员</p>
+<p class="text-xs text-slate-400 truncate">AI 节点已连接</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col overflow-hidden">
+<header class="h-20 border-b border-slate-200 dark:border-white/10 bg-white/50 dark:bg-background-dark/50 backdrop-blur-md px-8 flex items-center justify-between">
+<div class="flex items-center gap-8 overflow-x-auto no-scrollbar">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-slate-500 tracking-tighter">上证指数</span>
+<span class="text-accent-lime text-xs font-bold">+0.45%</span>
+</div>
+<span class="font-technical text-xl font-bold tracking-tight">3,052.12</span>
+</div>
+<div class="w-px h-8 bg-slate-200 dark:bg-white/10"></div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-slate-500 tracking-tighter">深证成指</span>
+<span class="text-accent-orange text-xs font-bold">-0.12%</span>
+</div>
+<span class="font-technical text-xl font-bold tracking-tight">9,414.05</span>
+</div>
+<div class="w-px h-8 bg-slate-200 dark:bg-white/10"></div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-slate-500 tracking-tighter">创业板指</span>
+<span class="text-accent-lime text-xs font-bold">+0.88%</span>
+</div>
+<span class="font-technical text-xl font-bold tracking-tight">1,820.41</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-lime/10 border border-accent-lime/20">
+<span class="size-2 rounded-full bg-accent-lime animate-pulse"></span>
+<span class="text-[11px] font-bold text-accent-lime uppercase">实时数据流</span>
+</div>
+<button class="p-2 rounded-full bg-slate-100 dark:bg-white/5 hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="bg-slate-100 dark:bg-white/5 border-none rounded-full py-2 pl-9 pr-4 text-xs w-48 focus:ring-1 focus:ring-primary" placeholder="搜索代码/简称..." type="text"/>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-[1600px] mx-auto grid grid-cols-12 gap-6">
+<div class="col-span-12 xl:col-span-8 flex flex-col gap-6">
+<div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/10 p-6 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-lg font-bold">上证指数 <span class="text-slate-500 font-normal ml-2 text-sm">000001.SH</span></h2>
+<p class="text-xs text-slate-400 mt-1">基于 AI Path Projection v4.2 的路径演化预测</p>
+</div>
+<div class="flex gap-2">
+<div class="flex rounded-lg bg-slate-100 dark:bg-white/5 p-1">
+<button class="px-3 py-1 text-xs font-bold rounded-md bg-white dark:bg-white/10 shadow-sm">分时</button>
+<button class="px-3 py-1 text-xs font-bold text-slate-500">日线</button>
+<button class="px-3 py-1 text-xs font-bold text-slate-500">周线</button>
+<button class="px-3 py-1 text-xs font-bold text-slate-500">月线</button>
+</div>
+<button class="flex items-center gap-2 px-3 py-1 text-xs font-bold rounded-lg border border-primary/30 text-primary bg-primary/5">
+<span class="material-symbols-outlined text-sm">auto_graph</span> AI 预测路径
+                                </button>
+</div>
+</div>
+<div class="relative h-[400px] w-full bg-slate-50 dark:bg-[#0d1117] rounded-lg k-line-grid overflow-hidden border border-slate-200 dark:border-white/5">
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 800 400">
+<path d="M0,320 L50,310 L100,330 L150,290 L200,305 L250,260 L300,280 L350,240 L400,250 L450,220 L500,230" fill="none" stroke="#64748b" stroke-width="2"></path>
+<path d="M500,230 L550,210 L600,190 L650,205 L700,160 L750,140 L800,150" fill="none" stroke="#6EE7B7" stroke-dasharray="8,5" stroke-width="3"></path>
+<path d="M500,230 L550,180 L600,160 L650,175 L700,130 L750,110 L800,120 L800,180 L750,170 L700,190 L650,235 L600,220 L550,240 Z" fill="#6EE7B7" fill-opacity="0.05"></path>
+<circle cx="500" cy="230" fill="#6EE7B7" r="4"></circle>
+<line opacity="0.5" stroke="#6EE7B7" stroke-dasharray="4,4" stroke-width="1" x1="500" x2="500" y1="0" y2="400"></line>
+</svg>
+<div class="absolute top-4 right-4 bg-background-dark/80 backdrop-blur px-3 py-2 rounded border border-white/10">
+<p class="text-[10px] font-bold text-accent-lime uppercase tracking-widest">AI 预测走势</p>
+<p class="text-xs text-white/60">置信度评分: 87.4%</p>
+</div>
+<div class="absolute bottom-4 left-4 flex gap-4 text-[10px] font-bold text-slate-500 uppercase">
+<span>历史行情数据</span>
+<span class="flex items-center gap-1"><span class="w-2 h-0 border-t-2 border-dashed border-accent-lime"></span> AI 模拟预测 (未来 7 个交易日)</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">target</span>
+                                AI 高胜率股票推荐
+                            </h3>
+<span class="text-xs font-bold text-slate-500">最后更新: 14:32:01</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/10">
+<div class="p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<p class="font-bold text-lg">比亚迪 <span class="text-xs text-slate-500 font-normal block">002594.SZ</span></p>
+<span class="bg-accent-lime/20 text-accent-lime text-[10px] font-bold px-2 py-0.5 rounded uppercase">强力买入</span>
+</div>
+<div class="flex items-end justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-400 uppercase font-bold">预期收益</span>
+<span class="text-accent-lime font-bold font-technical">+12.4%</span>
+</div>
+<div class="h-8 w-20 flex items-end gap-0.5">
+<div class="flex-1 bg-accent-lime/20 h-[40%]"></div>
+<div class="flex-1 bg-accent-lime/20 h-[60%]"></div>
+<div class="flex-1 bg-accent-lime/20 h-[50%]"></div>
+<div class="flex-1 bg-accent-lime/40 h-[80%]"></div>
+<div class="flex-1 bg-accent-lime h-[95%]"></div>
+</div>
+</div>
+</div>
+<div class="p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<p class="font-bold text-lg">宁德时代 <span class="text-xs text-slate-500 font-normal block">300750.SZ</span></p>
+<span class="bg-accent-lime/20 text-accent-lime text-[10px] font-bold px-2 py-0.5 rounded uppercase">强力买入</span>
+</div>
+<div class="flex items-end justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-400 uppercase font-bold">预期收益</span>
+<span class="text-accent-lime font-bold font-technical">+8.1%</span>
+</div>
+<div class="h-8 w-20 flex items-end gap-0.5">
+<div class="flex-1 bg-accent-lime/20 h-[30%]"></div>
+<div class="flex-1 bg-accent-lime/20 h-[40%]"></div>
+<div class="flex-1 bg-accent-lime/40 h-[60%]"></div>
+<div class="flex-1 bg-accent-lime/60 h-[70%]"></div>
+<div class="flex-1 bg-accent-lime h-[85%]"></div>
+</div>
+</div>
+</div>
+<div class="p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<p class="font-bold text-lg">五粮液 <span class="text-xs text-slate-500 font-normal block">000858.SZ</span></p>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase">逢低增持</span>
+</div>
+<div class="flex items-end justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-400 uppercase font-bold">预期收益</span>
+<span class="text-primary font-bold font-technical">+4.5%</span>
+</div>
+<div class="h-8 w-20 flex items-end gap-0.5">
+<div class="flex-1 bg-primary/20 h-[60%]"></div>
+<div class="flex-1 bg-primary/20 h-[55%]"></div>
+<div class="flex-1 bg-primary/40 h-[65%]"></div>
+<div class="flex-1 bg-primary/60 h-[60%]"></div>
+<div class="flex-1 bg-primary h-[70%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 xl:col-span-4 flex flex-col gap-6">
+<div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/10 p-6">
+<h3 class="font-bold flex items-center justify-between mb-8">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">psychology</span>
+                                全网情绪看板
+                            </span>
+<span class="bg-slate-100 dark:bg-white/5 text-[10px] px-2 py-1 rounded">实时全网监测</span>
+</h3>
+<div class="relative flex flex-col items-center justify-center">
+<div class="w-48 h-24 overflow-hidden relative">
+<div class="w-48 h-48 rounded-full border-[12px] border-slate-100 dark:border-white/5"></div>
+<div class="absolute top-0 w-48 h-48 rounded-full border-[12px] border-transparent border-t-accent-lime border-r-accent-lime rotate-[45deg]"></div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-20 bg-primary origin-bottom rotate-[65deg] rounded-full">
+<div class="absolute -top-1 -left-1 w-3 h-3 bg-primary rounded-full ring-4 ring-white dark:ring-card-dark"></div>
+</div>
+</div>
+<div class="mt-4 text-center">
+<p class="text-4xl font-black font-technical text-accent-lime">乐观 (Bullish)</p>
+<p class="text-sm text-slate-400 mt-1 font-medium italic">“监测到锂电产业链机构出现大额净买入迹象。”</p>
+</div>
+</div>
+<div class="mt-8 grid grid-cols-2 gap-4 border-t border-slate-200 dark:border-white/10 pt-6">
+<div>
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">散户活跃度</p>
+<div class="flex items-center gap-2 mt-1">
+<div class="flex-1 h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[82%]"></div>
+</div>
+<span class="text-xs font-bold font-technical">82%</span>
+</div>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">恐惧 / 贪婪</p>
+<div class="flex items-center gap-2 mt-1">
+<div class="flex-1 h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-accent-orange w-[45%]"></div>
+</div>
+<span class="text-xs font-bold font-technical">45%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/10 flex-1 flex flex-col overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-white/10">
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">newspaper</span>
+                                全球宏观事件量化影响
+                            </h3>
+<p class="text-xs text-slate-400 mt-1">AI 实时量化宏观新闻对 A 股流动性的冲击</p>
+</div>
+<div class="flex-1 overflow-y-auto divide-y divide-slate-200 dark:divide-white/5 no-scrollbar">
+<div class="p-6 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-white/10 rounded uppercase">宏观: 美联储</span>
+<span class="text-[10px] text-slate-400">12分钟前</span>
+</div>
+<h4 class="text-sm font-bold leading-snug">鲍威尔暗示将在即将到来的议息会议上维持“长期高利率”政策。</h4>
+<div class="mt-4 flex items-center gap-4 bg-background-light dark:bg-background-dark/30 p-3 rounded-lg border border-slate-200 dark:border-white/5">
+<div class="flex flex-col items-center">
+<span class="text-[10px] font-bold text-slate-500 uppercase">冲击指数</span>
+<span class="text-accent-orange font-bold font-technical text-lg">-14.2</span>
+</div>
+<div class="flex-1">
+<p class="text-[10px] text-slate-400 font-medium">影响高成长科技出口股流动性</p>
+<div class="h-1 bg-slate-200 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
+<div class="h-full bg-accent-orange w-[65%]"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-white/10 rounded uppercase">国内: 货币政策</span>
+<span class="text-[10px] text-slate-400">45分钟前</span>
+</div>
+<h4 class="text-sm font-bold leading-snug">央行宣布下调存款准备金率 50 个基点，旨在刺激制造业贷款。</h4>
+<div class="mt-4 flex items-center gap-4 bg-background-light dark:bg-background-dark/30 p-3 rounded-lg border border-slate-200 dark:border-white/5">
+<div class="flex flex-col items-center">
+<span class="text-[10px] font-bold text-slate-500 uppercase">利好指数</span>
+<span class="text-accent-lime font-bold font-technical text-lg">+22.8</span>
+</div>
+<div class="flex-1">
+<p class="text-[10px] text-slate-400 font-medium">直接注入金融板块流动性</p>
+<div class="h-1 bg-slate-200 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
+<div class="h-full bg-accent-lime w-[85%]"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-white/10 rounded uppercase">地缘政治</span>
+<span class="text-[10px] text-slate-400">2小时前</span>
+</div>
+<h4 class="text-sm font-bold leading-snug">中国与东盟合作伙伴签署新能源汽车出口新贸易协定。</h4>
+<div class="mt-4 flex items-center gap-4 bg-background-light dark:bg-background-dark/30 p-3 rounded-lg border border-slate-200 dark:border-white/5">
+<div class="flex flex-col items-center">
+<span class="text-[10px] font-bold text-slate-500 uppercase">利好指数</span>
+<span class="text-accent-lime font-bold font-technical text-lg">+11.5</span>
+</div>
+<div class="flex-1">
+<p class="text-[10px] text-slate-400 font-medium">长期利好工业零部件出口</p>
+<div class="h-1 bg-slate-200 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
+<div class="h-full bg-accent-lime w-[40%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

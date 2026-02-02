@@ -399,13 +399,13 @@ export default function ModernNewsComponent() {
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
       case 'positive':
-        return 'bg-green-100 text-green-700 border border-green-200';
+        return 'dark-badge dark-badge-success';
       case 'negative':
-        return 'bg-red-100 text-red-700 border border-red-200';
+        return 'dark-badge dark-badge-danger';
       case 'neutral':
-        return 'bg-gray-100 text-gray-700 border border-gray-200';
+        return 'dark-badge';
       default:
-        return 'bg-gray-100 text-gray-700 border border-gray-200';
+        return 'dark-badge';
     }
   };
 
@@ -423,12 +423,12 @@ export default function ModernNewsComponent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: 24, fontFamily: "'Inter','Noto Sans SC',sans-serif", color: '#111827' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--background-dark)', padding: 24, fontFamily: "'Inter','Noto Sans SC',sans-serif", color: 'var(--text)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>财经新闻 · 实时流</div>
-            <h2 style={{ margin: 0, fontSize: 22, color: '#0f172a' }}>财经新闻中枢</h2>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>财经新闻 · 实时流</div>
+            <h2 style={{ margin: 0, fontSize: 22, color: 'var(--text)' }}>财经新闻中枢</h2>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <Input.Search
@@ -440,8 +440,8 @@ export default function ModernNewsComponent() {
               onChange={e => { const v = e.target.value; setSearchQuery(v); if (!v) { setPage(1); loadNews(); } }}
               style={{ minWidth: 320 }}
             />
-            <button onClick={exportCsv} disabled={!filteredArticles.length} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 8, border: '1px solid #6b7280', background: '#fff', color: '#374151', cursor: filteredArticles.length ? 'pointer' : 'not-allowed' }}>导出CSV</button>
-            <button onClick={syncLatestNews} disabled={isIntelligentCollecting} style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 8, border: '1px solid #2563eb', background: isIntelligentCollecting ? '#3b82f6' : 'linear-gradient(180deg,#3b82f6,#1d4ed8)', color: '#fff', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <button onClick={exportCsv} disabled={!filteredArticles.length} className="dark-btn dark-btn-secondary" style={{ fontSize: 12 }}>导出CSV</button>
+            <button onClick={syncLatestNews} disabled={isIntelligentCollecting} className="dark-btn dark-btn-primary" style={{ fontSize: 12 }}>
               {isIntelligentCollecting ? '同步中...' : '同步最新新闻'}
             </button>
           </div>
@@ -461,25 +461,25 @@ export default function ModernNewsComponent() {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   {/* 股票选择下拉保留原自定义，不转 antd 以免破坏键盘导航逻辑 */}
                   <div style={{ position: 'relative' }} ref={stockSelectorRef}>
-                    <button onClick={() => setShowStockSelector(!showStockSelector)} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, minWidth: 120 }}>
+                    <button onClick={() => setShowStockSelector(!showStockSelector)} className="dark-btn dark-btn-secondary" style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, minWidth: 120 }}>
                       <span>{selectedStock || '选择股票'}</span>
                       <span style={{ fontSize: 10, transform: showStockSelector ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
                     </button>
                     {showStockSelector && (
-                      <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 240, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', zIndex: 50, maxHeight: 260, overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 240, background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', zIndex: 50, maxHeight: 260, overflow: 'hidden' }}>
                         <div style={{ overflowY: 'auto', maxHeight: 220 }}>
                           {watchlist.length === 0 ? (
-                            <div style={{ padding: 12, textAlign: 'center', fontSize: 12, color: '#6b7280' }}>暂无关注股票</div>
+                            <div style={{ padding: 12, textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>暂无关注股票</div>
                           ) : (
                             <div style={{ padding: 8 }}>
-                              <button onClick={() => handleStockSelect('')} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb', marginBottom: 6, background: selectedStock === '' ? '#eff6ff' : stockHighlightIndex === -1 ? '#f3f4f6' : '#fff', fontWeight: 600, cursor: 'pointer' }}>所有股票{stockHighlightIndex === -1 && selectedStock !== '' && ' ←'}</button>
+                              <button onClick={() => handleStockSelect('')} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', marginBottom: 6, background: selectedStock === '' ? 'rgba(99,102,241,0.2)' : stockHighlightIndex === -1 ? 'rgba(255,255,255,0.02)' : 'transparent', fontWeight: 600, cursor: 'pointer', color: 'var(--text)' }}>所有股票{stockHighlightIndex === -1 && selectedStock !== '' && ' ←'}</button>
                               {watchlist.map((stock, idx) => (
-                                <button key={stock.symbol} onClick={() => handleStockSelect(stock.symbol)} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb', marginBottom: 4, background: selectedStock === stock.symbol ? '#2563eb' : stockHighlightIndex === idx ? '#f3f4f6' : '#fff', color: selectedStock === stock.symbol ? '#fff' : '#111827', cursor: 'pointer' }}>
+                                <button key={stock.symbol} onClick={() => handleStockSelect(stock.symbol)} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', marginBottom: 4, background: selectedStock === stock.symbol ? '#2563eb' : stockHighlightIndex === idx ? 'rgba(255,255,255,0.02)' : 'transparent', color: selectedStock === stock.symbol ? '#fff' : 'var(--text)', cursor: 'pointer' }}>
                                   <div style={{ fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span>{stock.symbol}</span>
-                                    {stockHighlightIndex === idx && selectedStock !== stock.symbol && <span style={{ fontSize: 10, color: '#6b7280' }}>Enter 选择</span>}
+                                    {stockHighlightIndex === idx && selectedStock !== stock.symbol && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Enter 选择</span>}
                                   </div>
-                                  {stock.name && <div style={{ fontSize: 10, color: selectedStock === stock.symbol ? '#bfdbfe' : '#6b7280', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stock.name}</div>}
+                                  {stock.name && <div style={{ fontSize: 10, color: selectedStock === stock.symbol ? '#bfdbfe' : 'var(--text-muted)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stock.name}</div>}
                                 </button>
                               ))}
                             </div>
@@ -534,14 +534,14 @@ export default function ModernNewsComponent() {
     ) : filteredArticles.length === 0 ? (
       <div className="news-card text-center py-16">
         <div className="text-6xl mb-6">📰</div>
-        <div className="text-xl font-semibold text-gray-700 mb-3">
+        <div className="text-xl font-semibold text-[var(--text)] mb-3">
           {searchQuery || selectedStock || sentimentFilter !== 'all' ? '没有找到符合条件的新闻' : '暂无新闻数据'}
         </div>
-        <div className="text-gray-500 max-w-md mx-auto leading-relaxed">
+        <div className="text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">
           {selectedStock ? `没有找到关于 ${selectedStock} 的相关新闻。` : '请选择股票进行新闻收集，或使用智能收集功能获取最新财经资讯。'}
         </div>
         {fallbackInfo && (
-          <div className="text-gray-400 mt-3 text-sm">{fallbackInfo}</div>
+          <div className="text-[var(--text-muted)] mt-3 text-sm">{fallbackInfo}</div>
         )}
       </div>
                 ) : (
@@ -549,23 +549,23 @@ export default function ModernNewsComponent() {
                     <div key={article.id} className="news-card" style={{ marginBottom: idx !== pagedArticles.length - 1 ? 16 : 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', lineHeight: '1.4' }}>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', lineHeight: '1.4' }}>
                             {article.url ? <a href={article.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{article.title}</a> : article.title}
                           </div>
-                          <div style={{ marginTop: 6, fontSize: 13, color: '#6b7280' }}>
+                          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
                             {article.source || '未知来源'} · {formatDate(article.published_at ?? article.published_dt)}
                           </div>
-                          {article.summary && <div style={{ marginTop: 10, fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{article.summary}</div>}
+                          {article.summary && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>{article.summary}</div>}
                           {article.related_stocks && article.related_stocks.length > 0 && (
-                            <div style={{ marginTop: 10, fontSize: 12, color: '#6b7280' }}>
-                              <span style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 6 }}>相关: {article.related_stocks.slice(0,3).join(', ')}{article.related_stocks.length > 3 ? ` +${article.related_stocks.length - 3}` : ''}</span>
+                            <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>
+                              <span className="dark-badge">相关: {article.related_stocks.slice(0,3).join(', ')}{article.related_stocks.length > 3 ? ` +${article.related_stocks.length - 3}` : ''}</span>
                             </div>
                           )}
                         </div>
                         <div style={{ minWidth: 120, textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 8 }}>
                           <SentimentBadge sentiment={article.sentiment_type} />
-                          <div style={{ fontSize: 12, fontWeight: 500, color: '#374151' }}>得分: {typeof article.sentiment_score === 'number' ? article.sentiment_score.toFixed(2) : '暂无'}</div>
-                          <div style={{ fontSize: 12, color: '#9ca3af' }}>相关度: {article.relevance_score ?? '—'}</div>
+                          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>得分: {typeof article.sentiment_score === 'number' ? article.sentiment_score.toFixed(2) : '暂无'}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>相关度: {article.relevance_score ?? '—'}</div>
                         </div>
                       </div>
                     </div>
@@ -582,22 +582,22 @@ export default function ModernNewsComponent() {
       {/* 样式 */}
       <style>{`
         .news-card {
-          background:#fff;
+          background: var(--surface-dark);
           border-radius:12px;
           padding:16px 18px 18px;
-          border:1px solid #e5e7eb;
-          transition: box-shadow .25s ease;
+          border:1px solid var(--border);
+          transition: border-color .25s ease;
         }
         .news-card:hover {
-          box-shadow:0 6px 18px rgba(0,0,0,0.06);
+          border-color: rgba(255,255,255,0.15);
         }
         .chips-scroll::-webkit-scrollbar { height: 6px; }
         .chips-scroll::-webkit-scrollbar-track { background: transparent; }
-        .chips-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
-        .chip-stat { @apply px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-[11px] font-semibold shadow-sm whitespace-nowrap select-none; }
+        .chips-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+        .chip-stat { @apply px-3 py-1.5 rounded-full text-[11px] font-semibold shadow-sm whitespace-nowrap select-none; background: rgba(255,255,255,0.05); color: var(--text-secondary); }
         /* Skeleton shimmer (仅作用于灰条) */
         .skeleton-bar {
-          background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 40%, #e5e7eb 80%);
+          background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.02) 80%);
           background-size: 200% 100%;
           animation: skeleton-shimmer 1.8s ease-in-out infinite;
         }

@@ -344,59 +344,47 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
   }
 
   return (
-    <div style={{padding:16}}>
+    <div>
+      <div className="page-container">
       {/* 实时任务进度显示 */}
       {taskProgress && taskProgress.is_running && (
-        <div style={{marginBottom:16, padding:12, background:'#fef3c7', border:'1px solid #fcd34d', borderRadius:8}}>
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
-            <div style={{fontSize:13, fontWeight:600, color:'#1a1a1a'}}>
-              🔄 Profile 更新任务进行中...
-            </div>
-            <div style={{fontSize:12, color:'#1f2937', display:'flex', gap:16}}>
+        <div className="card-panel task-progress">
+          <div className="task-progress-head">
+            <div className="task-progress-title">🔄 Profile 更新任务进行中...</div>
+            <div className="task-progress-stats">
               <span>📊 {taskProgress.processed} / {taskProgress.total_stocks}</span>
               <span>✅ {taskProgress.successful} · ❌ {taskProgress.failed}</span>
               <span>⏱️ {taskProgress.elapsed_time_seconds}s</span>
               <span>🚀 {taskProgress.speed_stocks_per_minute.toFixed(1)}/分钟</span>
             </div>
           </div>
-          <div style={{fontSize:11, color:'#6b7280', marginBottom:8}}>
-            当前处理: {taskProgress.current_stock_name} ({taskProgress.current_stock})
+          <div className="task-progress-current">当前处理: {taskProgress.current_stock_name} ({taskProgress.current_stock})</div>
+          <div className="progress-bar-outer">
+            <div className="progress-bar-inner" style={{ width: `${taskProgress.progress_percentage}%` }} />
           </div>
-          <div style={{width:'100%', height:4, background:'#fee2e2', borderRadius:2, overflow:'hidden'}}>
-            <div 
-              style={{
-                width: `${taskProgress.progress_percentage}%`,
-                background: '#f59e0b',
-                height:'100%',
-                transition:'width 0.1s linear'
-              }}
-            />
-          </div>
-          <div style={{marginTop:6, fontSize:11, color:'#6b7280', textAlign:'right'}}>
-            进度: {taskProgress.progress_percentage.toFixed(1)}% · 预计剩余: {Math.floor(taskProgress.estimated_remaining_seconds / 60)}分钟 {taskProgress.estimated_remaining_seconds % 60}秒
-          </div>
+          <div className="task-progress-footer">进度: {taskProgress.progress_percentage.toFixed(1)}% · 预计剩余: {Math.floor(taskProgress.estimated_remaining_seconds / 60)}分钟 {taskProgress.estimated_remaining_seconds % 60}秒</div>
         </div>
       )}
 
       {/* 简化的总体 Profile 统计 */}
       {progress && (
-        <div style={{marginBottom:16, padding:12, background:'#f0f9ff', border:'1px solid #bfdbfe', borderRadius:8}}>
+        <div style={{marginBottom:16, padding:12, background:'rgba(99,102,241,0.1)', border:'1px solid var(--border)', borderRadius:8}}>
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-            <div style={{fontSize:13, fontWeight:600, color:'#1a1a1a'}}>
+            <div style={{fontSize:13, fontWeight:600, color:'var(--text)'}}>
               📋 Profile 数据填充进度
             </div>
-            <div style={{fontSize:12, color:'#1f2937', display:'flex', gap:20}}>
-              <span>✅ 已完成: <strong style={{color:'#10b981'}}>{progress.completed_profiles}</strong> / {progress.total_stocks}</span>
-              <span>� 完成度: <strong style={{color:'#f59e0b'}}>{progress.progress_percentage.toFixed(2)}%</strong></span>
+            <div style={{fontSize:12, color:'var(--text)', display:'flex', gap:20}}>
+              <span>✅ 已完成: <strong style={{color:'var(--accent-lime)'}}>{progress.completed_profiles}</strong> / {progress.total_stocks}</span>
+              <span>📊 完成度: <strong style={{color:'var(--accent-amber)'}}>{progress.progress_percentage.toFixed(2)}%</strong></span>
               <span>📈 平均: <strong>{progress.average_completion.toFixed(1)}%</strong></span>
             </div>
           </div>
           {/* 简单进度条 */}
-          <div style={{width:'100%', height:6, background:'#e5e7eb', borderRadius:3, overflow:'hidden', marginTop:8}}>
+          <div style={{width:'100%', height:6, background:'rgba(255,255,255,0.1)', borderRadius:3, overflow:'hidden', marginTop:8}}>
             <div 
               style={{
                 width: `${progress.progress_percentage}%`,
-                background: progress.progress_percentage >= 50 ? '#10b981' : '#f59e0b',
+                background: progress.progress_percentage >= 50 ? 'var(--accent-lime)' : 'var(--accent-amber)',
                 height:'100%',
                 transition:'width 0.3s ease'
               }}
@@ -405,8 +393,8 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
         </div>
       )}
 
-      <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:12, flexWrap:'wrap'}}>
-        <input value={q} onChange={e=> handleSearchChange(e.target.value)} onBlur={handleSearchBlur} placeholder='按代码或名称筛选' style={{padding:'6px 8px', border:'1px solid #e5e7eb', borderRadius:8}}/>
+      <div className="page-actions" style={{marginBottom:12}}>
+        <input value={q} onChange={e=> handleSearchChange(e.target.value)} onBlur={handleSearchBlur} placeholder='按代码或名称筛选' className="app-search" />
         
         {/* 市场选择器 */}
         <select 
@@ -414,15 +402,7 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
           onChange={(e) => {
             setMarket(e.target.value)
           }}
-          style={{
-            padding:'6px 8px', 
-            border:'1px solid #3b82f6', 
-            borderRadius:8,
-            background:'#eff6ff',
-            color:'#1e40af',
-            fontWeight:600,
-            cursor:'pointer'
-          }}
+          className="app-search"
         >
           <option value="A股">📍 A股</option>
           <option value="港股">🇭🇰 港股</option>
@@ -431,7 +411,7 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
         </select>
         
         {/* 过滤无效 Profiles 开关 */}
-        <label style={{fontSize:12, color:'#6b7280', display:'flex', gap:4, alignItems:'center', cursor:'pointer', marginLeft:'auto', borderLeft:'1px solid #e5e7eb', paddingLeft:8}}>
+        <label style={{fontSize:12, color:'var(--text-muted)', display:'flex', gap:4, alignItems:'center', cursor:'pointer', marginLeft:'auto', borderLeft:'1px solid var(--border)', paddingLeft:8}}>
           <input 
             type='checkbox' 
             checked={showInvalid} 
@@ -443,7 +423,7 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
         
         {/* 刷新控制 */}
         <div style={{display:'flex', gap:6, alignItems:'center'}}>
-          <label style={{fontSize:12, color:'#6b7280', display:'flex', gap:4, alignItems:'center', cursor:'pointer'}}>
+          <label style={{fontSize:12, color:'var(--text-muted)', display:'flex', gap:4, alignItems:'center', cursor:'pointer'}}>
             <input 
               type='checkbox' 
               checked={autoRefresh} 
@@ -456,7 +436,7 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
             <select 
               value={refreshInterval} 
               onChange={(e)=> setRefreshInterval(Number(e.target.value))}
-              style={{padding:'4px 6px', border:'1px solid #e5e7eb', borderRadius:4, fontSize:12}}
+              className="app-search"
             >
               <option value={3}>3 秒</option>
               <option value={5}>5 秒</option>
@@ -467,16 +447,16 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
           )}
           <button 
             onClick={()=> { load(false); loadTaskProgress() }} 
-            style={{padding:'6px 10px', border:'1px solid #e5e7eb', borderRadius:4, background:'#fff', cursor:'pointer'}}
+            className="dark-btn dark-btn-secondary"
             title='手动刷新数据'
           >
             🔄 刷新
           </button>
         </div>
       </div>
-      <div style={{border:'1px solid #e5e7eb', borderRadius:8, overflow:'hidden'}}>
-        <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
-          <thead style={{background:'#f8fafc'}}>
+      <div className="card-panel" style={{overflow:'hidden'}}>
+        <table className="dark-table" style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+          <thead>
             <tr>
               <th style={{textAlign:'left', padding:'8px'}}>名称</th>
               <th style={{textAlign:'left', padding:'8px'}}>代码</th>
@@ -496,11 +476,11 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
               const paginatedItems = items.slice(startIdx, endIdx)
               
               if (loading && items.length === 0) {
-                return <tr><td colSpan={8} style={{padding:16, textAlign:'center', color:'#9ca3af'}}>加载中...</td></tr>
+                return <tr><td colSpan={8} style={{padding:16, textAlign:'center', color:'var(--text-muted)'}}>加载中...</td></tr>
               }
               
               if (!loading && items.length === 0) {
-                return <tr><td colSpan={8} style={{padding:16, textAlign:'center', color:'#9ca3af'}}>没有数据</td></tr>
+                return <tr><td colSpan={8} style={{padding:16, textAlign:'center', color:'var(--text-muted)'}}>没有数据</td></tr>
               }
               
               return paginatedItems.map(it => {
@@ -508,42 +488,42 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
                 const isCompleted = (it.completion_percentage ?? 0) >= 50
                 return (
                   <tr key={it.symbol}>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9'}}>{it.name||'-'}</td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9'}}>{it.symbol}</td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9'}}>{it.start_date||'-'}</td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9', textAlign:'right'}}>{it.article_count}</td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9', textAlign:'center'}}>
+                    <td style={{padding:'8px'}}>{it.name||'-'}</td>
+                    <td style={{padding:'8px'}}>{it.symbol}</td>
+                    <td style={{padding:'8px'}}>{it.start_date||'-'}</td>
+                    <td style={{padding:'8px', textAlign:'right'}}>{it.article_count}</td>
+                    <td style={{padding:'8px', textAlign:'center'}}>
                       <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:4}}>
-                        <div style={{width:60, height:6, background:'#e5e7eb', borderRadius:2, overflow:'hidden'}}>
+                        <div style={{width:60, height:6, background:'rgba(255,255,255,0.1)', borderRadius:2, overflow:'hidden'}}>
                           <div 
                             style={{
                               width: `${it.completion_percentage ?? 0}%`,
                               height:'100%',
-                              background: isCompleted ? '#10b981' : '#f59e0b',
+                              background: isCompleted ? 'var(--accent-lime)' : 'var(--accent-amber)',
                               transition:'width 0.3s ease'
                             }}
                           />
                         </div>
-                        <span style={{fontSize:11, color:'#6b7280', minWidth:30}}>{(it.completion_percentage ?? 0).toFixed(0)}%</span>
+                        <span style={{fontSize:11, color:'var(--text-muted)', minWidth:30}}>{(it.completion_percentage ?? 0).toFixed(0)}%</span>
                       </div>
                     </td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9', textAlign:'center'}}>
+                    <td style={{padding:'8px', textAlign:'center'}}>
                       <div style={{
                         width: 12,
                         height: 12,
                         borderRadius: '50%',
-                        backgroundColor: isCompleted ? '#10b981' : '#d1d5db',
+                        backgroundColor: isCompleted ? 'var(--accent-lime)' : 'rgba(255,255,255,0.2)',
                         margin: '0 auto',
-                        boxShadow: isCompleted ? '0 0 6px rgba(16, 185, 129, 0.5)' : 'none',
+                        boxShadow: isCompleted ? '0 0 6px rgba(110, 231, 183, 0.5)' : 'none',
                         transition: 'all 0.2s ease'
                       }} title={isCompleted ? '已完成' : '待更新'}>
                       </div>
                     </td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9', textAlign:'center', fontSize: 12, color: '#6b7280'}}>
+                    <td style={{padding:'8px', textAlign:'center', fontSize: 12, color: 'var(--text-muted)'}}>
                       {formatTime(it.last_updated_at)}
                     </td>
-                    <td style={{padding:'8px', borderTop:'1px solid #f1f5f9', textAlign:'right'}}>
-                      <button onClick={()=> onOpen(it.symbol)} style={{padding:'4px 10px', border:'1px solid #e5e7eb', borderRadius:8, background:'#fff'}}>查看</button>
+                    <td style={{padding:'8px', textAlign:'right'}}>
+                      <button onClick={()=> onOpen(it.symbol)} className="dark-btn dark-btn-secondary">查看</button>
                     </td>
                   </tr>
                 )
@@ -553,7 +533,7 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
         </table>
       </div>
       <div style={{marginTop:12, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-        <div style={{fontSize:12, color:'#6b7280'}}>共 {total} 条，已加载 {allItemsCacheRef.current.length} 条</div>
+        <div style={{fontSize:12, color:'var(--text-muted)'}}>共 {total} 条，已加载 {allItemsCacheRef.current.length} 条</div>
         <div style={{display:'flex', gap:8, alignItems:'center'}}>
           <button 
             disabled={page<=1} 
@@ -563,11 +543,12 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
               loadPageOnDemand(newPage)
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }} 
-            style={{padding:'6px 10px', border:'1px solid #e5e7eb', borderRadius:8, background:'#fff', cursor: page > 1 ? 'pointer' : 'not-allowed', opacity: page > 1 ? 1 : 0.5}}
+            className="dark-btn dark-btn-secondary"
+            style={{opacity: page > 1 ? 1 : 0.5}}
           >
             上一页
           </button>
-          <span style={{fontSize:12}}>第 {page} 页</span>
+          <span style={{fontSize:12, color: 'var(--text-muted)'}}>第 {page} 页</span>
           <button 
             disabled={(page*pageSize)>=total} 
             onClick={()=> {
@@ -576,11 +557,13 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
               loadPageOnDemand(newPage)
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }} 
-            style={{padding:'6px 10px', border:'1px solid #e5e7eb', borderRadius:8, background:'#fff', cursor: (page*pageSize) < total ? 'pointer' : 'not-allowed', opacity: (page*pageSize) < total ? 1 : 0.5}}
+            className="dark-btn dark-btn-secondary"
+            style={{opacity: (page*pageSize) < total ? 1 : 0.5}}
           >
             下一页
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

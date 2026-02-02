@@ -86,8 +86,15 @@ class StockNewsStorage:
             return True
             
         except Exception as e:
+            logger.exception("⚠ MongoDB initialization failed (full traceback)")
             logger.warning(f"⚠ MongoDB initialization failed: {e}")
             logger.warning("⚠ System will continue without MongoDB support")
+            # 尝试关闭客户端以清理资源
+            try:
+                if self.client:
+                    await self.client.close()
+            except Exception:
+                pass
             # 清理连接对象，避免后续操作失败
             self.client = None
             self.db = None

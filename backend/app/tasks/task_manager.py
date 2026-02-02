@@ -294,17 +294,17 @@ class TaskManager:
                 logger.error(f"Report task {task_id} failed with exception: {e}")
                 return False
     
-        async def _generate_report(self, symbol: str, session) -> bool:
-                """生成股票报告
+    async def _generate_report(self, symbol: str, session) -> bool:
+        """生成股票报告
 
-                合同（Contract）：
-                - 输入：symbol 必填；session 为当前数据库会话。
-                - 输出：bool，表示是否成功入库一条新的“最新”（is_latest=True）报告。
-                - 副作用：
-                    1) 将该 symbol 之前 is_latest=True 的报告全部置为 False（一次性更新并提交）。
-                    2) 以 version 自增方式创建新报告（保持可追溯）。
-                - 失败模式：任意步骤异常返回 False；异常由上层捕获并写入 task.error_message。
-                """
+        合同（Contract）：
+        - 输入：symbol 必填；session 为当前数据库会话。
+        - 输出：bool，表示是否成功入库一条新的“最新”（is_latest=True）报告。
+        - 副作用：
+            1) 将该 symbol 之前 is_latest=True 的报告全部置为 False（一次性更新并提交）。
+            2) 以 version 自增方式创建新报告（保持可追溯）。
+        - 失败模式：任意步骤异常返回 False；异常由上层捕获并写入 task.error_message。
+        """
         try:
             # 获取最新价格数据
             latest_price = session.execute(
@@ -312,20 +312,20 @@ class TaskManager:
                 .order_by(PriceDaily.trade_date.desc())
                 .limit(1)
             ).scalar_one_or_none()
-            
+
             # 获取最新信号数据
             latest_signal = session.execute(
                 select(Signal).where(Signal.symbol == symbol)
                 .order_by(Signal.trade_date.desc())
                 .limit(1)
             ).scalar_one_or_none()
-            
+
             # 获取预测数据
             forecasts = session.execute(
                 select(Forecast).where(Forecast.symbol == symbol)
                 .order_by(Forecast.target_date)
             ).scalars().all()
-            
+
             # 构建报告数据
             price_data = None
             if latest_price:
@@ -338,7 +338,7 @@ class TaskManager:
                     "pct_chg": float(latest_price.pct_chg) if latest_price.pct_chg is not None else None,
                     "vol": latest_price.vol
                 }
-            
+
             signal_data = None
             if latest_signal:
                 signal_data = {
@@ -350,7 +350,7 @@ class TaskManager:
                     "signal_score": float(latest_signal.signal_score) if latest_signal.signal_score is not None else None,
                     "action": latest_signal.action
                 }
-            
+
             forecast_data = []
             for f in forecasts:
                 forecast_data.append({
@@ -360,35 +360,35 @@ class TaskManager:
                     "yhat_upper": float(f.yhat_upper) if f.yhat_upper is not None else None,
                     "model": f.model
                 })
-            
+
             # 计算数据质量评分（0-10，见 _calculate_data_quality）
             data_quality_score = self._calculate_data_quality(latest_price, latest_signal, forecasts)
-            
+
             # 计算预测置信度（0-1，见 _calculate_prediction_confidence）
             prediction_confidence = self._calculate_prediction_confidence(forecasts)
-            
+
             # 生成分析摘要（面向用户的简短文本）
             analysis_summary = self._generate_analysis_summary(symbol, latest_price, latest_signal, forecasts)
-            
+
             # 获取当前最大版本号
             max_version = session.execute(
                 select(Report.version).where(Report.symbol == symbol)
                 .order_by(Report.version.desc())
                 .limit(1)
             ).scalar_one_or_none()
-            
+
             next_version = (max_version or 0) + 1
-            
+
             # 将之前的报告标记为非最新 - 使用事务确保一致性
             session.execute(
                 update(Report)
                 .where(and_(Report.symbol == symbol, Report.is_latest == True))
                 .values(is_latest=False)
             )
-            
+
             # 立即提交更新，确保数据一致性
             session.commit()
-            
+
             # 创建新报告（注意：将部分对象转为 JSON 文本存储）
             new_report = Report(
                 symbol=symbol,
@@ -401,13 +401,13 @@ class TaskManager:
                 prediction_confidence=prediction_confidence,
                 is_latest=True
             )
-            
+
             session.add(new_report)
             session.commit()
-            
+
             logger.info(f"Generated report v{next_version} for {symbol}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error generating report for {symbol}: {e}")
             return False

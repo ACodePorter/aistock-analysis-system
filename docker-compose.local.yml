@@ -75,10 +75,39 @@ services:
     networks: [local-services]
     command: --noauth
 
+  # RSSHub + browserless for RSS aggregation (shares existing redis)
+  browserless:
+    image: browserless/chrome:latest
+    container_name: aistock-browserless
+    restart: unless-stopped
+    environment:
+      - CONNECTION_TIMEOUT=60000
+      - MAX_CONCURRENT_SESSIONS=10
+    ports:
+      - "3000:3000"
+    networks: [local-services]
+
+  rsshub:
+    image: diygod/rsshub:latest
+    container_name: aistock-rsshub
+    restart: unless-stopped
+    ports:
+      - "1200:1200"
+    environment:
+      - NODE_ENV=production
+      - CACHE_TYPE=redis
+      - REDIS_URL=redis://redis:6379/
+      - PUPPETEER_WS_ENDPOINT=ws://browserless:3000
+    depends_on:
+      - redis
+      - browserless
+    networks: [local-services]
+
 volumes:
   postgres_data:
   redis-data:
   mongodb_data:
+  # no additional volumes for rsshub/browserless (stateless)
 
 networks:
   local-services:

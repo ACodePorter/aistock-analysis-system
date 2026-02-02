@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: rsshub_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  browserless:
+    image: browserless/chrome:latest
+    container_name: rsshub_browserless
+    restart: unless-stopped
+    environment:
+      - CONNECTION_TIMEOUT=60000
+      - MAX_CONCURRENT_SESSIONS=10
+    ports:
+      - "3000:3000"
+
+  rsshub:
+    image: diygod/rsshub:latest
+    container_name: rsshub
+    restart: unless-stopped
+    ports:
+      - "1200:1200"
+    environment:
+      - NODE_ENV=production
+      - CACHE_TYPE=redis
+      - REDIS_URL=redis://redis:6379/
+      - PUPPETEER_WS_ENDPOINT=ws://browserless:3000
+    depends_on:
+      - redis
+      - browserless
+
+volumes:
+  redis_data:
+    driver: local

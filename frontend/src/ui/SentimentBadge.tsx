@@ -22,7 +22,7 @@ export default function SentimentBadge({ sentiment, score }: Props) {
         ? 'bg-brand-emerald-200 text-brand-emerald-800'
         : sentiment === 'negative'
         ? 'bg-brand-rose-200 text-brand-rose-800'
-        : 'bg-gray-100 text-gray-700';
+        : '';
 
     // Inline color fallback ensures the badge is colored even if Tailwind token isn't yet applied
     const inlineColor = sentiment === 'positive' ? '#315c50ff' : sentiment === 'negative' ? '#d41d1dff' : '#f0f1f3ff';

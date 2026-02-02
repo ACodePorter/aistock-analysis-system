@@ -87,6 +87,11 @@ from ..utils.mongo_storage import get_storage
 from ..news.news_deduplication import NewsDeduplicator
 from ..news.llm_processor import LLMNewsProcessor
 from ..news.news_service import NewsSearchService, NewsProcessor
+from .rss_collector import RSSNewsCollector
+from .akshare_collector import AKShareCollector
+from .multi_source_collector import MultiSourceCollector
+from .pdf_parser import extract_text_from_pdf
+from .document_manager import UnifiedDocumentManager, UnifiedDocument
 
 
 class EnhancedNewsScheduler:
@@ -98,9 +103,15 @@ class EnhancedNewsScheduler:
         # 初始化组件
         self.stock_manager = StockListManager()
         self.news_search_service = NewsSearchService()
+        self.rss_collector = RSSNewsCollector()
+        self.ak_collector = AKShareCollector()
+        self.multi_source_collector = MultiSourceCollector()
         self.news_crawler = NewsContentCrawler()
         self.llm_processor = LLMNewsProcessor()
         self.deduplicator = NewsDeduplicator()
+        
+        # 统一文档管理器（处理 PDF 完整流水线）
+        self.doc_manager = UnifiedDocumentManager()
         self.storage = None  # Will be initialized async
         
         # 调度配置
@@ -191,6 +202,116 @@ class EnhancedNewsScheduler:
         except Exception:
             # extreme fallback
             return ""  
+
+    async def run_rss_collection_once(self, related_symbol: str = None) -> Dict[str, Any]:
+        """
+        Run a one-off RSS collection using the configured RSSNewsCollector
+        and process the results via NewsProcessor.process_search_results.
+        Returns a result dict with basic stats.
+        """
+        start_time = datetime.utcnow()
+        try:
+            # collect entries from RSS sources (may use RSSHub)
+            entries = await self.rss_collector.collect_all()
+            count = len(entries or [])
+            logging.info(f"RSS collector returned {count} entries")
+
+            # Normalize to expected search-result dicts
+            normalized = []
+            for e in entries or []:
+                normalized.append({
+                    "title": e.get("title") or "",
+                    "url": e.get("url") or e.get("link") or "",
+                    "summary": e.get("summary") or e.get("description") or "",
+                    # keep published under common keys so NewsProcessor can parse it
+                    "published": e.get("published") or e.get("pubDate") or e.get("updated") or None,
+                    # preserve source name from feed if present
+                    "source": e.get("source") or e.get("site") or None,
+                })
+
+            # Process via NewsProcessor
+            processor = NewsProcessor()
+            processed = await processor.process_search_results(normalized, related_symbol)
+            processed_count = len(processed or [])
+
+            # update stats
+            self.stats["articles_found"] += count
+            self.stats["articles_processed"] += processed_count
+            self.stats["articles_saved"] += processed_count
+
+            end_time = datetime.utcnow()
+            return self._create_result("success", start_time, f"RSS collected {count}, processed {processed_count}", end_time)
+        except Exception as e:
+            logging.error(f"RSS collection run failed: {e}")
+            self.stats["errors"] += 1
+            return self._create_result("error", start_time, str(e))
+
+    async def run_multi_source_collection(self, related_symbol: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Run multi-source news collection (东方财富、新浪、同花顺等)
+        This is more reliable than AKShare for getting stock-specific news.
+        """
+        start_time = datetime.utcnow()
+        try:
+            if related_symbol:
+                # 单只股票的采集
+                results = await self.multi_source_collector.collect_stock_news(
+                    related_symbol, 
+                    limit_per_source=10
+                )
+            else:
+                # 批量采集所有启用的股票
+                enabled_stocks = await self.stock_manager.list_stocks(enabled_only=True)
+                if not enabled_stocks:
+                    return self._create_result("no_stocks", start_time, "No enabled stocks")
+                
+                symbols = [s.symbol for s in enabled_stocks]
+                results_dict = await self.multi_source_collector.batch_collect(symbols, limit_per_source=8)
+                results = []
+                for sym, items in results_dict.items():
+                    results.extend(items)
+            
+            count = len(results or [])
+            logging.info(f"MultiSource collector returned {count} entries")
+
+            # Normalize to expected search-result dicts
+            normalized = []
+            for e in results or []:
+                url = e.get("url") or ""
+                # Skip items without URL (like flash news)
+                if not url:
+                    continue
+                normalized.append({
+                    "title": e.get("title") or "",
+                    "url": url,
+                    "summary": e.get("summary") or "",
+                    "published": e.get("published") or None,
+                    "source": e.get("source") or "multi_source",
+                    "symbol": e.get("symbol"),
+                    "is_pdf": e.get("is_pdf", False),
+                })
+
+            # Process via NewsProcessor
+            processor = NewsProcessor()
+            processed = await processor.process_search_results(normalized, related_symbol)
+            processed_count = len(processed or [])
+
+            # update stats
+            self.stats["articles_found"] += count
+            self.stats["articles_processed"] += processed_count
+            self.stats["articles_saved"] += processed_count
+
+            end_time = datetime.utcnow()
+            return self._create_result(
+                "success", 
+                start_time, 
+                f"MultiSource collected {count}, processed {processed_count}",
+                end_time
+            )
+        except Exception as e:
+            logging.error(f"MultiSource collection run failed: {e}")
+            self.stats["errors"] += 1
+            return self._create_result("error", start_time, str(e))
     
     async def run_daily_news_collection(self) -> Dict[str, Any]:
         """
@@ -254,33 +375,62 @@ class EnhancedNewsScheduler:
     
     async def _collect_news_for_stock(self, stock: Watchlist) -> Dict[str, Any]:
         """
-        为单只股票收集新闻
+        为单只股票收集新闻 - 使用多源采集器优先
         """
         try:
             logging.info(f"Collecting news for {stock.symbol} - {stock.name}")
             self.stats["collections_started"] += 1
             
-            # 1. 搜索新闻
-            search_results = await self.news_search_service.search_stock_news(
-                symbol=stock.symbol,
-                company_name=stock.name
-            )
+            all_results = []
             
-            if not search_results:
-                logging.warning(f"No search results found for {stock.symbol}")
+            # 1. 首先使用多源采集器（更可靠）
+            try:
+                multi_results = await self.multi_source_collector.collect_stock_news(
+                    stock.symbol, 
+                    limit_per_source=8
+                )
+                if multi_results:
+                    logging.info(f"MultiSource found {len(multi_results)} articles for {stock.symbol}")
+                    for item in multi_results:
+                        if item.get("url"):  # 只保留有 URL 的
+                            all_results.append({
+                                "title": item.get("title", ""),
+                                "url": item.get("url", ""),
+                                "summary": item.get("summary", ""),
+                                "published": item.get("published"),
+                                "source": item.get("source", "multi_source"),
+                            })
+            except Exception as e:
+                logging.warning(f"MultiSource collector error for {stock.symbol}: {e}")
+            
+            # 2. 如果多源采集结果不足，补充使用搜索引擎
+            if len(all_results) < 5:
+                try:
+                    search_results = await self.news_search_service.search_stock_news(
+                        symbol=stock.symbol,
+                        company_name=stock.name
+                    )
+                    if search_results:
+                        logging.info(f"Search found {len(search_results)} additional articles for {stock.symbol}")
+                        all_results.extend(search_results)
+                except Exception as e:
+                    logging.warning(f"Search service error for {stock.symbol}: {e}")
+            
+            if not all_results:
+                logging.warning(f"No results found for {stock.symbol} from any source")
                 return {"status": "no_results", "symbol": stock.symbol}
             
-            self.stats["articles_found"] += len(search_results)
-            logging.info(f"Found {len(search_results)} articles for {stock.symbol}")
+            self.stats["articles_found"] += len(all_results)
+            logging.info(f"Total found {len(all_results)} articles for {stock.symbol}")
             
-            # 2. 限制数量并去重URL
-            unique_results = self._deduplicate_urls(search_results[:self.max_articles_per_stock])
+            # 3. 限制数量并去重URL
+            unique_results = self._deduplicate_urls(all_results[:self.max_articles_per_stock])
             
-            # 3. 爬取文章内容
+            # 4. 爬取文章内容
             async with NewsContentCrawler() as crawler:
                 crawl_results = await self._crawl_articles_batch(crawler, unique_results, stock.symbol)
             
-            # 4. 处理和保存文章
+            # 5. 处理和保存文章
             saved_count = await self._process_and_save_articles(crawl_results, stock.symbol)
             
             # 添加延迟
@@ -289,7 +439,7 @@ class EnhancedNewsScheduler:
             return {
                 "status": "success",
                 "symbol": stock.symbol,
-                "found": len(search_results),
+                "found": len(all_results),
                 "crawled": len(crawl_results),
                 "saved": saved_count
             }
@@ -639,14 +789,119 @@ class EnhancedNewsScheduler:
                         logging.debug(f"Skipping duplicate article: {article_data.get('url', 'unknown')}")
                         continue
                     
-                    # LLM分析
-                    analysis_result = await llm_processor.analyze_news(
-                        title=article_data.get('title', ''),
-                        content=article_data.get('content', ''),
-                        url=article_data.get('url', '')
-                    )
+                    # 准备分析内容：如果 content 为空或太短，使用 title + summary
+                    title = article_data.get('title', '')
+                    content = article_data.get('content', '')
+                    summary = article_data.get('summary', '')
                     
-                    # 保存到数据库
+                    # 对于 PDF 公告尝试下载并解析正文优先作为分析内容
+                    analysis_content = content
+                    source_type = article_data.get('source', '')
+                    is_pdf = article_data.get('is_pdf', False) or (source_type in ('eastmoney_ann', 'cninfo') and article_data.get('url', '').lower().endswith('.pdf'))
+
+                    # 使用统一文档管理器处理 PDF（对象存储 + 结构化标签）
+                    pdf_processed_doc = None
+                    if is_pdf:
+                        try:
+                            logging.info(f"Processing PDF via UnifiedDocumentManager: {article_data.get('url', '')}")
+                            doc = UnifiedDocument(
+                                title=title,
+                                url=article_data.get('url', ''),
+                                source=source_type or 'unknown',
+                                symbol=symbol,
+                                published_at=article_data.get('published'),
+                                is_pdf=True,
+                                content_type='pdf',
+                                raw_content=summary or ''
+                            )
+                            pdf_processed_doc = await self.doc_manager.pipeline.process_document(doc)
+                            
+                            # 使用提取的文本作为分析内容
+                            if pdf_processed_doc.extracted_text and len(pdf_processed_doc.extracted_text) > 120:
+                                analysis_content = pdf_processed_doc.extracted_text
+                                logging.info(f"PDF extracted text length: {len(analysis_content)}")
+                            else:
+                                # fallback to title+summary
+                                analysis_content = title
+                                if summary and summary != title:
+                                    analysis_content = f"{title}\n\n{summary}"
+                                if source_type in ('eastmoney_ann', 'cninfo'):
+                                    analysis_content = f"[公司公告] {analysis_content}"
+                                logging.info(f"PDF extract empty/short; using title for analysis: {title[:50]}...")
+                            
+                            # 同时入库到 MongoDB documents 集合
+                            await self.doc_manager.ingester.ingest_document(pdf_processed_doc)
+                            
+                        except Exception as e:
+                            logging.warning(f"PDF pipeline failed, fallback to simple extraction: {e}")
+                            # 降级：使用原有的简单提取
+                            try:
+                                extracted = await extract_text_from_pdf(article_data.get('url', ''))
+                                if extracted and len(extracted) > 120:
+                                    analysis_content = extracted
+                            except Exception:
+                                pass
+                            if not analysis_content or len(analysis_content) < 100:
+                                analysis_content = title if not summary else f"{title}\n\n{summary}"
+                    else:
+                        if not content or len(content) < 100:
+                            # 非 PDF 且过短，使用标题+摘要
+                            analysis_content = title
+                            if summary and summary != title:
+                                analysis_content = f"{title}\n\n{summary}"
+                            if source_type in ('eastmoney_ann', 'cninfo'):
+                                analysis_content = f"[公司公告] {analysis_content}"
+                            logging.info(f"Using title as content for analysis: {title[:50]}...")
+                    
+                    # LLM分析（如果 PDF 已通过统一流水线分析，可跳过重复分析）
+                    analysis_result = None
+                    if pdf_processed_doc and pdf_processed_doc.llm_analyzed and pdf_processed_doc.tags:
+                        # 使用 PDF 流水线的分析结果
+                        logging.info(f"Using PDF pipeline analysis result for: {title[:50]}")
+                        # 将 StructuredTags 转为 LLM 分析结果格式
+                        from dataclasses import dataclass
+                        @dataclass
+                        class PDFAnalysisResult:
+                            category: str = ''
+                            keywords: list = None
+                            entities: dict = None
+                            sentiment_type: str = 'neutral'
+                            sentiment_score: float = 0.0
+                            stock_symbols: list = None
+                            summary: str = ''
+                            relevance_score: float = 0.5
+                        
+                        analysis_result = PDFAnalysisResult(
+                            category=pdf_processed_doc.tags.document_type or 'announcement',
+                            keywords=pdf_processed_doc.tags.keywords,
+                            entities=pdf_processed_doc.tags.entities,
+                            sentiment_type=pdf_processed_doc.tags.sentiment,
+                            sentiment_score=pdf_processed_doc.tags.sentiment_score,
+                            stock_symbols=[symbol],
+                            summary=pdf_processed_doc.tags.summary,
+                            relevance_score=0.8 if pdf_processed_doc.tags.importance == 'high' else 0.5
+                        )
+                    else:
+                        # 使用传统 LLM 分析
+                        analysis_result = await llm_processor.analyze_news(
+                            title=title,
+                            content=analysis_content,
+                            url=article_data.get('url', '')
+                        )
+                    
+                    # 保存到数据库（附带 PDF 元数据）
+                    pdf_meta = None
+                    if pdf_processed_doc and pdf_processed_doc.pdf_meta:
+                        pdf_meta = {
+                            'storage_path': pdf_processed_doc.pdf_meta.storage_path,
+                            'file_hash': pdf_processed_doc.pdf_meta.file_hash,
+                            'file_size': pdf_processed_doc.pdf_meta.file_size,
+                            'page_count': pdf_processed_doc.pdf_meta.page_count,
+                            'extraction_status': pdf_processed_doc.pdf_meta.extraction_status,
+                        }
+                        article_data['pdf_meta'] = pdf_meta
+                        article_data['extracted_text'] = pdf_processed_doc.extracted_text
+                    
                     if await self._save_article_to_db(article_data, analysis_result, symbol):
                         saved_count += 1
                         self.stats["articles_processed"] += 1

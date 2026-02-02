@@ -166,12 +166,12 @@ export default function QueryTemplateManager(){
   ]
 
   return (
-    <div style={{minHeight:'100vh', background:'#f9fafb'}}>
+    <div style={{minHeight:'100vh', background:'var(--surface-dark)'}}>
       <div style={{maxWidth:980, margin:'0 auto', padding:24}}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
           <div>
-            <div style={{fontSize:12, color:'#6b7280'}}>新闻 · 查询范式</div>
-            <h2 style={{margin:0}}>Query 模板管理</h2>
+            <div style={{fontSize:12, color:'var(--text-muted)'}}>新闻 · 查询范式</div>
+            <h2 style={{margin:0, color:'var(--text)'}}>Query 模板管理</h2>
           </div>
           <Button type='primary' onClick={openCreate}>新增模板</Button>
         </div>

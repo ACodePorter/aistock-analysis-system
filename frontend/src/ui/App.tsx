@@ -3,6 +3,7 @@ import { sliceByTimeRange } from './utils/rangeSlice'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Area, ComposedChart, Legend } from 'recharts'
 import * as ReactWindow from 'react-window'
 import Dashboard from './Dashboard'
+import DarkLayout from './DarkLayout'
 import DailyAnalysisPage from './DailyAnalysisPage'
 import MacroReportPage from './MacroReportPage'
 import FundFlowPanel from './FundFlowPanel'
@@ -15,6 +16,8 @@ import QueryTemplateManager from './QueryTemplateManager'
 import StocksNewsIndex from './StocksNewsIndex'
 import StockNewsDetail from './StockNewsDetail'
 import ProfileValidationManager from './ProfileValidationManager'
+import AnalysisCenterPage from './AnalysisCenterPage'
+import NewsListPage from './NewsListPage'
 import { API_BASE, buildApiUrl, API_ENDPOINTS } from '../config/api'
 
 const VirtualList = (ReactWindow as any).List as any
@@ -124,19 +127,20 @@ function CustomDialog({
       justifyContent: 'center'
     }}>
       <div style={{
-        background: '#fff',
+        background: 'var(--surface-dark)',
         borderRadius: 12,
         padding: 24,
         minWidth: 320,
         maxWidth: 480,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.15)'
+        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+        border: '1px solid var(--border)'
       }}>
         {title && (
           <div style={{
             fontWeight: 600,
             fontSize: 18,
             marginBottom: 16,
-            color: type === 'confirm' ? '#d32f2f' : '#1976d2'
+            color: type === 'confirm' ? 'var(--accent-red)' : 'var(--primary)'
           }}>
             {title}
           </div>
@@ -144,7 +148,7 @@ function CustomDialog({
         
         <div style={{
           fontSize: 14,
-          color: '#424242',
+          color: 'var(--text-muted)',
           marginBottom: 24,
           lineHeight: 1.5
         }}>
@@ -159,14 +163,8 @@ function CustomDialog({
           {type === 'confirm' && (
             <button
               onClick={handleCancel}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #e5e7eb',
-                borderRadius: 6,
-                background: '#fff',
-                cursor: 'pointer',
-                color: '#6b7280'
-              }}
+              className="dark-btn dark-btn-secondary"
+              style={{ cursor: 'pointer' }}
             >
               取消
             </button>
@@ -311,13 +309,15 @@ function WatchlistSummary({ watch, current }: { watch: any[]; current?: string }
 
   const pillStyle:React.CSSProperties={
     padding:'4px 10px',
-    background:'#f1f5f9',
+    background:'var(--surface-dark)',
     borderRadius:999,
     fontSize:11,
     display:'flex',
     alignItems:'center',
     gap:4,
-    whiteSpace:'nowrap'
+    whiteSpace:'nowrap',
+    border:'1px solid var(--border)',
+    color:'var(--text-muted)'
   }
   return (
     <div style={{marginTop:10, display:'flex', flexWrap:'wrap', gap:6}}>
@@ -371,24 +371,24 @@ function DeepMarketInsight(){
 
   const renderTable = (title:string, rows:any[]) => (
     <div style={{flex:1, minWidth:0}}>
-      <div style={{fontWeight:600, marginBottom:6}}>{title}</div>
-      <div style={{border:'1px solid #e5e7eb', borderRadius:8, overflow:'hidden'}}>
+      <div style={{fontWeight:600, marginBottom:6, color:'var(--text)'}}>{title}</div>
+      <div style={{border:'1px solid var(--border)', borderRadius:8, overflow:'hidden'}}>
         <table style={{width:'100%', borderCollapse:'collapse', fontSize:12}}>
-          <thead style={{background:'#f8fafc'}}>
+          <thead style={{background:'rgba(255,255,255,0.03)'}}>
             <tr>
-              <th style={{textAlign:'left', padding:'6px 8px'}}>代码</th>
-              <th style={{textAlign:'left', padding:'6px 8px'}}>名称</th>
-              <th style={{textAlign:'right', padding:'6px 8px'}}>涨跌幅%</th>
-              <th style={{textAlign:'right', padding:'6px 8px'}}>价格</th>
+              <th style={{textAlign:'left', padding:'6px 8px', color:'var(--text-muted)'}}>代码</th>
+              <th style={{textAlign:'left', padding:'6px 8px', color:'var(--text-muted)'}}>名称</th>
+              <th style={{textAlign:'right', padding:'6px 8px', color:'var(--text-muted)'}}>涨跌幅%</th>
+              <th style={{textAlign:'right', padding:'6px 8px', color:'var(--text-muted)'}}>价格</th>
             </tr>
           </thead>
           <tbody>
             {rows.map(r=> (
               <tr key={r.symbol}>
-                <td style={{padding:'6px 8px', borderTop:'1px solid #f1f5f9'}}>{r.symbol}</td>
-                <td style={{padding:'6px 8px', borderTop:'1px solid #f1f5f9', color:'#64748b'}}>{r.name||'-'}</td>
-                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid #f1f5f9', color: (r.pct_chg)>0?'#16a34a':'#dc2626'}}>{r.pct_chg!=null? Number(r.pct_chg).toFixed(2):'-'}</td>
-                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid #f1f5f9'}}>{r.price!=null? Number(r.price).toFixed(2):'-'}</td>
+                <td style={{padding:'6px 8px', borderTop:'1px solid var(--border)', color:'var(--text)'}}>{r.symbol}</td>
+                <td style={{padding:'6px 8px', borderTop:'1px solid var(--border)', color:'var(--text-muted)'}}>{r.name||'-'}</td>
+                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid var(--border)', color: (r.pct_chg)>0?'var(--accent-lime)':'var(--accent-red)'}}>{r.pct_chg!=null? Number(r.pct_chg).toFixed(2):'-'}</td>
+                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid var(--border)', color:'var(--text)'}}>{r.price!=null? Number(r.price).toFixed(2):'-'}</td>
               </tr>
             ))}
           </tbody>
@@ -409,7 +409,7 @@ function DeepMarketInsight(){
             <option value="SZ">深证 (SZ)</option>
           </select>
         </div>
-        <button onClick={()=> loadLive()} style={{padding:'4px 10px', fontSize:12, border:'1px solid #e5e7eb', borderRadius:6, background:'#fff', cursor:'pointer'}}>手动刷新</button>
+        <button onClick={()=> loadLive()} className="dark-btn dark-btn-secondary" style={{padding:'4px 10px', fontSize:12, cursor:'pointer'}}>手动刷新</button>
         <label style={{fontSize:12, display:'flex', alignItems:'center', gap:4}}>
           <input type="checkbox" checked={autoRefresh} onChange={e=> setAutoRefresh(e.target.checked)} />自动刷新
         </label>
@@ -430,7 +430,7 @@ function DeepMarketInsight(){
             return p||'-';
           })()} （全量 {live.universe_size}） 更新时间: {new Date(live.generated_at).toLocaleTimeString()}
         </div>}
-        {live && <div style={{fontSize:12, marginTop:4, color:'#64748b', background:'#f8fafc', borderRadius:4, padding:'6px 10px', maxWidth:600}}>
+        {live && <div style={{fontSize:12, marginTop:4, color:'var(--text-muted)', background:'rgba(255,255,255,0.02)', borderRadius:4, padding:'6px 10px', maxWidth:600, border:'1px dashed var(--border)'}}>
           <b>数据源校验说明：</b> 客户可通过以下官方榜单链接手动校验当前榜单数据：<br/>
           {(() => {
             const p = live.provider;
@@ -477,7 +477,7 @@ function DeepMarketInsight(){
 }
 
 export default function App(){
-  const [currentPage, setCurrentPage] = useState<'main' | 'dashboard' | 'daily-analysis' | 'macro-report' | 'news' | 'news-management' | 'deep-insight' | 'query-templates' | 'stocks-news' | 'profile-manager'>('main')
+  const [currentPage, setCurrentPage] = useState<'main' | 'dashboard' | 'daily-analysis' | 'macro-report' | 'news' | 'news-management' | 'news-list' | 'deep-insight' | 'query-templates' | 'stocks-news' | 'profile-manager' | 'analysis-center'>('main')
   const [stocksDetailSymbol, setStocksDetailSymbol] = useState<string | null>(null)
   const [watch, setWatch] = useState<WatchItem[]>([])
   const [current, setCurrent] = useState<string | undefined>(undefined)
@@ -749,102 +749,42 @@ export default function App(){
     return m.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   },[prices,report,timeRange])
 
-  return (
-    <div className="page-shell">
-      <div className="page-container" style={{gap:20}}>
-        {/* 导航栏 */}
-        <div className="card-panel" style={{padding:'18px 22px'}}>
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:16}}>
-            <div>
-              <div className="page-eyebrow">AI Stock Toolkit</div>
-              <h2 className="page-title" style={{fontSize:26}}>A 股 AI 助手</h2>
-              <div className="page-subtitle">智能洞察、策略分析与全局新闻的统一工作台</div>
-            </div>
-            <div style={{display:'flex', flexDirection:'column', gap:12, alignItems:'flex-end'}}>
-              <nav style={{display:'flex', gap:12, flexWrap:'wrap', justifyContent:'flex-end'}}>
-                <button
-                  onClick={() => setCurrentPage('main')}
-                  className={`ghost-button ${currentPage === 'main' ? 'nav-active' : ''}`}
-                  style={{minWidth:96}}
-                >
-                  股票分析
-                </button>
-                <button
-                  onClick={() => setCurrentPage('dashboard')}
-                  className={`ghost-button ${currentPage === 'dashboard' ? 'nav-active' : ''}`}
-                  style={{minWidth:96}}
-                >
-                  任务监控
-                </button>
-                <button
-                  onClick={() => setCurrentPage('daily-analysis')}
-                  className={`ghost-button ${currentPage === 'daily-analysis' ? 'nav-active' : ''}`}
-                  style={{minWidth:120}}
-                >
-                  每日分析
-                </button>
-                <button
-                  onClick={() => setCurrentPage('macro-report')}
-                  className={`ghost-button ${currentPage === 'macro-report' ? 'nav-active' : ''}`}
-                  style={{minWidth:96}}
-                >
-                  宏观日报
-                </button>
-                <button
-                  onClick={() => setCurrentPage('news')}
-                  className={`ghost-button ${currentPage === 'news' ? 'nav-active' : ''}`}
-                  style={{minWidth:96}}
-                >
-                  财经新闻
-                </button>
-                <button
-                  onClick={() => setCurrentPage('news-management')}
-                  className={`ghost-button ${currentPage === 'news-management' ? 'nav-active' : ''}`}
-                  style={{minWidth:96}}
-                >
-                  新闻管理
-                </button>
-                <button
-                  onClick={() => setCurrentPage('deep-insight')}
-                  className={`ghost-button ${currentPage === 'deep-insight' ? 'nav-active' : ''}`}
-                  style={{minWidth:120}}
-                >
-                  深度行情
-                </button>
-                <button
-                  onClick={() => { setStocksDetailSymbol(null); setCurrentPage('stocks-news') }}
-                  className={`ghost-button ${currentPage === 'stocks-news' ? 'nav-active' : ''}`}
-                  style={{minWidth:120}}
-                >
-                  股票资讯
-                </button>
-                <button
-                  onClick={() => setCurrentPage('query-templates')}
-                  className={`ghost-button ${currentPage === 'query-templates' ? 'nav-active' : ''}`}
-                  style={{minWidth:120}}
-                >
-                  查询范式
-                </button>
-                <button
-                  onClick={() => setCurrentPage('profile-manager')}
-                  className={`ghost-button ${currentPage === 'profile-manager' ? 'nav-active' : ''}`}
-                  style={{minWidth:120}}
-                >
-                  Profile 管理
-                </button>
-              </nav>
-              <button
-                onClick={runDaily}
-                disabled={loading}
-                className="primary-button"
-                style={{opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer'}}
-              >
-                {loading ? '执行中…' : '手动执行当日训练'}
-              </button>
-            </div>
-          </div>
-        </div>
+  // Map currentPage to DarkLayout navigation IDs
+  const getNavPage = () => {
+    switch (currentPage) {
+      case 'main': return 'dashboard'
+      case 'dashboard': return 'dashboard'
+      case 'daily-analysis': return 'analysis'
+      case 'deep-insight': return 'analysis'
+      case 'analysis-center': return 'analysis'
+      case 'macro-report': return 'daily'
+      case 'news-management': return 'monitor'
+      case 'news-list': return 'monitor'
+      case 'stocks-news': return 'monitor'
+      case 'query-templates': return 'settings'
+      case 'profile-manager': return 'settings'
+      default: return 'dashboard'
+    }
+  }
 
+  const handleNavigate = (navId: string) => {
+    switch (navId) {
+      case 'dashboard': setCurrentPage('main'); break
+      case 'analysis': setCurrentPage('analysis-center'); break
+      case 'strategy': setCurrentPage('dashboard'); break
+      case 'monitor': setCurrentPage('stocks-news'); break
+      case 'daily': setCurrentPage('macro-report'); break
+      case 'settings': setCurrentPage('query-templates'); break
+    }
+  }
+
+  return (
+    <DarkLayout 
+      currentPage={getNavPage()} 
+      onNavigate={handleNavigate}
+      title="AI 股票监控"
+      subtitle="A-Share Intelligence"
+    >
     {/* 页面内容 */}
     {currentPage === 'main' ? (
     <div>
@@ -860,7 +800,7 @@ export default function App(){
           rightActions={
             <button
               onClick={() => watchlistSnapshotRefresh?.()}
-              className="soft-button"
+              className="dark-btn dark-btn-secondary"
               disabled={!watchlistSnapshotRefresh}
               style={{opacity: watchlistSnapshotRefresh ? 1 : 0.6}}
             >
@@ -893,13 +833,14 @@ export default function App(){
               autoComplete="off"
               style={{
                 width: '100%',
-                background: searching ? '#f3f4f6' : '#fff',
-                borderColor: searching ? '#3b82f6' : '#e5e7eb',
+                background: searching ? 'rgba(99, 102, 241, 0.1)' : 'var(--surface-dark)',
+                borderColor: searching ? 'var(--primary)' : 'var(--border)',
                 border: '1px solid',
                 borderRadius: '8px',
                 padding: '12px 16px',
                 paddingRight: searching ? '100px' : '16px',
-                fontSize: '14px'
+                fontSize: '14px',
+                color: 'var(--text)'
               }}
             />
             {searching && (
@@ -909,7 +850,7 @@ export default function App(){
                 top: '50%',
                 transform: 'translateY(-50%)',
                 fontSize: '12px',
-                color: '#3b82f6',
+                color: 'var(--primary)',
                 pointerEvents: 'none',
                 fontWeight: '500'
               }}>
@@ -923,9 +864,9 @@ export default function App(){
 
         {/* 查询结果弹窗 */}
         {showSearchModal && (
-          <div style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.15)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setShowSearchModal(false)}>
-            <div style={{background:'#fff',borderRadius:12,padding:24,minWidth:320,maxWidth:480,boxShadow:'0 2px 16px #0002'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontWeight:600,fontSize:16,marginBottom:12}}>
+          <div style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.5)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setShowSearchModal(false)}>
+            <div style={{background:'var(--surface-dark)',borderRadius:12,padding:24,minWidth:320,maxWidth:480,border:'1px solid var(--border)'}} onClick={e=>e.stopPropagation()}>
+              <div style={{fontWeight:600,fontSize:16,marginBottom:12,color:'var(--text)'}}>
                 {searching ? '搜索中...' : searchResults.length > 0 ? '查询结果' : '未找到结果'}
               </div>
               
@@ -934,8 +875,8 @@ export default function App(){
                   <div style={{
                     width: '32px',
                     height: '32px',
-                    border: '3px solid #f3f4f6',
-                    borderTop: '3px solid #3b82f6',
+                    border: '3px solid var(--border)',
+                    borderTop: '3px solid var(--primary)',
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite'
                   }}></div>
@@ -947,7 +888,7 @@ export default function App(){
                       }
                     `}
                   </style>
-                  <span style={{marginLeft: '12px', color: '#6b7280'}}>正在搜索股票信息...</span>
+                  <span style={{marginLeft: '12px', color: 'var(--text-muted)'}}>正在搜索股票信息...</span>
                 </div>
               )}
               
@@ -991,7 +932,8 @@ export default function App(){
               )}
               
               <button 
-                style={{marginTop:16,padding:'6px 18px',border:'1px solid #e5e7eb',borderRadius:8,background:'#fff',cursor:'pointer'}} 
+                className="dark-btn dark-btn-secondary"
+                style={{marginTop:16,cursor:'pointer'}} 
                 onClick={()=>setShowSearchModal(false)}
                 disabled={searching}
               >
@@ -1000,7 +942,7 @@ export default function App(){
             </div>
           </div>
         )}
-  <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:0, paddingTop:4, borderTop:'1px solid #f1f5f9', maxHeight:100, overflow:'hidden', alignItems:'center'}}>
+  <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:0, paddingTop:4, borderTop:'1px solid var(--border)', maxHeight:100, overflow:'hidden', alignItems:'center'}}>
           {watch.slice(0, 10).map(w => {
             const label = w.name && w.name.trim() ? `${w.name}(${w.symbol})` : w.symbol
             return (
@@ -1011,16 +953,16 @@ export default function App(){
                   alignItems:'center',
                   gap:4,
                   padding:'3px 8px',
-                  border:'1px solid #e5e7eb',
+                  border:'1px solid var(--border)',
                   borderRadius:999,
-                  background: current===w.symbol?'#eef2ff':'#fff',
+                  background: current===w.symbol?'rgba(99, 102, 241, 0.15)':'var(--surface-dark)',
                   fontSize:12,
                   lineHeight:1.05
                 }}
               >
                 <button
                   onClick={()=>setCurrent(w.symbol)}
-                  style={{border:'none', background:'transparent', cursor:'pointer', padding:0, color:'#111827'}}
+                  style={{border:'none', background:'transparent', cursor:'pointer', padding:0, color:'var(--text)'}}
                 >
                   {label}
                 </button>
@@ -1074,7 +1016,7 @@ export default function App(){
           <WatchlistSummary watch={watch} current={current} />
         )}
         {watch.length === 0 && (
-          <div style={{marginTop:10, padding:'6px 10px', background:'#f8fafc', border:'1px dashed #e2e8f0', borderRadius:8, fontSize:11, color:'#64748b'}}>
+          <div style={{marginTop:10, padding:'6px 10px', background:'rgba(255,255,255,0.02)', border:'1px dashed var(--border)', borderRadius:8, fontSize:11, color:'var(--text-muted)'}}>
             暂无自选股票，请先搜索添加。添加后这里将显示自选整体统计（数量、上涨/下跌、平均涨幅、主力净流入合计）。
           </div>
         )}
@@ -1102,10 +1044,10 @@ export default function App(){
                   onClick={() => setTimeRange(option.key as any)}
                   style={{
                     padding: '4px 8px',
-                    border: '1px solid #e5e7eb',
+                    border: '1px solid var(--border)',
                     borderRadius: 4,
-                    background: timeRange === option.key ? '#3b82f6' : '#fff',
-                    color: timeRange === option.key ? '#fff' : '#374151',
+                    background: timeRange === option.key ? 'var(--primary)' : 'var(--surface-dark)',
+                    color: timeRange === option.key ? '#fff' : 'var(--text-muted)',
                     cursor: 'pointer',
                     fontSize: 12,
                     fontWeight: timeRange === option.key ? '500' : '400'
@@ -1177,23 +1119,23 @@ export default function App(){
       {/* 数据详情表格（放在左侧列，避免右侧更高导致出现大块空白） */}
       <FloatingModule style={{marginTop:12, padding:12, borderRadius:12}}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
-          <div style={{fontWeight:600}}>数据详情</div>
-          <div style={{fontSize:12, color:'#6b7280'}}>
+          <div style={{fontWeight:600, color:'var(--text)'}}>数据详情</div>
+          <div style={{fontSize:12, color:'var(--text-muted)'}}>
             显示区间: {timeRange === '5d' ? '最近5个工作日' : timeRange === '1m' ? '最近1个月' : timeRange === '3m' ? '最近3个月' : timeRange === '6m' ? '最近6个月' : timeRange === '1y' ? '最近1年' : '全部数据'} + 未来预测
           </div>
         </div>
         
         {merged.length > 0 ? (
-          <div style={{maxHeight: 300, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 8}}>
+          <div style={{maxHeight: 300, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8}}>
             <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 12}}>
-              <thead style={{background: '#f9fafb', position: 'sticky', top: 0}}>
+              <thead style={{background: 'rgba(255,255,255,0.03)', position: 'sticky', top: 0}}>
                 <tr>
-                  <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb'}}>日期</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb'}}>实际收盘</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb'}}>预测均值</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb'}}>预测下界</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb'}}>预测上界</th>
-                  <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb'}}>类型</th>
+                  <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>日期</th>
+                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>实际收盘</th>
+                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>预测均值</th>
+                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>预测下界</th>
+                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>预测上界</th>
+                  <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>类型</th>
                 </tr>
               </thead>
               <tbody>
@@ -1201,27 +1143,27 @@ export default function App(){
                   const isHistorical = row.close !== undefined
                   const isFuture = row.yhat !== undefined
                   return (
-                    <tr key={idx} style={{background: isFuture ? '#f0f9ff' : '#fff'}}>
-                      <td style={{padding: '6px 12px', borderBottom: '1px solid #f3f4f6'}}>{row.date}</td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid #f3f4f6'}}>
+                    <tr key={idx} style={{background: isFuture ? 'rgba(99, 102, 241, 0.08)' : 'transparent'}}>
+                      <td style={{padding: '6px 12px', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>{row.date}</td>
+                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
                         {isHistorical ? Number(row.close).toFixed(2) : '-'}
                       </td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid #f3f4f6'}}>
+                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
                         {isFuture ? Number(row.yhat).toFixed(2) : '-'}
                       </td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid #f3f4f6'}}>
+                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
                         {isFuture && row.yl ? Number(row.yl).toFixed(2) : '-'}
                       </td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid #f3f4f6'}}>
+                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
                         {isFuture && row.yu ? Number(row.yu).toFixed(2) : '-'}
                       </td>
-                      <td style={{padding: '6px 12px', textAlign: 'center', borderBottom: '1px solid #f3f4f6'}}>
+                      <td style={{padding: '6px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)'}}>
                         <span style={{
                           padding: '2px 6px',
                           borderRadius: 4,
                           fontSize: 10,
-                          background: isHistorical ? '#e5e7eb' : '#dbeafe',
-                          color: isHistorical ? '#374151' : '#1e40af'
+                          background: isHistorical ? 'rgba(255,255,255,0.1)' : 'rgba(99, 102, 241, 0.15)',
+                          color: isHistorical ? 'var(--text-muted)' : 'var(--primary)'
                         }}>
                           {isHistorical ? '历史' : '预测'}
                         </span>
@@ -1265,14 +1207,14 @@ export default function App(){
       {/* 右侧：模型计划 + 个股数据报表 */}
       <div style={{flex:1, display:'flex', flexDirection:'column', gap:12}}>
         <FloatingModule style={{padding:12, borderRadius:12}}>
-          <div style={{fontWeight:600, marginBottom:8}}>模型与计划</div>
-          <div style={{fontSize:12, color:'#6b7280', marginBottom:6}}>
+          <div style={{fontWeight:600, marginBottom:8, color:'var(--text)'}}>模型与计划</div>
+          <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:6}}>
             📅 每日 16:10 Asia/Taipei 自动训练（由后端 APScheduler 执行）
           </div>
-            <div style={{fontSize:12, color:'#6b7280', marginBottom:8}}>
+            <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:8}}>
             🎯 点击右上角按钮可手动拉数/训练/生成
           </div>
-          <div style={{fontSize:11, color:'#9ca3af', background:'#f9fafb', padding:8, borderRadius:6}}>
+          <div style={{fontSize:11, color:'var(--text-muted)', background:'rgba(255,255,255,0.02)', padding:8, borderRadius:6, border:'1px solid var(--border)'}}>
             <div style={{fontWeight:500, marginBottom:4}}>当日训练流程：</div>
             <div>• 📊 抓取最新股价数据</div>
             <div>• 🔍 计算技术指标与信号</div>
@@ -1321,47 +1263,50 @@ export default function App(){
     />
     </div>
     ) : currentPage === 'dashboard' ? (
-      <div style={{padding: 12}}>
-        <Dashboard />
-      </div>
+      <Dashboard />
     ) : currentPage === 'daily-analysis' ? (
-      <div style={{padding: 12}}>
-        <DailyAnalysisPage />
-      </div>
+      <DailyAnalysisPage />
+    ) : currentPage === 'analysis-center' ? (
+      <AnalysisCenterPage />
+    ) : currentPage === 'news-list' ? (
+      <NewsListPage />
     ) : currentPage === 'macro-report' ? (
-      <div style={{padding: '0', background: 'transparent', border: 'none'}}>
-        <MacroReportPage />
-      </div>
+      <MacroReportPage />
     ) : currentPage === 'news-management' ? (
-      <div style={{background: 'transparent', padding: 0, border: 'none'}}>
-        <NewsManagement />
-      </div>
+      <NewsManagement />
     ) : currentPage === 'deep-insight' ? (
-      <div style={{padding:0, background:'transparent', border:'none'}}>
-        <DeepMarketInsight />
-      </div>
+      <DeepMarketInsight />
     ) : currentPage === 'stocks-news' ? (
-      <div style={{background: 'transparent', padding: 0, border: 'none'}}>
-        {stocksDetailSymbol ? (
-          <StockNewsDetail symbol={stocksDetailSymbol} onBack={() => setStocksDetailSymbol(null)} />
-        ) : (
-          <StocksNewsIndex onOpen={(sym) => setStocksDetailSymbol(sym)} />
-        )}
-      </div>
+      stocksDetailSymbol ? (
+        <StockNewsDetail symbol={stocksDetailSymbol} onBack={() => setStocksDetailSymbol(null)} />
+      ) : (
+        <StocksNewsIndex onOpen={(sym) => setStocksDetailSymbol(sym)} />
+      )
     ) : currentPage === 'query-templates' ? (
-      <div style={{background: 'transparent', padding: 0, border: 'none'}}>
-        <QueryTemplateManager />
-      </div>
+      <QueryTemplateManager />
     ) : currentPage === 'profile-manager' ? (
-      <div style={{background: 'transparent', padding: 0, border: 'none'}}>
-        <ProfileValidationManager />
-      </div>
+      <ProfileValidationManager />
     ) : (
-      <div style={{background: 'transparent', padding: 0, border: 'none'}}>
-        <ModernNewsComponent />
-      </div>
+      <ModernNewsComponent />
     )}
-      </div>
+
+      {/* Toast 消息组件 */}
+      <Toast
+        isVisible={toast.isVisible}
+        message={toast.message}
+        type={toast.type}
+        onClose={closeToast}
+      />
+
+      {/* 自定义弹窗组件 */}
+      <CustomDialog
+        isOpen={dialog.isOpen}
+        onClose={closeDialog}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        onConfirm={dialog.onConfirm}
+      />
 
       {/* 自选管理 Drawer */}
       {isWatchDrawerOpen && (
@@ -1369,7 +1314,8 @@ export default function App(){
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(15, 23, 42, 0.4)',
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'flex-end',
           zIndex: 2000,
@@ -1381,19 +1327,20 @@ export default function App(){
             width: 440,
             maxWidth: '90vw',
             height: '100vh',
-            background: '#fff',
-            boxShadow: '-4px 0 24px rgba(15,23,42,0.15)',
+            background: 'var(--surface-dark)',
+            boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
             padding: 24,
             display: 'flex',
             flexDirection: 'column',
+            borderLeft: '1px solid var(--border)',
           }}
           onClick={e => e.stopPropagation()}
         >
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
-            <div style={{fontSize:18, fontWeight:600}}>自选管理 · {filteredWatch.length} 只</div>
+            <div style={{fontSize:18, fontWeight:700, color:'var(--text)'}}>自选管理 · {filteredWatch.length} 只</div>
             <button 
               onClick={() => setWatchDrawerOpen(false)}
-              style={{fontSize:24, border:'none', background:'transparent', cursor:'pointer', color:'#6b7280', lineHeight:1}}
+              style={{fontSize:24, border:'none', background:'transparent', cursor:'pointer', color:'var(--text-muted)', lineHeight:1}}
             >
               ×
             </button>
@@ -1403,13 +1350,11 @@ export default function App(){
             value={watchSearch} 
             onChange={e => setWatchSearch(e.target.value)} 
             placeholder="搜索名称或代码"
+            className="dark-search-input"
             style={{
               width:'100%',
-              padding:'10px 12px',
-              border:'1px solid #e5e7eb',
-              borderRadius:8,
-              fontSize:14,
-              marginBottom:16
+              marginBottom:16,
+              borderRadius: 8
             }}
           />
           
@@ -1433,8 +1378,8 @@ export default function App(){
                       alignItems:'center',
                       justifyContent:'space-between',
                       padding:'0 12px',
-                      borderBottom:'1px solid #f3f4f6',
-                      background: isActive ? '#eff6ff' : 'transparent'
+                      borderBottom:'1px solid var(--border)',
+                      background: isActive ? 'var(--primary-light)' : 'transparent'
                     }}
                   >
                     <button 
@@ -1450,7 +1395,7 @@ export default function App(){
                         padding:'8px 4px',
                         fontSize:13,
                         cursor:'pointer',
-                        color: isActive ? '#1d4ed8' : '#374151',
+                        color: isActive ? 'var(--primary)' : 'var(--text)',
                         fontWeight: isActive ? 600 : 400
                       }}
                     >
@@ -1479,10 +1424,10 @@ export default function App(){
                       }}
                       style={{
                         padding:'4px 10px',
-                        border:'1px solid #fecaca',
+                        border:'1px solid rgba(239, 68, 68, 0.3)',
                         borderRadius:6,
-                        background:'#fef2f2',
-                        color:'#dc2626',
+                        background:'rgba(239, 68, 68, 0.1)',
+                        color:'var(--accent-red)',
                         fontSize:11,
                         cursor:'pointer',
                         fontWeight:500
@@ -1498,6 +1443,6 @@ export default function App(){
         </div>
       </div>
       )}
-    </div>
+    </DarkLayout>
   )
 }

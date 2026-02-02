@@ -13,6 +13,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       }
+      ,
+      // Proxy root-level endpoints used by the SPA in dev mode
+      '/watchlist': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      },
+      '/cache': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 })

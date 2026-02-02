@@ -100,14 +100,15 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
 
   if (loading && !profile) {
     return (
-      <div style={{ padding: 16, textAlign: 'center', color: '#9ca3af' }}>
+      <div className="page-container" style={{ textAlign: 'center', color: 'var(--muted)' }}>
         Loading profile details...
       </div>
     )
   }
 
   return (
-    <div style={{ padding: 16 }}>
+    <div>
+      <div className="page-container">
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -116,55 +117,21 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
         marginBottom: 16
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={onBack}
-            style={{
-              padding: '6px 10px',
-              border: '1px solid #e5e7eb',
-              borderRadius: 6,
-              background: '#fff',
-              cursor: 'pointer'
-            }}
-          >
-            ← 返回
-          </button>
-          <h2 style={{ margin: 0 }}>
+          <button onClick={onBack} className="dark-btn dark-btn-secondary">← 返回</button>
+          <h2 style={{ margin: 0, color: 'var(--text)' }}>
             公司画像分析 - {profile?.company_name || symbol}
           </h2>
         </div>
-        <div style={{
-          padding: '4px 12px',
-          background: '#dbeafe',
-          color: '#1e40af',
-          borderRadius: 6,
-          fontSize: 12,
-          fontWeight: 500
-        }}>
-          {symbol}
-        </div>
+        <div className="dark-badge">{symbol}</div>
       </div>
 
       {/* Tab Navigation */}
-      <div style={{
-        display: 'flex',
-        gap: 0,
-        borderBottom: '2px solid #e5e7eb',
-        marginBottom: 16
-      }}>
+      <div style={{ marginBottom: 16 }} className="dark-tabs">
         {(['overview', 'analysis', 'competitive'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              background: activeTab === tab ? '#fff' : 'transparent',
-              borderBottom: activeTab === tab ? '2px solid #3b82f6' : 'none',
-              color: activeTab === tab ? '#3b82f6' : '#6b7280',
-              fontWeight: activeTab === tab ? 600 : 400,
-              cursor: 'pointer',
-              marginBottom: '-2px'
-            }}
+            className={`dark-tab ${activeTab === tab ? 'active' : ''}`}
           >
             {tab === 'overview' && '📋 概览'}
             {tab === 'analysis' && '📊 数据分析'}
@@ -179,7 +146,9 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {/* Profile Card */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <StockProfileCard symbol={symbol} onRefresh={loadData} />
+              <div className="card-panel">
+                <StockProfileCard symbol={symbol} onRefresh={loadData} />
+              </div>
             </div>
           </div>
         )}
@@ -188,11 +157,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {/* Profile Completeness */}
             <div style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              padding: 16,
-              background: '#fff'
-            }}>
+            }} className="card-panel">
               <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
                 信息完整度
               </h3>
@@ -213,7 +178,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                         width: 100,
                         height: 100,
                         borderRadius: '50%',
-                        background: 'conic-gradient(#3b82f6 0deg, #3b82f6 ' + (dataAnalysis.profileCompleteness * 3.6) + 'deg, #e5e7eb ' + (dataAnalysis.profileCompleteness * 3.6) + 'deg)',
+                        background: 'conic-gradient(#3b82f6 0deg, #3b82f6 ' + (dataAnalysis.profileCompleteness * 3.6) + 'deg, rgba(255,255,255,0.1) ' + (dataAnalysis.profileCompleteness * 3.6) + 'deg)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -222,7 +187,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                           width: 90,
                           height: 90,
                           borderRadius: '50%',
-                          background: '#fff',
+                          background: 'var(--surface-dark)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -237,7 +202,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                           </div>
                           <div style={{
                             fontSize: 10,
-                            color: '#9ca3af'
+                            color: 'var(--text-muted)'
                           }}>
                             完成度
                           </div>
@@ -248,19 +213,19 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                   <div style={{
                     marginTop: 16,
                     fontSize: 12,
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: 8
                   }}>
                     <div>
-                      <div style={{ color: '#9ca3af', marginBottom: 2 }}>质量评分</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#059669' }}>
+                      <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>质量评分</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--accent-lime)' }}>
                         {dataAnalysis.qualityScore}/100
                       </div>
                     </div>
                     <div>
-                      <div style={{ color: '#9ca3af', marginBottom: 2 }}>数据源</div>
+                      <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>数据源</div>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>
                         {dataAnalysis.dataSource}
                       </div>
@@ -271,12 +236,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
             </div>
 
             {/* Update Status */}
-            <div style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              padding: 16,
-              background: '#fff'
-            }}>
+            <div className="card-panel">
               <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
                 更新状态
               </h3>
@@ -288,27 +248,17 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                 }}>
                   <div style={{
                     padding: 8,
-                    background: '#f0f9ff',
                     borderRadius: 6,
                     fontSize: 12
                   }}>
-                    <div style={{ color: '#6b7280', marginBottom: 4 }}>最后更新时间</div>
-                    <div style={{ fontWeight: 500, color: '#1e40af' }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>最后更新时间</div>
+                    <div style={{ fontWeight: 500, color: 'var(--primary)' }}>
                       {new Date(dataAnalysis.lastUpdated).toLocaleString('zh-CN')}
                     </div>
                   </div>
                   <button
                     onClick={loadData}
-                    style={{
-                      padding: '8px 12px',
-                      border: '1px solid #3b82f6',
-                      borderRadius: 6,
-                      background: '#dbeafe',
-                      color: '#1e40af',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      fontSize: 12
-                    }}
+                    className="dark-btn dark-btn-primary"
                   >
                     🔄 立即更新
                   </button>
@@ -317,13 +267,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
             </div>
 
             {/* Data Quality Distribution */}
-            <div style={{
-              gridColumn: '1 / -1',
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              padding: 16,
-              background: '#fff'
-            }}>
+            <div style={{ gridColumn: '1 / -1' }} className="card-panel">
               <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
                 数据质量评分细项
               </h3>
@@ -338,20 +282,15 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                   { label: '产品列表', score: 70, icon: '🏷️' },
                   { label: '竞争分析', score: 65, icon: '⚔️' }
                 ].map((item, i) => (
-                  <div key={i} style={{
-                    padding: 12,
-                    background: '#f9fafb',
-                    borderRadius: 6,
-                    border: '1px solid #e5e7eb'
-                  }}>
+                  <div key={i} className="card-panel stat-tile">
                     <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
-                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
                       {item.label}
                     </div>
                     <div style={{
                       fontSize: 14,
                       fontWeight: 600,
-                      color: item.score >= 80 ? '#059669' : item.score >= 60 ? '#f59e0b' : '#dc2626'
+                      color: item.score >= 80 ? 'var(--accent-lime)' : item.score >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)'
                     }}>
                       {item.score}%
                     </div>
@@ -365,12 +304,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
         {activeTab === 'competitive' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {/* Industry Overview */}
-            <div style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              padding: 16,
-              background: '#fff'
-            }}>
+            <div className="card-panel">
               <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
                 行业概览
               </h3>
@@ -382,37 +316,34 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                 }}>
                   <div style={{
                     padding: 8,
-                    background: '#ecfdf5',
                     borderRadius: 6,
                     fontSize: 12,
-                    border: '1px solid #a7f3d0'
+                    border: '1px solid var(--muted-border)'
                   }}>
-                    <div style={{ color: '#6b7280', marginBottom: 2 }}>行业内企业数</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#065f46' }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>行业内企业数</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--accent-lime)' }}>
                       {industryAnalysis.companiesInIndustry}
                     </div>
                   </div>
                   <div style={{
                     padding: 8,
-                    background: '#fef3c7',
                     borderRadius: 6,
                     fontSize: 12,
-                    border: '1px solid #fcd34d'
+                    border: '1px solid var(--muted-border)'
                   }}>
-                    <div style={{ color: '#6b7280', marginBottom: 2 }}>主要竞争对手</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#b45309' }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>主要竞争对手</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--accent-amber)' }}>
                       {industryAnalysis.competitorsCount}
                     </div>
                   </div>
                   <div style={{
                     padding: 8,
-                    background: '#f0f9ff',
                     borderRadius: 6,
                     fontSize: 12,
-                    border: '1px solid #bfdbfe'
+                    border: '1px solid var(--muted-border)'
                   }}>
-                    <div style={{ color: '#6b7280', marginBottom: 2 }}>市场份额</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#1e40af' }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>市场份额</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#3b82f6' }}>
                       {industryAnalysis.marketShare}
                     </div>
                   </div>
@@ -421,12 +352,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
             </div>
 
             {/* Competitive Position */}
-            <div style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              padding: 16,
-              background: '#fff'
-            }}>
+            <div className="card-panel">
               <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
                 竞争地位
               </h3>
@@ -438,34 +364,34 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                 }}>
                   <div style={{
                     padding: 12,
-                    background: '#f9fafb',
+                    background: 'rgba(255,255,255,0.02)',
                     borderRadius: 6,
-                    border: '1px solid #e5e7eb'
+                    border: '1px solid var(--border)'
                   }}>
-                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
                       行业趋势
                     </div>
                     <div style={{
                       fontSize: 14,
                       fontWeight: 600,
-                      color: industryAnalysis.industryTrend === 'Upward' ? '#059669' : industryAnalysis.industryTrend === 'Stable' ? '#6b7280' : '#dc2626'
+                      color: industryAnalysis.industryTrend === 'Upward' ? 'var(--accent-lime)' : industryAnalysis.industryTrend === 'Stable' ? 'var(--text-muted)' : 'var(--accent-red)'
                     }}>
                       {industryAnalysis.industryTrend === 'Upward' ? '📈 上升' : industryAnalysis.industryTrend === 'Stable' ? '➡️ 平稳' : '📉 下降'}
                     </div>
                   </div>
                   <div style={{
                     padding: 12,
-                    background: '#fef2f2',
+                    background: 'rgba(239, 68, 68, 0.1)',
                     borderRadius: 6,
-                    border: '1px solid #fecaca',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
                     fontSize: 12
                   }}>
-                    <div style={{ color: '#6b7280', marginBottom: 8 }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: 8 }}>
                       竞争力指数
                     </div>
                     <div style={{
                       height: 8,
-                      background: '#e5e7eb',
+                      background: 'rgba(255,255,255,0.1)',
                       borderRadius: 4,
                       overflow: 'hidden',
                       marginBottom: 4
@@ -473,11 +399,11 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                       <div style={{
                         height: '100%',
                         width: '65%',
-                        background: '#ef4444',
+                        background: 'var(--accent-red)',
                         borderRadius: 4
                       }} />
                     </div>
-                    <div style={{ color: '#991b1b', fontWeight: 500 }}>
+                    <div style={{ color: 'var(--accent-red)', fontWeight: 500 }}>
                       6.5 / 10
                     </div>
                   </div>
@@ -488,10 +414,10 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
             {/* Market Comparison */}
             <div style={{
               gridColumn: '1 / -1',
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: 16,
-              background: '#fff'
+              background: 'var(--surface-dark)'
             }}>
               <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
                 市场对标
@@ -508,19 +434,19 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                 ].map((item, i) => (
                   <div key={i} style={{
                     padding: 12,
-                    background: '#f9fafb',
+                    background: 'rgba(255,255,255,0.02)',
                     borderRadius: 6,
-                    border: '1px solid #e5e7eb'
+                    border: '1px solid var(--border)'
                   }}>
                     <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
                       {item.label}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
                       当前公司
                     </div>
                     <div style={{
                       height: 6,
-                      background: '#e5e7eb',
+                      background: 'rgba(255,255,255,0.1)',
                       borderRadius: 3,
                       overflow: 'hidden',
                       marginBottom: 8
@@ -536,7 +462,7 @@ export default function StockProfileDetails({ symbol, onBack }: StockProfileDeta
                       display: 'flex',
                       justifyContent: 'space-between',
                       fontSize: 11,
-                      color: '#9ca3af'
+                      color: 'var(--text-muted)'
                     }}>
                       <span>本公司: {item.current}%</span>
                       <span>行业均值: {item.industry}%</span>

@@ -91,6 +91,80 @@ DATA_SOURCE = os.getenv("DATA_SOURCE", "akshare").lower()
 TUSHARE_TOKEN = os.getenv("TUSHARE_TOKEN")
 logger = logging.getLogger(__name__)
 
+# ------------------------------------------------------------------
+# Safe akshare proxy: run akshare calls inside a dedicated worker thread
+# with a fresh event loop to avoid interfering with the main ASGI loop.
+# This wraps akshare callables so existing code can call `ak.foo(...)`
+# while the actual execution happens in an isolated thread/loop.
+# ------------------------------------------------------------------
+class _AkProxy:
+    def __init__(self):
+        self._mod = None
+
+    def _load(self):
+        if self._mod is None:
+            import importlib
+            try:
+                self._mod = importlib.import_module("akshare")
+            except Exception as e:
+                # re-raise later when attempted to call
+                self._mod = None
+                raise
+
+    def __getattr__(self, name):
+        # Lazily load akshare module; attribute access returns a wrapper
+        def _run_in_thread(fn, *a, **kw):
+            result = {}
+            def target():
+                try:
+                    import asyncio
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        val = fn(*a, **kw)
+                        result['ok'] = True
+                        result['val'] = val
+                    finally:
+                        try:
+                            loop.run_until_complete(loop.shutdown_asyncgens())
+                        except Exception:
+                            pass
+                except Exception as e:
+                    result['ok'] = False
+                    result['val'] = e
+                finally:
+                    try:
+                        asyncio.set_event_loop(None)
+                    except Exception:
+                        pass
+                    try:
+                        loop.close()
+                    except Exception:
+                        pass
+
+            th = threading.Thread(target=target)
+            th.daemon = True
+            th.start()
+            th.join()
+            if result.get('ok'):
+                return result.get('val')
+            raise result.get('val')
+
+        # ensure module is importable
+        try:
+            self._load()
+        except Exception as e:
+            raise RuntimeError("akshare module not available") from e
+
+        attr = getattr(self._mod, name)
+        if callable(attr):
+            return lambda *a, **kw: _run_in_thread(attr, *a, **kw)
+        return attr
+
+# Global ak proxy instance
+ak = _AkProxy()
+
+
 # ============================================================================
 # 代理禁用配置（解决 AKShare 连接 eastmoney.com 的代理问题）
 # ============================================================================
@@ -182,7 +256,7 @@ def fetch_daily_akshare(symbol: str, start_date: str = None) -> pd.DataFrame:
     - 含列 [symbol, trade_date, open, high, low, close, pct_chg, vol, amount] 的 DataFrame
     - 数值字段尽量转换为数值类型，缺失值以 None/NA 处理
     """
-    import akshare as ak
+    # Use global `ak` proxy to run akshare calls in an isolated thread/loop
     sym = normalize_symbol(symbol)
     base = sym.replace(".SH", "").replace(".SZ", "")
     try:
@@ -356,7 +430,7 @@ def _load_fund_flow_rank_today(max_age_sec: int = 20, retries: int = 3, backoff_
     last_err: Exception | None = None
     for attempt in range(retries):
         try:
-            import akshare as ak  # 本地导入，便于测试 stub
+            # Use global `ak` proxy to run akshare calls in an isolated thread/loop
             rdf = ak.stock_individual_fund_flow_rank(indicator="今日")
             if rdf is None or rdf.empty:
                 raise RuntimeError("fund flow rank interface returned empty dataframe")
@@ -472,7 +546,7 @@ def fetch_fund_flow_daily(symbol: str, start_date: str | None = None, include_to
     if os.getenv("FUND_FLOW_DISABLE", "false").lower() in ("1","true","yes"):
         return pd.DataFrame(columns=cols)
 
-    import akshare as ak
+    # Use global `ak` proxy to run akshare calls in an isolated thread/loop
     sym = normalize_symbol(symbol)
     base = sym.replace(".SH", "").replace(".SZ", "")
     # akshare 接口：stock_individual_fund_flow 明细按日（有时不可用）
@@ -679,7 +753,7 @@ def fetch_fund_flow_eod_history_eastmoney(symbol: str, start_date: str | None = 
 
 def search_stocks(query: str):
     """搜索股票，返回匹配的股票列表"""
-    import akshare as ak
+    # Use global `ak` proxy to run akshare calls in an isolated thread/loop
     try:
         # 使用akshare搜索股票
         df = ak.stock_info_a_code_name()
@@ -706,8 +780,9 @@ def search_stocks(query: str):
         return []
 
 def get_stock_info(symbol: str):
-    """获取股票基本信息"""
-    import akshare as ak
+    """获取股票基本信息
+    Uses global `ak` proxy to isolate akshare calls.
+    """
     try:
         sym = normalize_symbol(symbol)
         base = sym.replace(".SH", "").replace(".SZ", "")
@@ -740,8 +815,9 @@ def get_stock_info(symbol: str):
         return None
 
 def get_realtime_stock(symbol: str):
-    """获取股票实时数据"""
-    import akshare as ak
+    """获取股票实时数据
+    Uses global `ak` proxy to isolate akshare calls.
+    """
     try:
         sym = normalize_symbol(symbol)
         base = sym.replace(".SH", "").replace(".SZ", "")
@@ -776,7 +852,7 @@ def get_spot_snapshot(symbols: list[str]):
     """
     if not symbols:
         return {}
-    import akshare as ak
+    # Use global `ak` proxy to run akshare calls in an isolated thread/loop
     # 惰性获取 Redis 客户端用于轻量缓存（可选）
     try:
         from ..core.db import get_redis_client  # local import to avoid hard dependency at import time

@@ -1053,6 +1053,11 @@ class LLMNewsProcessor:
         将分析结果转换为字典
         """
         return asdict(result)
+
+    # Alias for backward compatibility
+    async def analyze_news(self, title: str, content: str, url: str = None) -> Optional[NewsAnalysisResult]:
+        """Alias for news() method for backward compatibility."""
+        return await self.news(title, content, url)
     
     async def __aenter__(self):
         """异步上下文管理器入口"""

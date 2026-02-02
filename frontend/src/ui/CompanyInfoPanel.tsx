@@ -81,13 +81,13 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
     return (
       <div style={{
         padding: '24px',
-        background: '#fff',
+        background: 'var(--surface-dark)',
         borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        border: '1px solid var(--border)',
         textAlign: 'center'
       }}>
         <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
-        <div style={{ color: '#666' }}>加载公司信息中...</div>
+        <div style={{ color: 'var(--text-muted)' }}>加载公司信息中...</div>
       </div>
     )
   }
@@ -96,21 +96,17 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
     return (
       <div style={{
         padding: '24px',
-        background: '#fef2f2',
+        background: 'rgba(239, 68, 68, 0.1)',
         borderRadius: '12px',
-        border: '1px solid #fecaca'
+        border: '1px solid var(--accent-red)'
       }}>
         <div style={{ fontSize: '18px', marginBottom: '12px' }}>⚠️</div>
-        <div style={{ color: '#991b1b', marginBottom: '16px' }}>{error}</div>
+        <div style={{ color: 'var(--accent-red)', marginBottom: '16px' }}>{error}</div>
         <button
           onClick={triggerEnrichment}
           disabled={enriching}
+          className="dark-btn dark-btn-primary"
           style={{
-            padding: '8px 16px',
-            background: '#3b82f6',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
             cursor: enriching ? 'not-allowed' : 'pointer',
             opacity: enriching ? 0.6 : 1
           }}
@@ -125,22 +121,19 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
     return (
       <div style={{
         padding: '24px',
-        background: '#f3f4f6',
+        background: 'var(--surface-dark)',
         borderRadius: '12px',
         textAlign: 'center',
-        color: '#666'
+        color: 'var(--text-muted)',
+        border: '1px solid var(--border)'
       }}>
         <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
         <div style={{ marginBottom: '16px' }}>暂无公司信息</div>
         <button
           onClick={triggerEnrichment}
           disabled={enriching}
+          className="dark-btn dark-btn-primary"
           style={{
-            padding: '8px 16px',
-            background: '#3b82f6',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
             cursor: enriching ? 'not-allowed' : 'pointer',
             opacity: enriching ? 0.6 : 1
           }}
@@ -154,17 +147,17 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
   return (
     <div style={{
       padding: '24px',
-      background: '#fff',
+      background: 'var(--surface-dark)',
       borderRadius: '12px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      border: '1px solid var(--border)',
       fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
     }}>
       {/* 标题区 */}
       <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 700, color: '#111827' }}>
+        <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>
           {profile.company_name || profile.symbol}
         </h2>
-        <div style={{ color: '#6b7280', fontSize: '14px' }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
           代码: {profile.symbol}
         </div>
       </div>
@@ -176,18 +169,18 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
         gap: '16px',
         marginBottom: '24px',
         paddingBottom: '24px',
-        borderBottom: '1px solid #e5e7eb'
+        borderBottom: '1px solid var(--border)'
       }}>
         {/* 行业 */}
         <div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: 600 }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
             行业
           </div>
-          <div style={{ fontSize: '16px', color: '#111827', fontWeight: 600 }}>
+          <div style={{ fontSize: '16px', color: 'var(--text)', fontWeight: 600 }}>
             {profile.industry || '—'}
           </div>
           {profile.sub_industry && (
-            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
               细分: {profile.sub_industry}
             </div>
           )}
@@ -195,10 +188,10 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
 
         {/* 市场地位 */}
         <div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: 600 }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
             竞争地位
           </div>
-          <div style={{ fontSize: '16px', color: '#111827', fontWeight: 600 }}>
+          <div style={{ fontSize: '16px', color: 'var(--text)', fontWeight: 600 }}>
             {profile.competitive_position || '—'}
           </div>
         </div>
@@ -207,18 +200,18 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
       {/* 业务概述 */}
       {profile.business_summary && (
         <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#111827' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             📋 业务概述
           </h3>
           <p style={{
             margin: 0,
             fontSize: '13px',
             lineHeight: '1.6',
-            color: '#374151',
-            background: '#f9fafb',
+            color: 'var(--text-muted)',
+            background: 'rgba(255,255,255,0.02)',
             padding: '12px',
             borderRadius: '8px',
-            borderLeft: '3px solid #3b82f6'
+            borderLeft: '3px solid var(--primary)'
           }}>
             {profile.business_summary}
           </p>
@@ -228,7 +221,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
       {/* 产品与服务 */}
       {profile.core_products && (
         <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#111827' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             🛍️ 核心产品
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -236,15 +229,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
               p.trim() && (
                 <span
                   key={i}
-                  style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    background: '#dbeafe',
-                    color: '#1e40af',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 600
-                  }}
+                  className="dark-badge dark-badge-info"
                 >
                   {p.trim()}
                 </span>
@@ -257,7 +242,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
       {/* 竞争对手 */}
       {profile.competitors && (
         <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#111827' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             🏆 主要竞争对手
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -265,15 +250,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
               c.trim() && (
                 <span
                   key={i}
-                  style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    background: '#fecaca',
-                    color: '#991b1b',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 600
-                  }}
+                  className="dark-badge dark-badge-warning"
                 >
                   {c.trim()}
                 </span>
@@ -286,7 +263,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
       {/* 风险因素 */}
       {profile.risk_factors && (
         <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#111827' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             ⚡ 风险因素
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -294,15 +271,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
               r.trim() && (
                 <span
                   key={i}
-                  style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    background: '#fee2e2',
-                    color: '#7f1d1d',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 600
-                  }}
+                  className="dark-badge dark-badge-error"
                 >
                   {r.trim()}
                 </span>
@@ -315,7 +284,7 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
       {/* 关键词 */}
       {profile.strategic_keywords && (
         <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#111827' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             🏷️ 关键词
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -323,15 +292,8 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
               k.trim() && (
                 <span
                   key={i}
-                  style={{
-                    display: 'inline-block',
-                    padding: '4px 10px',
-                    background: '#f0fdf4',
-                    color: '#166534',
-                    borderRadius: '16px',
-                    fontSize: '11px',
-                    fontWeight: 600
-                  }}
+                  className="dark-badge dark-badge-success"
+                  style={{ fontSize: '11px' }}
                 >
                   {k.trim()}
                 </span>
@@ -344,12 +306,12 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
       {/* 更新时间 & 刷新按钮 */}
       <div style={{
         paddingTop: '16px',
-        borderTop: '1px solid #e5e7eb',
+        borderTop: '1px solid var(--border)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
           最后更新: {profile.last_refreshed
             ? new Date(profile.last_refreshed).toLocaleString('zh-CN')
             : '从未更新'}
@@ -357,17 +319,11 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
         <button
           onClick={triggerEnrichment}
           disabled={enriching}
+          className="dark-btn dark-btn-primary"
           style={{
-            padding: '6px 12px',
-            background: enriching ? '#d1d5db' : '#3b82f6',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
             fontSize: '12px',
-            fontWeight: 600,
             cursor: enriching ? 'not-allowed' : 'pointer',
-            opacity: enriching ? 0.7 : 1,
-            transition: 'all 0.2s'
+            opacity: enriching ? 0.7 : 1
           }}
         >
           {enriching ? '🔄 更新中...' : '🔄 刷新'}
@@ -378,10 +334,11 @@ export default function CompanyInfoPanel({ symbol }: CompanyInfoPanelProps) {
         <div style={{
           marginTop: '12px',
           padding: '12px',
-          background: '#fef2f2',
-          color: '#991b1b',
+          background: 'rgba(239, 68, 68, 0.1)',
+          color: 'var(--accent-red)',
           borderRadius: '6px',
-          fontSize: '12px'
+          fontSize: '12px',
+          border: '1px solid var(--accent-red)'
         }}>
           ⚠️ {error}
         </div>

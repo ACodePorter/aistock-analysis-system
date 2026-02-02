@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI 智能策略与调仓信号 | 中国A股智能终端</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#116574",
+                        "accent-green": "#10B981",
+                        "accent-gold": "#D4A100",
+                        "background-light": "#f6f7f9",
+                        "background-dark": "#0a0c10",
+                        "surface-dark": "#161b22",
+                        "border-dark": "#30363d",
+                    },
+                    fontFamily: {
+                        "display": ["Noto Sans SC", "Manrope", "sans-serif"],
+                        "technical": ["Space Grotesk", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .monospaced-numbers {
+            font-variant-numeric: tabular-nums;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 border-r border-slate-200 dark:border-border-dark flex flex-col bg-white dark:bg-background-dark shrink-0">
+<div class="p-6 border-b border-slate-200 dark:border-border-dark flex items-center gap-3">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<h1 class="text-sm font-bold tracking-tight">AI 智能终端 v2.0</h1>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest">China A-Share AI</p>
+</div>
+</div>
+<nav class="flex-1 p-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-surface-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="text-sm font-medium">市场监控</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20" href="#">
+<span class="material-symbols-outlined text-xl">query_stats</span>
+<span class="text-sm font-medium">策略中心</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-surface-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+<span class="text-sm font-medium">我的投资组合</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-surface-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">security</span>
+<span class="text-sm font-medium">风险分析</span>
+</a>
+<div class="mt-8 mb-2 px-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">已存模型</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-surface-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-accent-green text-lg">radio_button_checked</span>
+<span class="text-sm font-medium">低波动阿尔法</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-surface-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-accent-gold text-lg">radio_button_checked</span>
+<span class="text-sm font-medium">动量精选 50</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-border-dark">
+<div class="flex items-center gap-3 p-2 bg-slate-50 dark:bg-surface-dark rounded-xl">
+<div class="size-8 rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden border border-slate-200 dark:border-slate-600">
+<img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfoCHVxTfNJjbl2J-YGMXFQ0TAPnKcgurkqmW2EnboyXFe8MEsj9SzUnswqbxtGuD2U852qQoKZocJ2o17gKwM75QrhCJiDH6uhM7zf-ily2nbr2HNtQozNkle7mct2OSaBoZAJ8fugMwkAcX-OlVJ428XlulUpP9htNpWsdKDwcwQb2VIC4oJrhDXj3M5bgGKAG6sq7wTXgByLyGkQxd8Nxn5hfhLnshSGN5nCiCfXP9yNJbG9ZKEA7dre_Xd4K4z9FSCb0J6E7o"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold truncate">量化工程师</p>
+<p class="text-[10px] text-slate-500">等级: 企业级</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">settings</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col overflow-hidden">
+<header class="h-16 border-b border-slate-200 dark:border-border-dark flex items-center justify-between px-8 bg-white dark:bg-background-dark">
+<div class="flex items-center gap-6">
+<h2 class="text-lg font-bold">AI 智能策略与调仓信号</h2>
+<div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+<div class="flex items-center gap-1.5">
+<span class="size-2 rounded-full bg-accent-green animate-pulse"></span>
+                        上证指数: 3,241.12 (+0.4%)
+                    </div>
+<div class="flex items-center gap-1.5">
+<span class="size-2 rounded-full bg-accent-green animate-pulse"></span>
+                        深证成指: 10,345.88 (+0.2%)
+                    </div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="bg-slate-100 dark:bg-surface-dark border-none rounded-lg py-2 pl-10 pr-4 text-sm w-80 focus:ring-1 focus:ring-primary" placeholder="搜索股票代码、策略或研报..." type="text"/>
+</div>
+<button class="size-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-surface-dark">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+<div class="max-w-7xl mx-auto space-y-8">
+<section>
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="text-xl font-bold">AI 推荐策略</h3>
+<p class="text-slate-500 text-sm mt-1">基于当前市场环境优化的资金配置方案。</p>
+</div>
+<div class="flex bg-slate-100 dark:bg-surface-dark p-1 rounded-lg">
+<button class="px-4 py-1.5 text-xs font-bold bg-white dark:bg-slate-600 rounded-md shadow-sm">回测分析</button>
+<button class="px-4 py-1.5 text-xs font-bold text-slate-500">实盘执行</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="group relative bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl p-6 hover:border-primary/50 transition-all duration-300 shadow-sm overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-bold rounded">低波动性</span>
+<span class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">ID: CG-04X</span>
+</div>
+<h4 class="text-xl font-bold">稳健增长型</h4>
+</div>
+<div class="text-right">
+<div class="text-2xl font-bold text-accent-green font-technical tracking-tighter monospaced-numbers">+18.4%</div>
+<div class="text-[10px] font-bold text-slate-500 uppercase">预估年化收益</div>
+</div>
+</div>
+<div class="h-32 w-full mt-4 relative">
+<div class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent"></div>
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 40">
+<path d="M0,35 Q10,30 20,32 T40,25 T60,20 T80,15 T100,5" fill="none" stroke="#116574" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<path d="M0,38 Q15,35 30,36 T50,32 T70,33 T85,30 T100,28" fill="none" stroke="#475569" stroke-dasharray="2,2" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+<div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-border-dark">
+<div>
+<p class="text-[10px] font-bold text-slate-500 uppercase mb-1">夏普比率</p>
+<p class="font-technical text-lg">2.14</p>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-500 uppercase mb-1">最大回撤</p>
+<p class="font-technical text-lg">-4.2%</p>
+</div>
+<div class="text-right">
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors">应用策略</button>
+</div>
+</div>
+</div>
+<div class="group relative bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl p-6 hover:border-accent-gold/50 transition-all duration-300 shadow-sm overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 bg-orange-500/10 text-orange-500 text-[10px] font-bold rounded">高动量</span>
+<span class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">ID: AA-99Y</span>
+</div>
+<h4 class="text-xl font-bold">进取阿尔法型</h4>
+</div>
+<div class="text-right">
+<div class="text-2xl font-bold text-accent-green font-technical tracking-tighter monospaced-numbers">+42.8%</div>
+<div class="text-[10px] font-bold text-slate-500 uppercase">预估年化收益</div>
+</div>
+</div>
+<div class="h-32 w-full mt-4 relative">
+<div class="absolute inset-0 bg-gradient-to-t from-accent-gold/5 to-transparent"></div>
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 40">
+<path d="M0,35 Q10,38 20,25 T40,28 T60,10 T80,15 T100,0" fill="none" stroke="#D4A100" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<path d="M0,38 Q15,35 30,36 T50,32 T70,33 T85,30 T100,28" fill="none" stroke="#475569" stroke-dasharray="2,2" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+<div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-border-dark">
+<div>
+<p class="text-[10px] font-bold text-slate-500 uppercase mb-1">夏普比率</p>
+<p class="font-technical text-lg">1.82</p>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-500 uppercase mb-1">最大回撤</p>
+<p class="font-technical text-lg">-12.5%</p>
+</div>
+<div class="text-right">
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors">应用策略</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="lg:col-span-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden shadow-sm">
+<div class="p-6 border-b border-slate-100 dark:border-border-dark flex items-center justify-between">
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-green">bolt</span>
+                                当前调仓信号
+                            </h3>
+<span class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">42秒后刷新</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead class="bg-slate-50 dark:bg-background-dark/50 text-[10px] font-bold uppercase text-slate-500 tracking-widest border-b border-slate-100 dark:border-border-dark">
+<tr>
+<th class="px-6 py-4">股票代码 / 名称</th>
+<th class="px-6 py-4">操作方向</th>
+<th class="px-6 py-4">建议入场价</th>
+<th class="px-6 py-4">止损位</th>
+<th class="px-6 py-4">止盈位</th>
+<th class="px-6 py-4">AI 信心度</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-border-dark">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-technical font-medium">600519.SH</div>
+<div class="text-[11px] text-slate-500">贵州茅台</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-accent-green/10 text-accent-green px-2 py-1 rounded text-[10px] font-bold">强烈买入</span>
+</td>
+<td class="px-6 py-4 font-technical monospaced-numbers text-slate-300">1,642.50</td>
+<td class="px-6 py-4 font-technical text-red-500 monospaced-numbers">1,580.00</td>
+<td class="px-6 py-4 font-technical text-accent-green monospaced-numbers">1,820.00</td>
+<td class="px-6 py-4">
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 88%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500 mt-1 block">匹配度 88%</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-technical font-medium">002594.SZ</div>
+<div class="text-[11px] text-slate-500">比亚迪</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-accent-green/10 text-accent-green px-2 py-1 rounded text-[10px] font-bold">买入</span>
+</td>
+<td class="px-6 py-4 font-technical monospaced-numbers text-slate-300">214.30</td>
+<td class="px-6 py-4 font-technical text-red-500 monospaced-numbers">202.00</td>
+<td class="px-6 py-4 font-technical text-accent-green monospaced-numbers">245.00</td>
+<td class="px-6 py-4">
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 72%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500 mt-1 block">匹配度 72%</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-technical font-medium">601318.SH</div>
+<div class="text-[11px] text-slate-500">中国平安</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-red-500/10 text-red-500 px-2 py-1 rounded text-[10px] font-bold">卖出</span>
+</td>
+<td class="px-6 py-4 font-technical monospaced-numbers text-slate-300">44.15</td>
+<td class="px-6 py-4 font-technical text-slate-400 monospaced-numbers">--</td>
+<td class="px-6 py-4 font-technical text-slate-400 monospaced-numbers">--</td>
+<td class="px-6 py-4">
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-red-500 h-full" style="width: 94%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500 mt-1 block">风险分 94%</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl p-6 shadow-sm flex flex-col">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">psychology</span>
+<h3 class="font-bold">AI 逻辑解析</h3>
+</div>
+<div class="flex-1 space-y-6 overflow-y-auto custom-scrollbar max-h-[400px] pr-2">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="size-1.5 rounded-full bg-primary"></span>
+<p class="text-[11px] font-bold text-slate-400 tracking-wider">爬虫舆情分析</p>
+</div>
+<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                                    在政策利好落地后，<span class="text-primary font-bold">贵州茅台</span> 的社交媒体情绪指数激增 14%。LLM 爬虫检测到大宗消费领域的机构仓位正在显著上移。
+                                </p>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="size-1.5 rounded-full bg-primary"></span>
+<p class="text-[11px] font-bold text-slate-400 tracking-wider">宏观叙事 context</p>
+</div>
+<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                                    人民币对美元汇率企稳为蓝筹股提供了估值支撑。技术指标显示银行板块处于“超买”状态，而新能源板块出现“动量背离”，建议通过权重股防御。
+                                </p>
+</div>
+<div class="bg-slate-50 dark:bg-background-dark p-4 rounded-lg border border-slate-100 dark:border-border-dark">
+<div class="flex justify-between items-center mb-3">
+<span class="text-[10px] font-bold uppercase text-slate-400">知识图谱关联</span>
+<span class="material-symbols-outlined text-xs text-slate-400">link</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="text-[10px] bg-white dark:bg-surface-dark px-2 py-1 rounded border border-slate-200 dark:border-border-dark">央行政策</span>
+<span class="text-[10px] bg-white dark:bg-surface-dark px-2 py-1 rounded border border-slate-200 dark:border-border-dark">电动车产业链</span>
+<span class="text-[10px] bg-white dark:bg-surface-dark px-2 py-1 rounded border border-slate-200 dark:border-border-dark">Q3 盈利预增</span>
+</div>
+</div>
+</div>
+<button class="mt-6 w-full py-3 border border-primary text-primary hover:bg-primary hover:text-white transition-all rounded-lg text-xs font-bold uppercase tracking-widest">查看完整深度研究报告</button>
+</div>
+</div>
+<section class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-gold">warning</span>
+                                投资组合风险热力图
+                            </h3>
+<p class="text-xs text-slate-500 mt-1">行业集中度与波动率风险暴露的可视化分析。</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-sm bg-primary/20"></span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">低风险</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-sm bg-primary"></span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">高集中度</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-sm bg-accent-gold/60"></span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">波动预警</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+<div class="p-4 bg-primary text-white rounded-lg flex flex-col justify-between h-32 border border-white/10 hover:brightness-110 cursor-default transition-all">
+<span class="text-[11px] font-bold opacity-80">信息技术</span>
+<div class="text-right">
+<div class="text-xl font-technical font-bold">28.4%</div>
+<div class="text-[10px] font-medium opacity-70">总暴露度</div>
+</div>
+</div>
+<div class="p-4 bg-primary/60 text-white rounded-lg flex flex-col justify-between h-32 border border-white/5 hover:brightness-110 cursor-default transition-all">
+<span class="text-[11px] font-bold opacity-80">日常消费</span>
+<div class="text-right">
+<div class="text-xl font-technical font-bold">14.2%</div>
+<div class="text-[10px] font-medium opacity-70">总暴露度</div>
+</div>
+</div>
+<div class="p-4 bg-primary/30 text-slate-900 dark:text-white rounded-lg flex flex-col justify-between h-32 border border-slate-100 dark:border-white/5 hover:brightness-110 cursor-default transition-all">
+<span class="text-[11px] font-bold opacity-60">金融地产</span>
+<div class="text-right">
+<div class="text-xl font-technical font-bold">8.1%</div>
+<div class="text-[10px] font-medium opacity-50">总暴露度</div>
+</div>
+</div>
+<div class="p-4 bg-accent-gold/60 text-white rounded-lg flex flex-col justify-between h-32 border border-white/10 hover:brightness-110 cursor-default transition-all">
+<span class="text-[11px] font-bold opacity-80">能源材料</span>
+<div class="text-right">
+<div class="text-xl font-technical font-bold">18.5%</div>
+<div class="text-[10px] font-medium opacity-70">高波动率</div>
+</div>
+</div>
+<div class="p-4 bg-primary/10 text-slate-900 dark:text-white rounded-lg flex flex-col justify-between h-32 border border-slate-100 dark:border-white/5 hover:brightness-110 cursor-default transition-all">
+<span class="text-[11px] font-bold opacity-60">医药生物</span>
+<div class="text-right">
+<div class="text-xl font-technical font-bold">4.2%</div>
+<div class="text-[10px] font-medium opacity-50">总暴露度</div>
+</div>
+</div>
+<div class="p-4 bg-primary/10 text-slate-900 dark:text-white rounded-lg flex flex-col justify-between h-32 border border-slate-100 dark:border-white/5 hover:brightness-110 cursor-default transition-all">
+<span class="text-[11px] font-bold opacity-60">工业制造</span>
+<div class="text-right">
+<div class="text-xl font-technical font-bold">2.6%</div>
+<div class="text-[10px] font-medium opacity-50">总暴露度</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+<div class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+<div class="bg-white dark:bg-surface-dark rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-border-dark">
+<div class="p-6 border-b border-slate-100 dark:border-border-dark flex justify-between items-center">
+<h3 class="text-lg font-bold">确认策略调仓执行</h3>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary">close</span>
+</div>
+<div class="p-8 space-y-6">
+<div class="flex items-center gap-4 p-4 bg-primary/10 rounded-xl">
+<span class="material-symbols-outlined text-primary text-3xl">verified_user</span>
+<div>
+<p class="text-sm font-bold">进取阿尔法型</p>
+<p class="text-xs text-slate-500">分配金额: 250,000 CNY (现货交易)</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">执行模式</span>
+<span class="font-bold">自动调仓再平衡</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">滑点容忍度</span>
+<span class="font-bold">0.15%</span>
+</div>
+</div>
+</div>
+<div class="p-6 bg-slate-50 dark:bg-background-dark/50 flex gap-4">
+<button class="flex-1 py-3 bg-slate-200 dark:bg-slate-700 rounded-lg text-sm font-bold">取消</button>
+<button class="flex-1 py-3 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20">立即执行</button>
+</div>
+</div>
+</div>
+
+</body></html>

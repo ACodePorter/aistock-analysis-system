@@ -9,8 +9,8 @@ interface CardProps {
 
 export function Card({ children, className = '', variant = 'default', style }: CardProps) {
   const base = {
-    default: 'bg-white rounded-lg border border-gray-200 shadow-sm',
-    soft: 'bg-gray-50/80 rounded-lg shadow-sm border-0',
+    default: 'bg-[var(--surface-dark)] rounded-lg border border-[var(--border)]',
+    soft: 'bg-[rgba(255,255,255,0.02)] rounded-lg border border-[var(--border)]',
     ghost: 'bg-transparent rounded-lg border-0 shadow-none',
     bare: 'rounded-lg shadow-sm border-0',
   }[variant];

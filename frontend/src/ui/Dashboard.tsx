@@ -189,11 +189,11 @@ const Dashboard: React.FC = () => {
 
   const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'running': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'dark-badge dark-badge-success';
+      case 'running': return 'dark-badge dark-badge-info';
+      case 'pending': return 'dark-badge dark-badge-warning';
+      case 'failed': return 'dark-badge dark-badge-danger';
+      default: return 'dark-badge';
     }
   };
 
@@ -252,28 +252,28 @@ const Dashboard: React.FC = () => {
     if (value === null || value === undefined) {
       return {
         label: '未知',
-        color: '#374151',
-        background: '#e5e7eb',
+        color: 'var(--text-muted)',
+        background: 'rgba(255,255,255,0.05)',
       };
     }
     if (value >= 0.25) {
       return {
         label: '积极',
-        color: '#047857',
-        background: '#dcfce7',
+        color: 'var(--accent-lime)',
+        background: 'rgba(110, 231, 183, 0.15)',
       };
     }
     if (value <= -0.25) {
       return {
         label: '偏空',
-        color: '#b91c1c',
-        background: '#fee2e2',
+        color: 'var(--accent-red)',
+        background: 'rgba(239, 68, 68, 0.15)',
       };
     }
     return {
       label: '中性',
-      color: '#1d4ed8',
-      background: '#dbeafe',
+      color: '#60a5fa',
+      background: 'rgba(59, 130, 246, 0.15)',
     };
   };
 
@@ -316,61 +316,33 @@ const Dashboard: React.FC = () => {
   };
 
   const macroHighlightPalette: Record<string, { background: string; border: string; color: string }> = {
-    'positive-topic': { background: '#ecfdf5', border: '#34d399', color: '#047857' },
-    'negative-topic': { background: '#fef2f2', border: '#f87171', color: '#b91c1c' },
-    'high-volume': { background: '#eff6ff', border: '#60a5fa', color: '#1d4ed8' },
-    'model-update': { background: '#f5f3ff', border: '#a78bfa', color: '#5b21b6' },
+    'positive-topic': { background: 'rgba(110, 231, 183, 0.15)', border: '#6EE7B7', color: '#6EE7B7' },
+    'negative-topic': { background: 'rgba(239, 68, 68, 0.15)', border: '#EF4444', color: '#EF4444' },
+    'high-volume': { background: 'rgba(59, 130, 246, 0.15)', border: '#60a5fa', color: '#60a5fa' },
+    'model-update': { background: 'rgba(167, 139, 250, 0.15)', border: '#a78bfa', color: '#a78bfa' },
   };
 
   const getHighlightStyle = (type: string) => {
     return (
       macroHighlightPalette[type] || {
-        background: '#f3f4f6',
-        border: '#d1d5db',
-        color: '#374151',
+        background: 'rgba(255,255,255,0.05)',
+        border: 'var(--border)',
+        color: 'var(--text-secondary)',
       }
     );
   };
 
   if (activeTab !== 'macro' && loading) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        backgroundColor: '#f9fafb', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        padding: '20px'
-      }}>
-        <div style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '12px', 
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', 
-          border: '1px solid #e5e7eb', 
-          padding: '40px', 
-          textAlign: 'center',
-          maxWidth: '400px',
-          width: '100%'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            marginBottom: '20px' 
-          }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <div className="dark-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <LoadingSpinner />
           </div>
-          <div style={{ 
-            fontSize: '18px', 
-            color: '#4b5563', 
-            fontWeight: '500',
-            marginBottom: '8px' 
-          }}>
+          <div style={{ fontSize: '18px', color: 'var(--text)', fontWeight: 500, marginBottom: '8px' }}>
             加载仪表板数据...
           </div>
-          <div style={{ 
-            fontSize: '14px', 
-            color: '#6b7280' 
-          }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
             请稍候，正在获取最新信息
           </div>
         </div>
@@ -380,80 +352,20 @@ const Dashboard: React.FC = () => {
 
   if (activeTab !== 'macro' && error) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        backgroundColor: '#f9fafb', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        padding: '20px'
-      }}>
-        <div style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '12px', 
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', 
-          border: '1px solid #fca5a5', 
-          padding: '40px', 
-          maxWidth: '400px',
-          width: '100%',
-          textAlign: 'center'
-        }}>
-          <div style={{ 
-            backgroundColor: '#fee2e2', 
-            borderRadius: '50%', 
-            padding: '12px', 
-            width: '48px', 
-            height: '48px', 
-            margin: '0 auto 16px auto', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center'
-          }}>
-            <svg style={{ width: '24px', height: '24px', color: '#dc2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <div className="dark-card" style={{ maxWidth: '420px', width: '100%', textAlign: 'center', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', borderRadius: '50%', padding: 12, width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: 24, height: 24, color: 'var(--accent-red)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
-          <h3 style={{ 
-            fontSize: '18px', 
-            fontWeight: '600', 
-            color: '#991b1b', 
-            marginBottom: '8px' 
-          }}>
-            加载失败
-          </h3>
-          <p style={{ 
-            color: '#dc2626', 
-            marginBottom: '24px',
-            fontSize: '14px'
-          }}>
-            {error}
-          </p>
-          <button
-            onClick={() => fetchDashboardData(false)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto',
-              padding: '8px 16px',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => {
-              (e.target as HTMLButtonElement).style.backgroundColor = '#b91c1c';
-            }}
-            onMouseOut={(e) => {
-              (e.target as HTMLButtonElement).style.backgroundColor = '#dc2626';
-            }}
-          >
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--accent-red)', marginBottom: 8 }}>加载失败</h3>
+          <p style={{ color: 'var(--accent-red)', marginBottom: 24, fontSize: 14 }}>{error}</p>
+          <button onClick={() => fetchDashboardData(false)} className="dark-btn dark-btn-primary">
             <RefreshIcon />
-            <span style={{ marginLeft: '8px' }}>重试</span>
+            <span style={{ marginLeft: 8 }}>重试</span>
           </button>
         </div>
       </div>
@@ -461,24 +373,10 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div style={{ 
-      padding: '16px', 
-      backgroundColor: '#f9fafb', 
-      minHeight: '100vh' 
-    }}>
-      <div style={{ 
-        maxWidth: '1200px', 
-        margin: '0 auto' 
-      }}>
+    <div>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* 页头区域 */}
-        <div style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '8px', 
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', 
-          border: '1px solid #e5e7eb', 
-          padding: '16px', 
-          marginBottom: '16px'
-        }}>
+        <div className="dark-card" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -489,7 +387,7 @@ const Dashboard: React.FC = () => {
             <h1 style={{ 
               fontSize: '20px', 
               fontWeight: 'bold', 
-              color: '#111827',
+              color: 'var(--text)',
               margin: 0
             }}>
               任务监控
@@ -500,170 +398,32 @@ const Dashboard: React.FC = () => {
               gap: '8px',
               flexWrap: 'wrap'
             }}>
-              <button
-                onClick={handleRefresh}
-                disabled={tabLoading || tabRefreshing}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 12px',
-                  backgroundColor: (tabLoading || tabRefreshing) ? '#9ca3af' : '#2563eb',
-                  color: 'white',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: (tabLoading || tabRefreshing) ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  if (!tabLoading && !tabRefreshing) {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#1d4ed8';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!tabLoading && !tabRefreshing) {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#2563eb';
-                  }
-                }}
-              >
-                {tabLoading || tabRefreshing ? (
-                  <LoadingSpinner />
-                ) : (
-                  <RefreshIcon />
-                )}
-                <span style={{ marginLeft: '4px' }}>
-                  {tabRefreshing ? '刷新中...' : tabLoading ? '加载中...' : '刷新'}
-                </span>
+              <button onClick={handleRefresh} disabled={tabLoading || tabRefreshing} className="dark-btn dark-btn-primary">
+                {tabLoading || tabRefreshing ? <LoadingSpinner /> : <RefreshIcon />}
+                <span style={{ marginLeft: 8 }}>{tabRefreshing ? '刷新中...' : tabLoading ? '加载中...' : '刷新'}</span>
               </button>
-              <button
-                onClick={() => setActiveTab('reports')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  backgroundColor: activeTab === 'reports' ? '#2563eb' : '#f3f4f6',
-                  color: activeTab === 'reports' ? 'white' : '#4b5563'
-                }}
-                onMouseOver={(e) => {
-                  if (activeTab !== 'reports') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeTab !== 'reports') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#f3f4f6';
-                  }
-                }}
-              >
+              <button onClick={() => setActiveTab('reports')} className={activeTab === 'reports' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <ChartIcon />
-                <span style={{ marginLeft: '4px' }}>报告</span>
+                <span style={{ marginLeft: 8 }}>报告</span>
               </button>
-              <button
-                onClick={() => setActiveTab('tasks')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  backgroundColor: activeTab === 'tasks' ? '#2563eb' : '#f3f4f6',
-                  color: activeTab === 'tasks' ? 'white' : '#4b5563'
-                }}
-                onMouseOver={(e) => {
-                  if (activeTab !== 'tasks') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeTab !== 'tasks') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#f3f4f6';
-                  }
-                }}
-              >
+              <button onClick={() => setActiveTab('tasks')} className={activeTab === 'tasks' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <TaskIcon />
-                <span style={{ marginLeft: '4px' }}>统计</span>
+                <span style={{ marginLeft: 8 }}>统计</span>
               </button>
-              <button
-                onClick={() => setActiveTab('macro')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  backgroundColor: activeTab === 'macro' ? '#2563eb' : '#f3f4f6',
-                  color: activeTab === 'macro' ? 'white' : '#4b5563'
-                }}
-                onMouseOver={(e) => {
-                  if (activeTab !== 'macro') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeTab !== 'macro') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#f3f4f6';
-                  }
-                }}
-              >
+              <button onClick={() => setActiveTab('macro')} className={activeTab === 'macro' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <StatsIcon className="w-4 h-4" />
-                <span style={{ marginLeft: '4px' }}>宏观</span>
+                <span style={{ marginLeft: 8 }}>宏观</span>
               </button>
-              <button
-                onClick={() => setActiveTab('agent')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  backgroundColor: activeTab === 'agent' ? '#2563eb' : '#f3f4f6',
-                  color: activeTab === 'agent' ? 'white' : '#4b5563'
-                }}
-                onMouseOver={(e) => {
-                  if (activeTab !== 'agent') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeTab !== 'agent') {
-                    (e.target as HTMLButtonElement).style.backgroundColor = '#f3f4f6';
-                  }
-                }}
-              >
+              <button onClick={() => setActiveTab('agent')} className={activeTab === 'agent' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <StatsIcon className="w-4 h-4" />
-                <span style={{ marginLeft: '4px' }}>Agent</span>
+                <span style={{ marginLeft: 8 }}>Agent</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* 内容区域 */}
-        <div style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '8px', 
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', 
-          border: '1px solid #e5e7eb',
-          position: 'relative'
-        }}>
+        <div className="dark-card" style={{ position: 'relative' }}>
           {/* 刷新遮罩层 */}
           {tabRefreshing && (
             <div style={{
@@ -672,8 +432,8 @@ const Dashboard: React.FC = () => {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '8px',
+              backgroundColor: 'rgba(10, 12, 16, 0.85)',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -689,7 +449,7 @@ const Dashboard: React.FC = () => {
                 <LoadingSpinner />
                 <div style={{
                   fontSize: '14px',
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                   fontWeight: '500'
                 }}>
                   正在刷新数据...
@@ -705,7 +465,7 @@ const Dashboard: React.FC = () => {
                 <h3 style={{ 
                   fontSize: '18px', 
                   fontWeight: '500', 
-                  color: '#111827', 
+                  color: 'var(--text)', 
                   marginBottom: '16px' 
                 }}>
                   股票分析状态
@@ -720,160 +480,81 @@ const Dashboard: React.FC = () => {
                   opacity: refreshing ? 0.6 : 1,
                   transition: 'opacity 0.3s ease'
                 }}>
-                  <div style={{ 
+                  <div className="dark-stat" style={{ 
                     flex: '1',
                     minWidth: '200px',
-                    backgroundColor: '#f9fafb', 
-                    borderRadius: '8px', 
-                    padding: '24px 16px', 
-                    border: '1px solid #e5e7eb',
-                    textAlign: 'center',
                     transform: refreshing ? 'scale(0.98)' : 'scale(1)',
                     transition: 'transform 0.3s ease'
                   }}>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>
-                      {dashboardData.totalStocks}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>总数</div>
+                    <div className="dark-stat-value">{dashboardData.totalStocks}</div>
+                    <div className="dark-stat-label">总数</div>
                   </div>
                   
-                  <div style={{ 
+                  <div className="dark-stat" style={{ 
                     flex: '1',
                     minWidth: '200px',
-                    backgroundColor: '#f0fdf4', 
-                    borderRadius: '8px', 
-                    padding: '24px 16px', 
-                    border: '1px solid #bbf7d0',
-                    textAlign: 'center',
                     transform: refreshing ? 'scale(0.98)' : 'scale(1)',
-                    transition: 'transform 0.3s ease'
-                  }}>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#047857', marginBottom: '8px' }}>
-                      {dashboardData.completedReports}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#059669', fontWeight: '500' }}>完成</div>
+                    transition: 'transform 0.3s ease',
+                    '--stat-accent': 'var(--accent-lime)'
+                  } as React.CSSProperties}>
+                    <div className="dark-stat-value" style={{ color: 'var(--accent-lime)' }}>{dashboardData.completedReports}</div>
+                    <div className="dark-stat-label">完成</div>
                   </div>
                   
-                  <div style={{ 
+                  <div className="dark-stat" style={{ 
                     flex: '1',
                     minWidth: '200px',
-                    backgroundColor: '#eff6ff', 
-                    borderRadius: '8px', 
-                    padding: '24px 16px', 
-                    border: '1px solid #93c5fd',
-                    textAlign: 'center',
                     transform: refreshing ? 'scale(0.98)' : 'scale(1)',
-                    transition: 'transform 0.3s ease'
-                  }}>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1d4ed8', marginBottom: '8px' }}>
-                      {dashboardData.pendingReports}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#2563eb', fontWeight: '500' }}>进行</div>
+                    transition: 'transform 0.3s ease',
+                    '--stat-accent': 'var(--primary)'
+                  } as React.CSSProperties}>
+                    <div className="dark-stat-value" style={{ color: 'var(--primary)' }}>{dashboardData.pendingReports}</div>
+                    <div className="dark-stat-label">进行</div>
                   </div>
                   
-                  <div style={{ 
+                  <div className="dark-stat" style={{ 
                     flex: '1',
                     minWidth: '200px',
-                    backgroundColor: '#fef2f2', 
-                    borderRadius: '8px', 
-                    padding: '24px 16px', 
-                    border: '1px solid #fecaca',
-                    textAlign: 'center',
                     transform: refreshing ? 'scale(0.98)' : 'scale(1)',
-                    transition: 'transform 0.3s ease'
-                  }}>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#dc2626', marginBottom: '8px' }}>
-                      {dashboardData.failedReports}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#dc2626', fontWeight: '500' }}>失败</div>
+                    transition: 'transform 0.3s ease',
+                    '--stat-accent': 'var(--accent-red)'
+                  } as React.CSSProperties}>
+                    <div className="dark-stat-value" style={{ color: 'var(--accent-red)' }}>{dashboardData.failedReports}</div>
+                    <div className="dark-stat-label">失败</div>
                   </div>
                 </div>
               </div>
 
               {/* 数据表格 - 优化样式 */}
-              <div style={{ 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '8px', 
-                overflow: 'hidden',
-                backgroundColor: 'white',
+              <div className="dark-table-wrap" style={{ 
                 opacity: refreshing ? 0.6 : 1,
                 transform: refreshing ? 'scale(0.99)' : 'scale(1)',
                 transition: 'opacity 0.3s ease, transform 0.3s ease'
               }}>
                 <div style={{ 
-                  backgroundColor: '#f9fafb', 
+                  backgroundColor: 'var(--surface-dark)', 
                   padding: '16px', 
-                  borderBottom: '1px solid #e5e7eb',
+                  borderBottom: '1px solid var(--border-dark)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between'
                 }}>
-                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', margin: 0 }}>
                     股票分析详情
                   </h4>
-                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                  <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
                     共 {dashboardData.reports.length} 条记录
                   </span>
                 </div>
                 
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead style={{ backgroundColor: '#f9fafb' }}>
+                <table className="dark-table">
+                  <thead>
                     <tr>
-                      <th style={{ 
-                        padding: '12px 16px', 
-                        textAlign: 'left', 
-                        fontSize: '12px', 
-                        fontWeight: '500', 
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        股票代码
-                      </th>
-                      <th style={{ 
-                        padding: '12px 16px', 
-                        textAlign: 'left', 
-                        fontSize: '12px', 
-                        fontWeight: '500', 
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        最新版本
-                      </th>
-                      <th style={{ 
-                        padding: '12px 16px', 
-                        textAlign: 'left', 
-                        fontSize: '12px', 
-                        fontWeight: '500', 
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        执行状态
-                      </th>
-                      <th style={{ 
-                        padding: '12px 16px', 
-                        textAlign: 'left', 
-                        fontSize: '12px', 
-                        fontWeight: '500', 
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        更新时间
-                      </th>
-                      <th style={{ 
-                        padding: '12px 16px', 
-                        textAlign: 'center', 
-                        fontSize: '12px', 
-                        fontWeight: '500', 
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        操作
-                      </th>
+                      <th>股票代码</th>
+                      <th>最新版本</th>
+                      <th>执行状态</th>
+                      <th>更新时间</th>
+                      <th style={{ textAlign: 'center' }}>操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -883,21 +564,21 @@ const Dashboard: React.FC = () => {
                           padding: '48px 16px', 
                           textAlign: 'center', 
                           fontSize: '14px', 
-                          color: '#6b7280' 
+                          color: 'var(--text-muted)' 
                         }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <div style={{ 
-                              backgroundColor: '#f3f4f6', 
+                              backgroundColor: 'var(--surface-dark)', 
                               borderRadius: '50%', 
                               padding: '12px', 
                               marginBottom: '16px' 
                             }}>
-                              <ChartIcon className="w-6 h-6 text-gray-400" />
+                              <ChartIcon className="w-6 h-6" style={{ color: 'var(--text-muted)' }} />
                             </div>
-                            <div style={{ fontSize: '16px', fontWeight: '500', color: '#111827', marginBottom: '8px' }}>
+                            <div style={{ fontSize: '16px', fontWeight: '500', color: 'var(--text)', marginBottom: '8px' }}>
                               暂无数据
                             </div>
-                            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
                               当前没有股票报告数据
                             </div>
                           </div>
@@ -905,27 +586,11 @@ const Dashboard: React.FC = () => {
                       </tr>
                     ) : (
                       dashboardData.reports.map((report, index) => (
-                        <tr key={report.stockCode} style={{ 
-                          backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
-                          borderTop: '1px solid #f3f4f6'
-                        }}>
-                          <td style={{ 
-                            padding: '16px', 
-                            fontSize: '14px', 
-                            fontWeight: '600', 
-                            color: '#111827' 
-                          }}>
+                        <tr key={report.stockCode}>
+                          <td>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                               
-                              <div style={{ 
-                                backgroundColor: '#dbeafe', 
-                                borderRadius: '6px', 
-                                padding: '6px 8px', 
-                                marginRight: '0px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                color: '#1d4ed8'
-                              }}>
+                              <div className="dark-badge dark-badge-info">
                                 {report.name ? (
                                   <span style={{ marginRight: '8px' }}>{report.name}</span>
                                 ) : null}
@@ -938,75 +603,32 @@ const Dashboard: React.FC = () => {
                             </div>
                           </td>
                           <td style={{ 
-                            padding: '16px', 
-                            fontSize: '14px', 
-                            color: '#6b7280',
-                            fontFamily: 'monospace'
+                            fontFamily: "'Space Grotesk', monospace",
+                            color: 'var(--text-muted)'
                           }}>
                             {report.latestVersion || '未生成'}
                           </td>
-                          <td style={{ padding: '16px' }}>
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '4px 12px',
-                              borderRadius: '9999px',
-                              fontSize: '12px',
-                              fontWeight: '500',
-                              backgroundColor: report.status === 'completed' ? '#dcfce7' :
-                                             report.status === 'running' ? '#dbeafe' :
-                                             report.status === 'pending' ? '#fef3c7' :
-                                             report.status === 'failed' ? '#fee2e2' : '#f3f4f6',
-                              color: report.status === 'completed' ? '#166534' :
-                                    report.status === 'running' ? '#1e40af' :
-                                    report.status === 'pending' ? '#92400e' :
-                                    report.status === 'failed' ? '#991b1b' : '#374151'
-                            }}>
-                              <span style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                marginRight: '8px',
-                                backgroundColor: report.status === 'completed' ? '#10b981' :
-                                               report.status === 'running' ? '#3b82f6' :
-                                               report.status === 'pending' ? '#f59e0b' : '#ef4444'
-                              }}></span>
+                          <td>
+                            <span className={`dark-badge ${
+                              report.status === 'completed' ? 'dark-badge-success' :
+                              report.status === 'running' ? 'dark-badge-info' :
+                              report.status === 'pending' ? 'dark-badge-warning' :
+                              report.status === 'failed' ? 'dark-badge-error' : ''
+                            }`}>
                               {getStatusText(report.status)}
                             </span>
                           </td>
-                          <td style={{ 
-                            padding: '16px', 
-                            fontSize: '14px', 
-                            color: '#6b7280' 
-                          }}>
+                          <td style={{ color: 'var(--text-muted)' }}>
                             {report.lastUpdate || '未更新'}
                           </td>
-                          <td style={{ padding: '16px', textAlign: 'center' }}>
+                          <td style={{ textAlign: 'center' }}>
                             <button
                               onClick={() => retryReport(report.stockCode)}
                               disabled={report.status === 'running'}
+                              className="dark-btn dark-btn-ghost"
                               style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                padding: '6px 12px',
-                                fontSize: '12px',
-                                fontWeight: '500',
-                                borderRadius: '6px',
-                                border: '1px solid #3b82f6',
-                                backgroundColor: report.status === 'running' ? '#f3f4f6' : '#eff6ff',
-                                color: report.status === 'running' ? '#9ca3af' : '#1d4ed8',
-                                cursor: report.status === 'running' ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s'
-                              }}
-                              onMouseOver={(e) => {
-                                if (report.status !== 'running') {
-                                  (e.target as HTMLButtonElement).style.backgroundColor = '#dbeafe';
-                                }
-                              }}
-                              onMouseOut={(e) => {
-                                if (report.status !== 'running') {
-                                  (e.target as HTMLButtonElement).style.backgroundColor = '#eff6ff';
-                                }
+                                opacity: report.status === 'running' ? 0.5 : 1,
+                                cursor: report.status === 'running' ? 'not-allowed' : 'pointer'
                               }}
                             >
                               <ActionIcon className="w-3 h-3 mr-1" />
@@ -1034,13 +656,13 @@ const Dashboard: React.FC = () => {
                   gap: '16px'
                 }}>
                   <LoadingSpinner />
-                  <div style={{ fontSize: '15px', color: '#4b5563', fontWeight: 500 }}>正在加载宏观情绪数据...</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af' }}>请稍候，这可能需要几秒钟</div>
+                  <div style={{ fontSize: '15px', color: 'var(--text-muted)', fontWeight: 500 }}>正在加载宏观情绪数据...</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>请稍候，这可能需要几秒钟</div>
                 </div>
               ) : macroErrorMessage ? (
                 <div style={{
-                  border: '1px solid #fecaca',
-                  backgroundColor: '#fef2f2',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
                   borderRadius: '12px',
                   padding: '32px',
                   maxWidth: '520px',
@@ -1051,8 +673,8 @@ const Dashboard: React.FC = () => {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#fee2e2',
-                    color: '#b91c1c',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    color: 'var(--accent-red)',
                     borderRadius: '9999px',
                     width: '48px',
                     height: '48px',
@@ -1062,32 +684,15 @@ const Dashboard: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#991b1b', marginBottom: '12px' }}>宏观数据加载失败</h3>
-                  <p style={{ color: '#b91c1c', fontSize: '14px', marginBottom: '20px' }}>{macroErrorMessage}</p>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-red)', marginBottom: '12px' }}>宏观数据加载失败</h3>
+                  <p style={{ color: 'var(--accent-red)', fontSize: '14px', marginBottom: '20px' }}>{macroErrorMessage}</p>
                   <button
                     onClick={() => {
                       refreshMacroOverview();
                       refreshMacroReport(false);
                     }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '10px 20px',
-                      backgroundColor: '#b91c1c',
-                      color: 'white',
-                      borderRadius: '8px',
-                      border: 'none',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      cursor: 'pointer'
-                    }}
-                    onMouseOver={(e) => {
-                      (e.target as HTMLButtonElement).style.backgroundColor = '#7f1d1d';
-                    }}
-                    onMouseOut={(e) => {
-                      (e.target as HTMLButtonElement).style.backgroundColor = '#b91c1c';
-                    }}
+                    className="dark-btn dark-btn-primary"
+                    style={{ backgroundColor: 'var(--accent-red)' }}
                   >
                     <RefreshIcon />
                     <span style={{ marginLeft: '8px' }}>重新获取</span>
@@ -1101,17 +706,17 @@ const Dashboard: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '12px',
-                  color: '#6b7280'
+                  color: 'var(--text-muted)'
                 }}>
                   <div style={{
-                    backgroundColor: '#f3f4f6',
+                    backgroundColor: 'var(--surface-dark)',
                     borderRadius: '14px',
                     padding: '16px'
                   }}>
-                    <StatsIcon className="w-6 h-6 text-gray-400" />
+                    <StatsIcon className="w-6 h-6" style={{ color: 'var(--text-muted)' }} />
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>暂无宏观观测记录</div>
-                  <div style={{ fontSize: '14px', color: '#6b7280', maxWidth: '360px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>暂无宏观观测记录</div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '360px', textAlign: 'center' }}>
                     宏观情绪任务尚未生成结果。请稍后重试或检查后端调度状态。
                   </div>
                 </div>
@@ -1125,10 +730,10 @@ const Dashboard: React.FC = () => {
                     alignItems: 'flex-start'
                   }}>
                     <div>
-                      <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
+                      <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
                         宏观情绪总览
                       </h3>
-                      <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                      <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
                         最后更新：{formatDateTime(macroDataLastUpdated)}
                       </div>
                     </div>
@@ -1137,22 +742,19 @@ const Dashboard: React.FC = () => {
                         width: '10px',
                         height: '10px',
                         borderRadius: '50%',
-                        backgroundColor: macroStorageAvailable ? '#10b981' : '#ef4444',
+                        backgroundColor: macroStorageAvailable ? 'var(--accent-lime)' : 'var(--accent-red)',
                         boxShadow: macroStorageAvailable
-                          ? '0 0 0 4px rgba(16, 185, 129, 0.2)'
+                          ? '0 0 0 4px rgba(110, 231, 183, 0.2)'
                           : '0 0 0 4px rgba(239, 68, 68, 0.2)'
                       }}></div>
-                      <span style={{ fontSize: '14px', color: macroStorageAvailable ? '#047857' : '#b91c1c', fontWeight: 500 }}>
+                      <span style={{ fontSize: '14px', color: macroStorageAvailable ? 'var(--accent-lime)' : 'var(--accent-red)', fontWeight: 500 }}>
                         {macroStorageAvailable ? '数据连接正常' : '存储未连接'}
                       </span>
                     </div>
                   </div>
 
-                  <div style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '16px',
+                  <div className="dark-card" style={{
                     padding: '24px',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '24px'
@@ -1165,9 +767,9 @@ const Dashboard: React.FC = () => {
                       alignItems: 'flex-start'
                     }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280' }}>每日宏观日报</span>
-                        <span style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>{macroReport?.report_date ?? '—'}</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                        <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>每日宏观日报</span>
+                        <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>{macroReport?.report_date ?? '—'}</span>
+                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                           生成时间：{formatDateTime(macroReport?.generated_at ?? null)}
                         </span>
                       </div>
@@ -1175,15 +777,8 @@ const Dashboard: React.FC = () => {
                         <select
                           value={selectedReportDate}
                           onChange={(event) => setSelectedReportDate(event.target.value as 'latest' | string)}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '14px',
-                            color: '#1f2937',
-                            backgroundColor: '#ffffff',
-                            minWidth: '160px'
-                          }}
+                          className="dark-select"
+                          style={{ minWidth: '160px' }}
                           disabled={tabLoading || tabRefreshing}
                         >
                           <option value="latest">最新日报</option>
@@ -1196,30 +791,7 @@ const Dashboard: React.FC = () => {
                         <button
                           onClick={() => refreshMacroReport(true)}
                           disabled={tabLoading || tabRefreshing}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '10px 16px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            backgroundColor: tabLoading || tabRefreshing ? '#9ca3af' : '#2563eb',
-                            color: '#ffffff',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            cursor: tabLoading || tabRefreshing ? 'not-allowed' : 'pointer',
-                            transition: 'background-color 0.2s'
-                          }}
-                          onMouseOver={(event) => {
-                            if (!(tabLoading || tabRefreshing)) {
-                              (event.target as HTMLButtonElement).style.backgroundColor = '#1d4ed8';
-                            }
-                          }}
-                          onMouseOut={(event) => {
-                            if (!(tabLoading || tabRefreshing)) {
-                              (event.target as HTMLButtonElement).style.backgroundColor = '#2563eb';
-                            }
-                          }}
+                          className="dark-btn dark-btn-primary"
                         >
                           <RefreshIcon className="w-4 h-4" />
                           生成最新
@@ -1264,50 +836,26 @@ const Dashboard: React.FC = () => {
                           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                           gap: '16px'
                         }}>
-                          <div style={{
-                            padding: '16px',
-                            borderRadius: '12px',
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: '#f9fafb',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px'
-                          }}>
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>文章总量</span>
-                            <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827' }}>
+                          <div className="dark-stat">
+                            <span className="dark-stat-label">文章总量</span>
+                            <span className="dark-stat-value">
                               {(macroReportMetrics.article_count ?? macroTotalArticles ?? 0)}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#9ca3af' }}>覆盖的新闻数量</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>覆盖的新闻数量</span>
                           </div>
-                          <div style={{
-                            padding: '16px',
-                            borderRadius: '12px',
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: '#fefce8',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px'
-                          }}>
-                            <span style={{ fontSize: '12px', color: '#b45309' }}>平均情绪</span>
-                            <span style={{ fontSize: '22px', fontWeight: 700, color: '#92400e' }}>
+                          <div className="dark-stat" style={{ '--stat-accent': 'var(--accent-gold)' } as React.CSSProperties}>
+                            <span className="dark-stat-label">平均情绪</span>
+                            <span className="dark-stat-value" style={{ color: 'var(--accent-gold)' }}>
                               {formatSentiment(macroReportMetrics.average_sentiment ?? macroAverageSentiment)}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#b45309' }}>范围 [-1, 1]</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>范围 [-1, 1]</span>
                           </div>
-                          <div style={{
-                            padding: '16px',
-                            borderRadius: '12px',
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: '#ecfdf5',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px'
-                          }}>
-                            <span style={{ fontSize: '12px', color: '#047857' }}>积极主题占比</span>
-                            <span style={{ fontSize: '22px', fontWeight: 700, color: '#065f46' }}>
+                          <div className="dark-stat" style={{ '--stat-accent': 'var(--accent-lime)' } as React.CSSProperties}>
+                            <span className="dark-stat-label">积极主题占比</span>
+                            <span className="dark-stat-value" style={{ color: 'var(--accent-lime)' }}>
                               {formatPercent(macroReportMetrics.positive_topic_ratio ?? null)}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#047857' }}>最近一天</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>最近一天</span>
                           </div>
                         </div>
 
@@ -1318,67 +866,58 @@ const Dashboard: React.FC = () => {
                             gap: '16px'
                           }}>
                             {macroTopPositive.length > 0 && (
-                              <div style={{
-                                border: '1px solid #d1fae5',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                backgroundColor: '#f0fdf4',
+                              <div className="dark-card" style={{
+                                borderColor: 'rgba(110, 231, 183, 0.3)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '10px'
                               }}>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#047857' }}>积极焦点</span>
-                                <span style={{ fontSize: '16px', fontWeight: 600, color: '#065f46' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-lime)' }}>积极焦点</span>
+                                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
                                   {macroTopPositive[0].topic_display ?? macroTopPositive[0].topic}
                                 </span>
-                                <div style={{ fontSize: '13px', color: '#047857' }}>
+                                <div style={{ fontSize: '13px', color: 'var(--accent-lime)' }}>
                                   情绪 {formatSentiment(macroTopPositive[0].avg_sentiment)}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                   文章数 {macroTopPositive[0].article_count ?? 0}
                                 </div>
                               </div>
                             )}
                             {macroTopNegative.length > 0 && (
-                              <div style={{
-                                border: '1px solid #fee2e2',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                backgroundColor: '#fef2f2',
+                              <div className="dark-card" style={{
+                                borderColor: 'rgba(239, 68, 68, 0.3)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '10px'
                               }}>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#b91c1c' }}>风险关注</span>
-                                <span style={{ fontSize: '16px', fontWeight: 600, color: '#b91c1c' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-red)' }}>风险关注</span>
+                                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
                                   {macroTopNegative[0].topic_display ?? macroTopNegative[0].topic}
                                 </span>
-                                <div style={{ fontSize: '13px', color: '#b91c1c' }}>
+                                <div style={{ fontSize: '13px', color: 'var(--accent-red)' }}>
                                   情绪 {formatSentiment(macroTopNegative[0].avg_sentiment)}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                   文章数 {macroTopNegative[0].article_count ?? 0}
                                 </div>
                               </div>
                             )}
                             {macroMostCovered.length > 0 && (
-                              <div style={{
-                                border: '1px solid #dbeafe',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                backgroundColor: '#eff6ff',
+                              <div className="dark-card" style={{
+                                borderColor: 'rgba(17, 101, 116, 0.3)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '10px'
                               }}>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1d4ed8' }}>热度最高</span>
-                                <span style={{ fontSize: '16px', fontWeight: 600, color: '#1d4ed8' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}>热度最高</span>
+                                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
                                   {macroMostCovered[0].topic_display ?? macroMostCovered[0].topic}
                                 </span>
-                                <div style={{ fontSize: '13px', color: '#1d4ed8' }}>
+                                <div style={{ fontSize: '13px', color: 'var(--primary)' }}>
                                   文章数 {macroMostCovered[0].article_count ?? 0}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                   关键词 {(macroMostCovered[0].top_keywords || []).slice(0, 3).join(', ') || '—'}
                                 </div>
                               </div>
@@ -1389,11 +928,11 @@ const Dashboard: React.FC = () => {
                     ) : (
                       <div style={{
                         padding: '24px',
-                        border: '1px dashed #d1d5db',
+                        border: '1px dashed var(--border-dark)',
                         borderRadius: '12px',
                         textAlign: 'center',
-                        color: '#6b7280',
-                        backgroundColor: '#f9fafb'
+                        color: 'var(--text-muted)',
+                        backgroundColor: 'var(--surface-dark)'
                       }}>
                         暂无日报快照，可尝试切换日期或稍后刷新。
                       </div>
@@ -1405,49 +944,41 @@ const Dashboard: React.FC = () => {
                     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                     gap: '16px'
                   }}>
-                    <div style={{
-                      padding: '20px',
-                      borderRadius: '12px',
-                      border: '1px solid #e5e7eb',
-                      background: 'linear-gradient(135deg, #f8fafc, #ffffff)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px'
-                    }}>
-                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280' }}>主题数量</div>
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#111827' }}>{macroTopicCount}</div>
-                      <div style={{ fontSize: '13px', color: '#9ca3af' }}>跟踪的宏观主题</div>
+                    <div className="dark-stat">
+                      <div className="dark-stat-label">主题数量</div>
+                      <div className="dark-stat-value">{macroTopicCount}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>跟踪的宏观主题</div>
                     </div>
 
                     <div style={{
                       padding: '20px',
                       borderRadius: '12px',
-                      border: '1px solid #e5e7eb',
-                      background: 'linear-gradient(135deg, #ecfdf5, #ffffff)',
+                      border: '1px solid var(--border)',
+                      background: 'rgba(163, 230, 53, 0.05)',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '6px'
                     }}>
-                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#047857' }}>文章覆盖</div>
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{macroTotalArticles}</div>
-                      <div style={{ fontSize: '13px', color: '#047857' }}>收录的新闻篇目</div>
+                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-lime)' }}>文章覆盖</div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)' }}>{macroTotalArticles}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>收录的新闻篇目</div>
                     </div>
 
                     <div style={{
                       padding: '20px',
                       borderRadius: '12px',
-                      border: '1px solid #e5e7eb',
-                      background: 'linear-gradient(135deg, #eef2ff, #ffffff)',
+                      border: '1px solid var(--border)',
+                      background: 'rgba(99, 102, 241, 0.05)',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '10px'
                     }}>
-                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#4338ca' }}>平均情绪</div>
+                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--primary)' }}>平均情绪</div>
                       {(() => {
                         const tone = getSentimentTone(macroAverageSentiment);
                         return (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '28px', fontWeight: 700, color: '#1f2937' }}>{formatSentiment(macroAverageSentiment)}</span>
+                            <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)' }}>{formatSentiment(macroAverageSentiment)}</span>
                             <span style={{
                               padding: '4px 10px',
                               borderRadius: '9999px',
@@ -1461,21 +992,21 @@ const Dashboard: React.FC = () => {
                           </div>
                         );
                       })()}
-                      <div style={{ fontSize: '13px', color: '#4338ca' }}>情绪范围：[-1.00, 1.00]</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>情绪范围：[-1.00, 1.00]</div>
                     </div>
 
                     <div style={{
                       padding: '20px',
                       borderRadius: '12px',
-                      border: '1px solid #e5e7eb',
-                      background: 'linear-gradient(135deg, #fefce8, #ffffff)',
+                      border: '1px solid var(--border)',
+                      background: 'rgba(245, 158, 11, 0.05)',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '6px'
                     }}>
-                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#b45309' }}>模型运行</div>
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#92400e' }}>{macroModelRuns.length}</div>
-                      <div style={{ fontSize: '13px', color: '#b45309' }}>最近的训练记录</div>
+                      <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-amber)' }}>模型运行</div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)' }}>{macroModelRuns.length}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>最近的训练记录</div>
                     </div>
                   </div>
 
@@ -1499,14 +1030,13 @@ const Dashboard: React.FC = () => {
                         <div
                           key={`${topic.topic}-${index}`}
                           style={{
-                            border: '1px solid #e5e7eb',
+                            border: '1px solid var(--border)',
                             borderRadius: '12px',
                             padding: '20px',
-                            background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
+                            background: 'var(--surface-dark)',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '16px',
-                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)'
+                            gap: '16px'
                           }}
                         >
                           <div style={{
@@ -1517,24 +1047,24 @@ const Dashboard: React.FC = () => {
                             alignItems: 'baseline'
                           }}>
                             <div>
-                              <h4 style={{ fontSize: '18px', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>
+                              <h4 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>
                                 {topic.topic_display || topic.topic}
                               </h4>
-                              <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                                 观测时间：{formatDateTime(topic.observation_date)}
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '13px', color: '#6b7280' }}>文章数</span>
-                              <span style={{ fontSize: '18px', fontWeight: 600, color: '#1f2937' }}>{topic.article_count ?? 0}</span>
+                              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>文章数</span>
+                              <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)' }}>{topic.article_count ?? 0}</span>
                             </div>
                           </div>
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>情绪概览</span>
+                              <span style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 600 }}>情绪概览</span>
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
                                   {formatSentiment(topic.avg_sentiment)}
                                 </span>
                                 <span style={{
@@ -1555,22 +1085,22 @@ const Dashboard: React.FC = () => {
                               height: '10px',
                               borderRadius: '9999px',
                               overflow: 'hidden',
-                              backgroundColor: '#e5e7eb'
+                              backgroundColor: 'var(--border)'
                             }}>
                               <div style={{
                                 width: `${Math.min(Math.max(positiveRatio, 0), 1) * 100}%`,
-                                backgroundColor: '#10b981'
+                                backgroundColor: 'var(--accent-lime)'
                               }}></div>
                               <div style={{
                                 width: `${Math.min(Math.max(neutralRatio, 0), 1) * 100}%`,
-                                backgroundColor: '#f3f4f6'
+                                backgroundColor: 'rgba(255,255,255,0.1)'
                               }}></div>
                               <div style={{
                                 width: `${Math.min(Math.max(negativeRatio, 0), 1) * 100}%`,
-                                backgroundColor: '#f87171'
+                                backgroundColor: 'var(--accent-red)'
                               }}></div>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#6b7280' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
                               <span>积极 {formatPercent(positiveRatio)}</span>
                               <span>中性 {formatPercent(neutralRatio)}</span>
                               <span>消极 {formatPercent(negativeRatio)}</span>
@@ -1579,7 +1109,7 @@ const Dashboard: React.FC = () => {
 
                           {(topic.top_keywords || []).length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>核心关键词</div>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>核心关键词</div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                 {(topic.top_keywords || []).slice(0, 8).map((keyword, keywordIndex) => (
                                   <span
@@ -1587,8 +1117,8 @@ const Dashboard: React.FC = () => {
                                     style={{
                                       padding: '4px 10px',
                                       borderRadius: '9999px',
-                                      backgroundColor: '#eff6ff',
-                                      color: '#1d4ed8',
+                                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                      color: 'var(--primary)',
                                       fontSize: '12px',
                                       fontWeight: 500
                                     }}
@@ -1602,7 +1132,7 @@ const Dashboard: React.FC = () => {
 
                           {entityEntries.length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>关联实体</div>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>关联实体</div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {entityEntries.map(([label, values]) => (
                                   <div key={`${topic.topic}-entity-${label}`} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
@@ -1610,7 +1140,7 @@ const Dashboard: React.FC = () => {
                                       minWidth: '44px',
                                       fontSize: '12px',
                                       fontWeight: 600,
-                                      color: '#6b7280'
+                                      color: 'var(--text-muted)'
                                     }}>
                                       {getEntityLabel(label)}
                                     </span>
@@ -1621,9 +1151,10 @@ const Dashboard: React.FC = () => {
                                           style={{
                                             padding: '3px 8px',
                                             borderRadius: '6px',
-                                            backgroundColor: '#f4f4f5',
-                                            color: '#374151',
-                                            fontSize: '12px'
+                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                            color: 'var(--text-muted)',
+                                            fontSize: '12px',
+                                            border: '1px solid var(--border)'
                                           }}
                                         >
                                           {value}
@@ -1638,8 +1169,8 @@ const Dashboard: React.FC = () => {
 
                           {summaries.length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>要点摘要</div>
-                              <ul style={{ margin: 0, paddingLeft: '18px', color: '#4b5563', fontSize: '13px' }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>要点摘要</div>
+                              <ul style={{ margin: 0, paddingLeft: '18px', color: 'var(--text-muted)', fontSize: '13px' }}>
                                 {summaries.map((summary, summaryIndex) => (
                                   <li key={`${topic.topic}-summary-${summaryIndex}`} style={{ marginBottom: '6px' }}>
                                     {summary}
@@ -1651,15 +1182,15 @@ const Dashboard: React.FC = () => {
 
                           {references.length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>相关报道</div>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>相关报道</div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {references.map((reference, referenceIndex) => {
                                   const content = (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      <span style={{ fontSize: '13px', color: '#1d4ed8', fontWeight: 500 }}>
+                                      <span style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 500 }}>
                                         {reference.title || '新闻链接'}
                                       </span>
-                                      <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                         {formatDateTime(reference.published_at)}
                                       </span>
                                     </div>
@@ -1674,8 +1205,8 @@ const Dashboard: React.FC = () => {
                                       style={{
                                         padding: '10px 12px',
                                         borderRadius: '8px',
-                                        border: '1px solid #dbeafe',
-                                        backgroundColor: '#eff6ff',
+                                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
                                         textDecoration: 'none',
                                         display: 'block'
                                       }}
@@ -1688,8 +1219,8 @@ const Dashboard: React.FC = () => {
                                       style={{
                                         padding: '10px 12px',
                                         borderRadius: '8px',
-                                        border: '1px solid #e5e7eb',
-                                        backgroundColor: '#f9fafb'
+                                        border: '1px solid var(--border)',
+                                        backgroundColor: 'rgba(255,255,255,0.02)'
                                       }}
                                     >
                                       {content}
@@ -1707,8 +1238,8 @@ const Dashboard: React.FC = () => {
                   {macroModelRuns.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#111827' }}>模型训练结果</h3>
-                        <span style={{ fontSize: '13px', color: '#6b7280' }}>最新 {macroModelRuns.length} 次训练记录</span>
+                        <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)' }}>模型训练结果</h3>
+                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>最新 {macroModelRuns.length} 次训练记录</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
                         {macroModelRuns.map((run, runIndex) => {
@@ -1721,22 +1252,21 @@ const Dashboard: React.FC = () => {
                             <div
                               key={`${run.model_name || 'model'}-${run.run_date || runIndex}`}
                               style={{
-                                border: '1px solid #e5e7eb',
+                                border: '1px solid var(--border)',
                                 borderRadius: '12px',
                                 padding: '20px',
-                                backgroundColor: '#ffffff',
+                                backgroundColor: 'var(--surface-dark)',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '14px',
-                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)'
+                                gap: '14px'
                               }}
                             >
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                  <div style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                                  <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
                                     {run.model_name || '未命名模型'}
                                   </div>
-                                  <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                     {formatDateTime(run.run_date)}
                                   </span>
                                 </div>
@@ -1748,8 +1278,8 @@ const Dashboard: React.FC = () => {
                                         style={{
                                           padding: '4px 10px',
                                           borderRadius: '9999px',
-                                          backgroundColor: '#eef2ff',
-                                          color: '#3730a3',
+                                          backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                          color: 'var(--primary)',
                                           fontSize: '12px',
                                           fontWeight: 500
                                         }}
@@ -1763,7 +1293,7 @@ const Dashboard: React.FC = () => {
 
                               {coefficientEntries.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>重要系数</div>
+                                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>重要系数</div>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {coefficientEntries.map(([coefKey, coefValue]) => (
                                       <span
@@ -1771,8 +1301,8 @@ const Dashboard: React.FC = () => {
                                         style={{
                                           padding: '4px 10px',
                                           borderRadius: '9999px',
-                                          backgroundColor: '#fef3c7',
-                                          color: '#b45309',
+                                          backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                          color: 'var(--accent-amber)',
                                           fontSize: '12px',
                                           fontWeight: 500
                                         }}
@@ -1787,17 +1317,17 @@ const Dashboard: React.FC = () => {
                               {hasCalibration && (
                                 <div style={{
                                   borderRadius: '8px',
-                                  border: '1px dashed #e5e7eb',
-                                  backgroundColor: '#f9fafb',
+                                  border: '1px dashed var(--border)',
+                                  backgroundColor: 'rgba(255,255,255,0.02)',
                                   padding: '12px'
                                 }}>
-                                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937', marginBottom: '4px' }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>
                                     校准信息
                                   </div>
                                   <pre style={{
                                     margin: 0,
                                     fontSize: '12px',
-                                    color: '#6b7280',
+                                    color: 'var(--text-muted)',
                                     whiteSpace: 'pre-wrap',
                                     wordBreak: 'break-all'
                                   }}>
@@ -1808,8 +1338,8 @@ const Dashboard: React.FC = () => {
 
                               {notes.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>模型备注</div>
-                                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#4b5563', fontSize: '13px' }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>模型备注</div>
+                                  <ul style={{ margin: 0, paddingLeft: '18px', color: 'var(--text-muted)', fontSize: '13px' }}>
                                     {notes.map((note, noteIndex) => (
                                       <li key={`${runIndex}-note-${noteIndex}`} style={{ marginBottom: '4px' }}>
                                         {note}
@@ -1839,7 +1369,7 @@ const Dashboard: React.FC = () => {
             <div style={{ padding: '24px' }}>
               {/* 统计概览区域 */}
               <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>
                   任务执行统计
                 </h3>
                 
@@ -1854,38 +1384,38 @@ const Dashboard: React.FC = () => {
                   <div style={{ 
                     flex: '1',
                     minWidth: '300px',
-                    backgroundColor: '#f8fafc', 
+                    backgroundColor: 'var(--surface-dark)', 
                     borderRadius: '12px', 
                     padding: '24px', 
-                    border: '1px solid #e2e8f0'
+                    border: '1px solid var(--border)'
                   }}>
-                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '16px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>
                       总体成功率
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
                       <div style={{ 
                         fontSize: '36px', 
                         fontWeight: 'bold', 
-                        color: '#059669',
+                        color: 'var(--accent-lime)',
                         marginRight: '12px'
                       }}>
                         {dashboardData.totalStocks > 0 ? 
                           Math.round((dashboardData.completedReports / dashboardData.totalStocks) * 100) : 0}%
                       </div>
-                      <div style={{ fontSize: '14px', color: '#64748b' }}>
+                      <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
                         {dashboardData.completedReports} / {dashboardData.totalStocks} 任务完成
                       </div>
                     </div>
                     <div style={{ 
                       width: '100%', 
                       height: '8px', 
-                      backgroundColor: '#e2e8f0', 
+                      backgroundColor: 'var(--border)', 
                       borderRadius: '4px',
                       overflow: 'hidden'
                     }}>
                       <div style={{ 
                         height: '100%', 
-                        backgroundColor: '#10b981',
+                        backgroundColor: 'var(--accent-lime)',
                         width: `${dashboardData.totalStocks > 0 ? (dashboardData.completedReports / dashboardData.totalStocks) * 100 : 0}%`,
                         transition: 'width 0.3s ease'
                       }}></div>
@@ -1896,12 +1426,12 @@ const Dashboard: React.FC = () => {
                   <div style={{ 
                     flex: '1',
                     minWidth: '300px',
-                    backgroundColor: '#f8fafc', 
+                    backgroundColor: 'var(--surface-dark)', 
                     borderRadius: '12px', 
                     padding: '24px', 
-                    border: '1px solid #e2e8f0'
+                    border: '1px solid var(--border)'
                   }}>
-                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '16px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>
                       任务状态分布
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1910,13 +1440,13 @@ const Dashboard: React.FC = () => {
                           <div style={{ 
                             width: '12px', 
                             height: '12px', 
-                            backgroundColor: '#10b981', 
+                            backgroundColor: 'var(--accent-lime)', 
                             borderRadius: '50%', 
                             marginRight: '8px' 
                           }}></div>
-                          <span style={{ fontSize: '14px', color: '#374151' }}>已完成</span>
+                          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>已完成</span>
                         </div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
                           {dashboardData.completedReports}
                         </span>
                       </div>
@@ -1926,13 +1456,13 @@ const Dashboard: React.FC = () => {
                           <div style={{ 
                             width: '12px', 
                             height: '12px', 
-                            backgroundColor: '#3b82f6', 
+                            backgroundColor: 'var(--primary)', 
                             borderRadius: '50%', 
                             marginRight: '8px' 
                           }}></div>
-                          <span style={{ fontSize: '14px', color: '#374151' }}>进行中</span>
+                          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>进行中</span>
                         </div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
                           {dashboardData.pendingReports}
                         </span>
                       </div>
@@ -1942,13 +1472,13 @@ const Dashboard: React.FC = () => {
                           <div style={{ 
                             width: '12px', 
                             height: '12px', 
-                            backgroundColor: '#ef4444', 
+                            backgroundColor: 'var(--accent-red)', 
                             borderRadius: '50%', 
                             marginRight: '8px' 
                           }}></div>
-                          <span style={{ fontSize: '14px', color: '#374151' }}>失败</span>
+                          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>失败</span>
                         </div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
                           {dashboardData.failedReports}
                         </span>
                       </div>
@@ -1958,17 +1488,17 @@ const Dashboard: React.FC = () => {
                 
                 {/* 详细统计表格 */}
                 <div style={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'var(--surface-dark)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--border)',
                   overflow: 'hidden'
                 }}>
                   <div style={{ 
-                    backgroundColor: '#f8fafc', 
+                    backgroundColor: 'rgba(255,255,255,0.02)', 
                     padding: '16px 24px', 
-                    borderBottom: '1px solid #e2e8f0'
+                    borderBottom: '1px solid var(--border)'
                   }}>
-                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', margin: 0 }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', margin: 0 }}>
                       任务执行详情统计
                     </h4>
                   </div>
@@ -1981,56 +1511,56 @@ const Dashboard: React.FC = () => {
                     }}>
                       <div style={{ 
                         padding: '16px', 
-                        backgroundColor: '#f0f9ff', 
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)', 
                         borderRadius: '8px',
-                        border: '1px solid #bae6fd'
+                        border: '1px solid rgba(99, 102, 241, 0.3)'
                       }}>
-                        <div style={{ fontSize: '14px', color: '#0369a1', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--primary)', marginBottom: '4px' }}>
                           平均执行时间
                         </div>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>
                           ~ 2.5分钟
                         </div>
                       </div>
                       
                       <div style={{ 
                         padding: '16px', 
-                        backgroundColor: '#ecfdf5', 
+                        backgroundColor: 'rgba(163, 230, 53, 0.1)', 
                         borderRadius: '8px',
-                        border: '1px solid #a7f3d0'
+                        border: '1px solid rgba(163, 230, 53, 0.3)'
                       }}>
-                        <div style={{ fontSize: '14px', color: '#047857', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--accent-lime)', marginBottom: '4px' }}>
                           今日完成任务
                         </div>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#064e3b' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>
                           {dashboardData.completedReports}
                         </div>
                       </div>
                       
                       <div style={{ 
                         padding: '16px', 
-                        backgroundColor: '#fefce8', 
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)', 
                         borderRadius: '8px',
-                        border: '1px solid #fde047'
+                        border: '1px solid rgba(245, 158, 11, 0.3)'
                       }}>
-                        <div style={{ fontSize: '14px', color: '#a16207', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--accent-amber)', marginBottom: '4px' }}>
                           待处理任务
                         </div>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#713f12' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>
                           {dashboardData.pendingReports}
                         </div>
                       </div>
                       
                       <div style={{ 
                         padding: '16px', 
-                        backgroundColor: '#fef2f2', 
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)', 
                         borderRadius: '8px',
-                        border: '1px solid #fca5a5'
+                        border: '1px solid rgba(239, 68, 68, 0.3)'
                       }}>
-                        <div style={{ fontSize: '14px', color: '#dc2626', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--accent-red)', marginBottom: '4px' }}>
                           失败重试次数
                         </div>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#991b1b' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>
                           {dashboardData.failedReports}
                         </div>
                       </div>
@@ -2040,16 +1570,16 @@ const Dashboard: React.FC = () => {
                     <div style={{ 
                       marginTop: '24px', 
                       padding: '16px', 
-                      backgroundColor: '#f8fafc',
+                      backgroundColor: 'rgba(255,255,255,0.02)',
                       borderRadius: '8px',
-                      border: '1px solid #e2e8f0'
+                      border: '1px solid var(--border)'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>
                             系统运行状态
                           </div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             最后更新: {new Date().toLocaleString('zh-CN')}
                           </div>
                         </div>
@@ -2057,12 +1587,12 @@ const Dashboard: React.FC = () => {
                           <div style={{ 
                             width: '8px', 
                             height: '8px', 
-                            backgroundColor: '#10b981', 
+                            backgroundColor: 'var(--accent-lime)', 
                             borderRadius: '50%', 
                             marginRight: '8px',
                             animation: 'pulse 2s infinite'
                           }}></div>
-                          <span style={{ fontSize: '14px', color: '#059669', fontWeight: '500' }}>
+                          <span style={{ fontSize: '14px', color: 'var(--accent-lime)', fontWeight: '500' }}>
                             正常运行
                           </span>
                         </div>

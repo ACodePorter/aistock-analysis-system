@@ -562,7 +562,7 @@ engines:
   - name: bing news
     engine: bing_news
     shortcut: bin
-    disabled: true
+    disabled: false
 
   - name: bing videos
     engine: bing_videos
@@ -838,21 +838,21 @@ engines:
     categories: [images, web]
     ddg_category: images
     shortcut: ddi
-    disabled: true
+    disabled: false
 
   - name: duckduckgo videos
     engine: duckduckgo_extra
     categories: [videos, web]
     ddg_category: videos
     shortcut: ddv
-    disabled: true
+    disabled: false
 
   - name: duckduckgo news
     engine: duckduckgo_extra
     categories: [news, web]
     ddg_category: news
     shortcut: ddn
-    disabled: true
+    disabled: false
 
   - name: duckduckgo weather
     engine: duckduckgo_weather
@@ -1901,22 +1901,22 @@ engines:
   - name: sogou
     engine: sogou
     shortcut: sogou
-    disabled: true
+    disabled: false
 
   - name: sogou images
     engine: sogou_images
     shortcut: sogoui
-    disabled: true
+    disabled: false
 
   - name: sogou videos
     engine: sogou_videos
     shortcut: sogouv
-    disabled: true
+    disabled: false
 
   - name: sogou wechat
     engine: sogou_wechat
     shortcut: sogouw
-    disabled: true
+    disabled: false
 
   - name: soundcloud
     engine: soundcloud

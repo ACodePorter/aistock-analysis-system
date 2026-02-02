@@ -167,15 +167,15 @@ export default function DailyAnalysisPage() {
   ]
 
   return (
-    <div style={{ padding: 4 }}>
-      <h2 style={{ margin: '4px 0 12px', fontSize: 24 }}>每日分析总览</h2>
-      {error && <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 8 }}>加载失败：{error}</div>}
-      {loading && <div style={{ fontSize: 12 }}>加载中...</div>}
+    <div>
+      <h2 style={{ margin: '4px 0 12px', fontSize: 24, color: 'var(--text)' }}>每日分析总览</h2>
+      {error && <div style={{ color: 'var(--accent-red)', fontSize: 12, marginBottom: 8 }}>加载失败：{error}</div>}
+      {loading && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>加载中...</div>}
       {!loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <SectionCard title='Agent 概览' extra={<div style={{ display: 'flex', gap: 6 }}>
-            <button style={{ fontSize: 11, padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 6 }} onClick={loadAll}>刷新</button>
-            <button disabled={agentFSLoading} title='直接读取最新文件，绕过数据库缓存' style={{ fontSize: 11, padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 6, background: agentFSLoading ? '#94a3b8' : '#fff' }} onClick={async ()=>{
+            <button className="dark-btn dark-btn-secondary" onClick={loadAll}>刷新</button>
+            <button className="dark-btn dark-btn-secondary" disabled={agentFSLoading} title='直接读取最新文件，绕过数据库缓存' onClick={async ()=>{
               try {
                 setAgentFSLoading(true)
                 const latest = await fetchLatestAgentReport({ forceFilesystem: true })
@@ -184,7 +184,7 @@ export default function DailyAnalysisPage() {
                 console.warn('hard refresh failed', e)
               } finally { setAgentFSLoading(false) }
             }}>{agentFSLoading ? '硬刷新中...' : '硬刷新(文件)'}</button>
-            <button disabled={liveEnsuring || !agent || !Array.isArray((agent as any)?.stock_reports)} title='逐个股票补齐并回读最新计数' style={{ fontSize: 11, padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 6, background: liveEnsuring ? '#94a3b8' : '#fff' }} onClick={async ()=>{
+            <button className="dark-btn dark-btn-secondary" disabled={liveEnsuring || !agent || !Array.isArray((agent as any)?.stock_reports)} title='逐个股票补齐并回读最新计数' onClick={async ()=>{
               if (!agent || !Array.isArray((agent as any)?.stock_reports)) return
               try {
                 setLiveEnsuring(true)
@@ -197,7 +197,7 @@ export default function DailyAnalysisPage() {
                 console.warn('ensureNewsCounts failed', e)
               } finally { setLiveEnsuring(false) }
             }}>{liveEnsuring ? '校验中...' : '校验并补齐新闻数'}</button>
-            <button disabled={runningAgent} style={{ fontSize: 11, padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 6, background: runningAgent ? '#94a3b8' : '#fff', cursor: runningAgent ? 'not-allowed' : 'pointer' }} onClick={async ()=>{
+            <button className="dark-btn dark-btn-primary" disabled={runningAgent} onClick={async ()=>{
               if (runningAgent) return
               try {
                 setRunningAgent(true)
@@ -219,7 +219,7 @@ export default function DailyAnalysisPage() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {(agent.top_stocks || agent.top_symbols.map((s:string)=>({ symbol:s }))).map((s: any) => {
                         const label = s?.name ? `${s.name} (${s.symbol})` : s.symbol
-                        return <span key={s.symbol} style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 6 }}>{label}</span>
+                        return <span key={s.symbol} className="dark-badge dark-badge-info">{label}</span>
                       })}
                     </div>
                   </div>
@@ -227,9 +227,9 @@ export default function DailyAnalysisPage() {
                 {Array.isArray((agent as any)?.stock_reports) && (agent as any).stock_reports.length > 0 && (
                   <div style={{ marginTop: 8 }}>
                     <div style={{ fontWeight: 500, marginBottom: 4 }}>新闻计数（最新报告摘要{Object.keys(liveCounts).length>0 ? ' + 实时校验' : ''}）</div>
-                    <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid #f1f5f9', borderRadius: 6 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ background: '#f9fafb' }}>
+                    <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 6 }}>
+                      <table className="dark-table" style={{ width: '100%' }}>
+                        <thead>
                           <tr>
                             <th style={{ textAlign: 'left', padding: '4px 6px' }}>股票</th>
                             <th style={{ textAlign: 'right', padding: '4px 6px' }}>新闻数</th>
@@ -238,11 +238,11 @@ export default function DailyAnalysisPage() {
                         </thead>
                         <tbody>
                           {(agent as any).stock_reports.map((sr: any, idx: number) => (
-                            <tr key={sr.symbol || idx} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <tr key={sr.symbol || idx}>
                               <td style={{ padding: '4px 6px' }}>{(sr.name ? `${sr.name} (${sr.symbol})` : sr.symbol) || '-'}</td>
-                              <td style={{ padding: '4px 6px', textAlign: 'right', color: typeof sr.news_count === 'number' && sr.news_count < 5 ? '#dc2626' : '#111827' }}>{typeof sr.news_count === 'number' ? sr.news_count : '-'}</td>
+                              <td style={{ padding: '4px 6px', textAlign: 'right', color: typeof sr.news_count === 'number' && sr.news_count < 5 ? 'var(--accent-red)' : 'var(--text)' }}>{typeof sr.news_count === 'number' ? sr.news_count : '-'}</td>
                               {Object.keys(liveCounts).length>0 && (
-                                <td style={{ padding: '4px 6px', textAlign: 'right', color: (liveCounts[sr.symbol] ?? 0) < 5 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>
+                                <td style={{ padding: '4px 6px', textAlign: 'right', color: (liveCounts[sr.symbol] ?? 0) < 5 ? 'var(--accent-red)' : 'var(--accent-lime)', fontWeight: 600 }}>
                                   {liveCounts[sr.symbol] ?? '-'}
                                 </td>
                               )}
@@ -256,14 +256,14 @@ export default function DailyAnalysisPage() {
                 {agent.summary_markdown && (
                   <div style={{ marginTop: 8 }}>
                     <div style={{ fontWeight: 500, marginBottom: 4 }}>摘要：</div>
-                    <div style={{ background: '#f8fafc', padding: 8, borderRadius: 6 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: 8, borderRadius: 6, border: '1px solid var(--border)' }}>
                       <ReactMarkdown>{agent.summary_markdown}</ReactMarkdown>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: '#64748b' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 暂无最新分析结果。
                 <div style={{ marginTop: 6 }}>
                   可点击“生成报告”启动一次分析，稍候自动刷新。{lastRunJobId && <span> (job: {lastRunJobId.slice(0,8)})</span>}
@@ -274,12 +274,12 @@ export default function DailyAnalysisPage() {
 
           <SectionCard title='动态股票池' extra={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ fontSize: 11 }}>第 {poolPageNum} / {totalPages} 页</div>
-            <button disabled={poolPageNum <= 1} onClick={() => setPoolPageNum(p => Math.max(1, p - 1))} style={{ fontSize: 11, padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff' }}>上一页</button>
-            <button disabled={poolPageNum >= totalPages} onClick={() => setPoolPageNum(p => Math.min(totalPages, p + 1))} style={{ fontSize: 11, padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff' }}>下一页</button>
+            <button className="dark-btn dark-btn-secondary" disabled={poolPageNum <= 1} onClick={() => setPoolPageNum(p => Math.max(1, p - 1))}>上一页</button>
+            <button className="dark-btn dark-btn-secondary" disabled={poolPageNum >= totalPages} onClick={() => setPoolPageNum(p => Math.min(totalPages, p + 1))}>下一页</button>
           </div>}>
-            <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #f1f5f9', borderRadius: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead style={{ background: '#f9fafb', position: 'sticky', top: 0 }}>
+            <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
+              <table className="dark-table" style={{ width: '100%', fontSize: 12 }}>
+                <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>选择</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>股票</th>
@@ -291,26 +291,26 @@ export default function DailyAnalysisPage() {
                 </thead>
                 <tbody>
                   {poolItems.map(it => (
-                    <tr key={it.symbol} style={{ borderTop: '1px solid #f1f5f9', background: selectedSymbols.includes(it.symbol) ? '#eef2ff' : '#fff' }}>
+                    <tr key={it.symbol} className={selectedSymbols.includes(it.symbol) ? 'selected-row' : ''}>
                       <td style={{ padding: '4px 6px' }}>
                         <input type='checkbox' checked={selectedSymbols.includes(it.symbol)} onChange={() => toggleSymbol(it.symbol)} />
                       </td>
                       <td style={{ padding: '4px 6px' }}>{it.symbol}</td>
-                      <td style={{ padding: '4px 6px', color: '#64748b' }}>{it.industry || '-'}</td>
+                      <td style={{ padding: '4px 6px', color: 'var(--text-muted)' }}>{it.industry || '-'}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right' }}>{it.first_seen?.slice(0, 10)}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right' }}>{it.last_seen?.slice(0, 10)}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 500 }}>{it.days_active ?? '-'}</td>
                     </tr>
                   ))}
                   {poolItems.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: 12, textAlign: 'center', color: '#64748b' }}>暂无数据</td></tr>
+                    <tr><td colSpan={6} style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)' }}>暂无数据</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 11, color: '#64748b' }}>共 {poolPage?.total ?? 0} 条</div>
-              <button disabled={predictLoading || selectedSymbols.length === 0} onClick={runPrediction} style={{ fontSize: 12, padding: '6px 12px', border: 'none', borderRadius: 6, background: predictLoading ? '#94a3b8' : '#2563eb', color: '#fff', cursor: predictLoading || selectedSymbols.length === 0 ? 'not-allowed' : 'pointer' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>共 {poolPage?.total ?? 0} 条</div>
+              <button className="dark-btn dark-btn-primary" disabled={predictLoading || selectedSymbols.length === 0} onClick={runPrediction}>
                 {predictLoading ? '预测中...' : `预测 (${selectedSymbols.length})`}
               </button>
             </div>
@@ -322,48 +322,36 @@ export default function DailyAnalysisPage() {
               extra={
                 <div style={{ display: 'flex', gap: 4 }}>
                   {rangeBtns.map(r => (
-                    <button
-                      key={r.key}
-                      onClick={() => setReportRange(r.key)}
-                      style={{
-                        fontSize: 11,
-                        padding: '4px 8px',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 6,
-                        background: reportRange === r.key ? '#2563eb' : '#fff',
-                        color: reportRange === r.key ? '#fff' : '#334155',
-                        cursor: 'pointer'
-                      }}
-                    >{r.label}</button>
+                    <button key={r.key} onClick={() => setReportRange(r.key)} className={reportRange === r.key ? 'primary-button active' : 'soft-button'}>{r.label}</button>
                   ))}
                 </div>
               }
             >
-              {reportLoading && <div style={{ fontSize: 12, color: '#64748b' }}>加载中...</div>}
+              {reportLoading && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>加载中...</div>}
               {!reportLoading && reportData && reportData.price_data && reportData.price_data.length > 0 && (
                 <div style={{ fontSize: 12 }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                     {reportData.price_data.map(p => (
-                      <span key={p.date} style={{ background: '#f1f5f9', padding: '2px 4px', borderRadius: 4 }}>
+                      <span key={p.date} className="dark-badge dark-badge-info">
                         {p.date.slice(5)} {p.close != null ? p.close.toFixed(2) : '-'}
                       </span>
                     ))}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     显示 {reportData.price_data.length} 条价格数据{reportData.stale ? '（来自较早的缓存数据）' : ''}
                   </div>
                 </div>
               )}
               {!reportLoading && (!reportData || !reportData.price_data || reportData.price_data.length === 0) && (
-                <div style={{ fontSize: 12, color: '#64748b' }}>暂无价格数据</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>暂无价格数据</div>
               )}
             </SectionCard>
           )}
 
           <SectionCard title='预测结果'>
             {predictions.length > 0 ? (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead style={{ background: '#f9fafb' }}>
+              <table className="dark-table" style={{ width: '100%', fontSize: 12 }}>
+                <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>股票</th>
                     <th style={{ textAlign: 'right', padding: '6px 8px' }}>周期</th>
@@ -373,16 +361,16 @@ export default function DailyAnalysisPage() {
                 </thead>
                 <tbody>
                   {predictions.map((p, idx) => (
-                    <tr key={idx} style={{ borderTop: '1px solid #f1f5f9' }}>
+                    <tr key={idx}>
                       <td style={{ padding: '4px 6px' }}>{p.symbol}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right' }}>{p.horizon}d</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right' }}>{p.yhat.toFixed(2)}</td>
-                      <td style={{ padding: '4px 6px', textAlign: 'right', color: p.prob_up != null ? (p.prob_up > 0.55 ? '#16a34a' : p.prob_up < 0.45 ? '#dc2626' : '#64748b') : '#64748b' }}>{p.prob_up != null ? (p.prob_up * 100).toFixed(1) + '%' : '-'}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right', color: p.prob_up != null ? (p.prob_up > 0.55 ? 'var(--accent-lime)' : p.prob_up < 0.45 ? 'var(--accent-red)' : 'var(--text-muted)') : 'var(--text-muted)' }}>{p.prob_up != null ? (p.prob_up * 100).toFixed(1) + '%' : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            ) : <div style={{ fontSize: 12, color: '#64748b' }}>尚未生成预测，请先选择股票并点击预测。</div>}
+            ) : <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>尚未生成预测，请先选择股票并点击预测。</div>}
           </SectionCard>
         </div>
       )}

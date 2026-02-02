@@ -6,18 +6,18 @@ import {
 } from '../config/api';
 
 const highlightPalette: Record<string, { background: string; border: string; color: string }> = {
-  'positive-topic': { background: '#ecfdf5', border: '#34d399', color: '#047857' },
-  'negative-topic': { background: '#fef2f2', border: '#f87171', color: '#b91c1c' },
-  'high-volume': { background: '#eff6ff', border: '#60a5fa', color: '#1d4ed8' },
-  'model-update': { background: '#f5f3ff', border: '#a78bfa', color: '#5b21b6' },
+  'positive-topic': { background: 'rgba(110, 231, 183, 0.15)', border: '#6EE7B7', color: '#6EE7B7' },
+  'negative-topic': { background: 'rgba(239, 68, 68, 0.15)', border: '#EF4444', color: '#EF4444' },
+  'high-volume': { background: 'rgba(59, 130, 246, 0.15)', border: '#60a5fa', color: '#60a5fa' },
+  'model-update': { background: 'rgba(167, 139, 250, 0.15)', border: '#a78bfa', color: '#a78bfa' },
 };
 
 const getHighlightStyle = (type: string) => {
   return (
     highlightPalette[type] || {
-      background: '#f3f4f6',
-      border: '#d1d5db',
-      color: '#374151',
+      background: 'rgba(255,255,255,0.05)',
+      border: 'var(--border)',
+      color: 'var(--text-secondary)',
     }
   );
 };
@@ -132,24 +132,8 @@ const MacroReportPage: React.FC = () => {
   const hasReport = Boolean(report);
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: '#f9fafb',
-        padding: '32px 24px',
-        fontFamily: "'Inter', 'Noto Sans SC', sans-serif",
-        color: '#111827',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 24,
-        }}
-      >
+    <div>
+      <div className="page-container">
         <div
           style={{
             display: 'flex',
@@ -160,42 +144,22 @@ const MacroReportPage: React.FC = () => {
           }}
         >
           <div>
-            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>宏观洞察 · 每日更新</div>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#111827' }}>每日宏观日报</h1>
+            <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 4 }}>宏观洞察 · 每日更新</div>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: 'var(--text)' }}>每日宏观日报</h1>
             {report?.report_date && (
-              <div style={{ marginTop: 8, fontSize: 14, color: '#374151' }}>
+              <div style={{ marginTop: 8, fontSize: 14, color: 'var(--text)' }}>
                 报告日期：{report.report_date}
               </div>
             )}
             {lastUpdated && (
-              <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
+              <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>
                 最近更新：{formatDateTime(lastUpdated)}
               </div>
             )}
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 12,
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <select
-              value={selectedDate === 'latest' ? 'latest' : selectedDate}
-              onChange={handleDateChange}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: '1px solid #d1d5db',
-                minWidth: 180,
-                fontSize: 14,
-                color: '#111827',
-                backgroundColor: '#fff',
-              }}
-            >
+          <div className="page-actions">
+            <select value={selectedDate === 'latest' ? 'latest' : selectedDate} onChange={handleDateChange} className="app-search">
               <option value="latest">最新日报</option>
               {availableDates.map((date) => (
                 <option key={date} value={date}>
@@ -203,50 +167,19 @@ const MacroReportPage: React.FC = () => {
                 </option>
               ))}
             </select>
-            <button
-              onClick={() => handleRefresh(false)}
-              disabled={loading}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: '1px solid #d1d5db',
-                backgroundColor: '#fff',
-                color: '#111827',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.6 : 1,
-                fontSize: 14,
-              }}
-            >
-              {refreshing ? '刷新中…' : '重新加载' }
-            </button>
-            <button
-              onClick={() => handleRefresh(true)}
-              disabled={loading}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: 'none',
-                backgroundColor: '#2563eb',
-                color: '#fff',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.6 : 1,
-                fontWeight: 600,
-                fontSize: 14,
-              }}
-            >
-              {loading ? '生成中…' : '立即生成'}
-            </button>
+            <button onClick={() => handleRefresh(false)} disabled={loading} className="dark-btn dark-btn-secondary">{refreshing ? '刷新中…' : '重新加载'}</button>
+            <button onClick={() => handleRefresh(true)} disabled={loading} className="dark-btn dark-btn-primary">{loading ? '生成中…' : '立即生成'}</button>
           </div>
         </div>
 
         {error && (
           <div
             style={{
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 12,
               padding: '16px 20px',
-              color: '#b91c1c',
+              color: 'var(--accent-red)',
               fontSize: 14,
             }}
           >
@@ -259,7 +192,7 @@ const MacroReportPage: React.FC = () => {
             className="card-panel"
             style={{
               textAlign: 'center',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               fontSize: 14,
             }}
           >
@@ -272,7 +205,7 @@ const MacroReportPage: React.FC = () => {
             className="card-panel"
             style={{
               textAlign: 'center',
-              color: '#4b5563',
+              color: 'var(--text-muted)',
               fontSize: 14,
             }}
           >
@@ -283,7 +216,7 @@ const MacroReportPage: React.FC = () => {
         {hasReport && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <section className="card-panel">
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0f172a' }}>宏观情绪概览</h2>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: 'var(--text)' }}>宏观情绪概览</h2>
               <div
                 style={{
                   display: 'grid',
@@ -313,8 +246,8 @@ const MacroReportPage: React.FC = () => {
             {highlights.length > 0 && (
               <section className="card-panel">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <span style={{ fontSize: 20, fontWeight: 600, color: '#0f172a' }}>今日亮点</span>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>从情绪波动和模型洞察抓取的关键信号</span>
+                  <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)' }}>今日亮点</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>从情绪波动和模型洞察抓取的关键信号</span>
                 </div>
                 <div
                   style={{
@@ -341,7 +274,7 @@ const MacroReportPage: React.FC = () => {
                       >
                         <div style={{ fontSize: 13, opacity: 0.9 }}>#{item.type}</div>
                         <div style={{ fontSize: 16, fontWeight: 600 }}>{item.title}</div>
-                        <div style={{ fontSize: 13, lineHeight: 1.6, color: '#374151' }}>{item.detail}</div>
+                        <div style={{ fontSize: 13, lineHeight: 1.6, opacity: 0.85 }}>{item.detail}</div>
                       </div>
                     );
                   })}
@@ -357,13 +290,13 @@ const MacroReportPage: React.FC = () => {
 
             <section className="card-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0f172a' }}>主题详情</h2>
-                <span style={{ fontSize: 12, color: '#6b7280' }}>共 {topics.length} 个主题</span>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: 'var(--text)' }}>主题详情</h2>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>共 {topics.length} 个主题</span>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#f8fafc', textAlign: 'left' }}>
+                    <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'left' }}>
                       <th style={tableHeaderStyle}>主题</th>
                       <th style={tableHeaderStyle}>情绪</th>
                       <th style={tableHeaderStyle}>文章数</th>
@@ -375,16 +308,16 @@ const MacroReportPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {topics.map((topic) => (
-                      <tr key={topic.topic} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: '#fff' }}>
+                      <tr key={topic.topic} style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'transparent' }}>
                         <td style={tableCellStyle}>
-                          <div style={{ fontWeight: 600, color: '#0f172a' }}>{topic.topic_display || topic.topic}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{topic.topic_display || topic.topic}</div>
                           {topic.summaries && topic.summaries.length > 0 && (
-                            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>{topic.summaries.slice(0, 2).join('；')}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>{topic.summaries.slice(0, 2).join('；')}</div>
                           )}
                         </td>
                         <td style={tableCellStyle}>
                           <div style={{ fontWeight: 600 }}>{formatNumber(topic.avg_sentiment ?? null, 2)}</div>
-                          <div style={{ fontSize: 12, color: '#6b7280' }}>{sentimentLabel(topic.avg_sentiment ?? null)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sentimentLabel(topic.avg_sentiment ?? null)}</div>
                         </td>
                         <td style={tableCellStyle}>{formatNumber(topic.article_count ?? null, 0)}</td>
                         <td style={tableCellStyle}>{formatPercent(topic.positive_ratio ?? null, 1)}</td>
@@ -404,7 +337,7 @@ const MacroReportPage: React.FC = () => {
 
             {modelInsights && (modelInsights.latest_run || modelInsights.best_validation_run) && (
               <section className="card-panel">
-                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>模型洞察</h2>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>模型洞察</h2>
                 <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                   {modelInsights.latest_run && (
                     <ModelInsightCard title="最新运行" insight={modelInsights.latest_run} />
@@ -429,16 +362,9 @@ interface MetricCardProps {
 
 const MetricCard: React.FC<MetricCardProps> = ({ label, value }) => {
   return (
-    <div
-      style={{
-        backgroundColor: '#f8fafc',
-        borderRadius: 14,
-        padding: '18px 20px',
-        border: '1px solid #e2e8f0',
-      }}
-    >
-      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 600, color: '#0f172a' }}>{value}</div>
+    <div className="card-panel metric-card">
+      <div className="metric-title">{label}</div>
+      <div className="metric-value">{value}</div>
     </div>
   );
 };
@@ -452,43 +378,15 @@ interface TopicListCardProps {
 
 const TopicListCard: React.FC<TopicListCardProps> = ({ title, subtitle, topics, sentimentTone = 'positive' }) => {
   return (
-    <div className="card-panel" style={{ minHeight: 260 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#0f172a' }}>{title}</h3>
-        <span style={{ fontSize: 12, color: '#6b7280' }}>{topics.length} 个</span>
-      </div>
-      {subtitle && <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 16 }}>{subtitle}</div>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {topics.length === 0 && <div style={{ fontSize: 13, color: '#9ca3af' }}>暂无数据</div>}
+    <div className="card-panel topic-list-card" style={{ minHeight: 260 }}>
+      <div className="topic-list-title">{title}</div>
+      {subtitle && <div className="topic-list-subtitle">{subtitle}</div>}
+      <div className="topic-list">
+        {topics.length === 0 && <div className="no-data">暂无数据</div>}
         {topics.map((topic) => (
-          <div
-            key={topic.topic}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '12px 14px',
-              borderRadius: 12,
-              backgroundColor: sentimentTone === 'negative' ? '#fef2f2' : '#ecfdf5',
-              border: `1px solid ${sentimentTone === 'negative' ? '#fecaca' : '#bbf7d0'}`,
-              gap: 12,
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{topic.topic_display || topic.topic}</span>
-              {topic.summaries && topic.summaries.length > 0 && (
-                <span style={{ fontSize: 12, color: '#4b5563' }}>{topic.summaries[0]}</span>
-              )}
-              {topic.top_keywords && topic.top_keywords.length > 0 && (
-                <span style={{ fontSize: 12, color: '#6b7280' }}>关键词：{topic.top_keywords.slice(0, 4).join('、')}</span>
-              )}
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: sentimentTone === 'negative' ? '#b91c1c' : '#047857' }}>
-                {formatNumber(topic.avg_sentiment ?? null, 2)}
-              </div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>文章 {formatNumber(topic.article_count ?? null, 0)} 篇</div>
-            </div>
+          <div key={topic.topic} className="topic-item">
+            <div className="topic-name">{topic.topic_display || topic.topic}</div>
+            <div className="topic-score">{formatNumber(topic.avg_sentiment ?? null, 2)}</div>
           </div>
         ))}
       </div>
@@ -508,8 +406,8 @@ const ModelInsightCard: React.FC<ModelInsightCardProps> = ({ title, insight }) =
     <div
       style={{
         borderRadius: 16,
-        border: '1px solid #e5e7eb',
-        backgroundColor: '#f8fafc',
+        border: '1px solid var(--border)',
+        backgroundColor: 'var(--surface-dark)',
         padding: '20px 22px',
         display: 'flex',
         flexDirection: 'column',
@@ -517,23 +415,23 @@ const ModelInsightCard: React.FC<ModelInsightCardProps> = ({ title, insight }) =
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{title}</h3>
-        {run_date && <span style={{ fontSize: 12, color: '#6b7280' }}>{run_date}</span>}
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{title}</h3>
+        {run_date && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{run_date}</span>}
       </div>
-      {model_name && <div style={{ fontSize: 13, color: '#1f2937' }}>模型：{model_name}</div>}
+      {model_name && <div style={{ fontSize: 13, color: 'var(--text)' }}>模型：{model_name}</div>}
       {metrics && Object.keys(metrics).length > 0 && (
         <div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>关键指标</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>关键指标</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {Object.entries(metrics).map(([key, value]) => (
               <span
                 key={key}
                 style={{
                   fontSize: 12,
-                  backgroundColor: '#fff',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
                   borderRadius: 999,
                   padding: '6px 10px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--border)',
                 }}
               >
                 {key}: {typeof value === 'number' ? value.toFixed(3) : String(value)}
@@ -544,17 +442,17 @@ const ModelInsightCard: React.FC<ModelInsightCardProps> = ({ title, insight }) =
       )}
       {coefficients && Object.keys(coefficients).length > 0 && (
         <div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>权重系数</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>权重系数</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {Object.entries(coefficients).map(([key, value]) => (
               <span
                 key={key}
                 style={{
                   fontSize: 12,
-                  backgroundColor: '#fff',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
                   borderRadius: 999,
                   padding: '6px 10px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--border)',
                 }}
               >
                 {key}: {typeof value === 'number' ? value.toFixed(4) : String(value)}
@@ -564,10 +462,10 @@ const ModelInsightCard: React.FC<ModelInsightCardProps> = ({ title, insight }) =
         </div>
       )}
       {calibration && (
-        <div style={{ fontSize: 12, color: '#6b7280' }}>校准信息：{JSON.stringify(calibration)}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>校准信息：{JSON.stringify(calibration)}</div>
       )}
       {notes && notes.length > 0 && (
-        <ul style={{ margin: 0, paddingLeft: 18, color: '#4b5563', fontSize: 12 }}>
+        <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text)', fontSize: 12 }}>
           {notes.map((note, idx) => (
             <li key={`${note}-${idx}`}>{note}</li>
           ))}
@@ -580,7 +478,7 @@ const ModelInsightCard: React.FC<ModelInsightCardProps> = ({ title, insight }) =
 const tableHeaderStyle: React.CSSProperties = {
   padding: '12px 14px',
   fontSize: 12,
-  color: '#6b7280',
+  color: 'var(--text-muted)',
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
 };
@@ -588,7 +486,7 @@ const tableHeaderStyle: React.CSSProperties = {
 const tableCellStyle: React.CSSProperties = {
   padding: '14px 14px',
   verticalAlign: 'top',
-  color: '#111827',
+  color: 'var(--text)',
   fontSize: 13,
 };
 

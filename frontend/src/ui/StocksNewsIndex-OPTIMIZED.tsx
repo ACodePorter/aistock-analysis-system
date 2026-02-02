@@ -397,18 +397,19 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
   const currentPageNum = 1
 
   return (
-    <div className="border-l border-slate-200 p-4 space-y-4">
+    <div className="app-shell">
+      <div className="page-container">
       {/* 市场选择 */}
       <div className="flex items-center gap-2 flex-wrap">
-        <label className="font-semibold text-sm">市场：</label>
+        <label className="font-semibold text-sm text-[var(--text)]">市场：</label>
         {['A股', '港股', '美股', '全部'].map(m => (
           <button
             key={m}
             onClick={() => setMarket(m)}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               market === m
-                ? 'bg-blue-500 text-white'
-                : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                ? 'dark-btn-primary'
+                : 'dark-btn dark-btn-secondary'
             }`}
           >
             {m}
@@ -424,13 +425,13 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
           value={q}
           onChange={(e) => handleSearchChange(e.target.value)}
           onBlur={handleSearchBlur}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="app-search"
         />
       </div>
 
       {/* 统计信息 */}
       {progress && (
-        <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm space-y-1">
+        <div className="card-panel stats-panel">
           <div>📊 总股票数: <strong>{progress.total_stocks}</strong></div>
           <div>✅ 已完成: <strong>{progress.completed_profiles}</strong> ({(progress.progress_percentage || 0).toFixed(1)}%)</div>
           <div>📈 平均完成度: <strong>{(progress.average_completion || 0).toFixed(1)}%</strong></div>
@@ -453,7 +454,7 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
           <select
             value={refreshInterval}
             onChange={(e) => setRefreshInterval(Number(e.target.value))}
-            className="px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="app-search"
           >
             <option value={10}>10 秒</option>
             <option value={20}>20 秒</option>
@@ -466,15 +467,16 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
 
       {/* 数据表格 */}
       {loading ? (
-        <div className="text-center py-8 text-slate-500">加载中...</div>
+        <div className="text-center py-8 text-muted">加载中...</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-8 text-slate-500">暂无数据</div>
+        <div className="text-center py-8 text-muted">暂无数据</div>
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <div className="card-panel table-panel">
+            <table className="dark-table w-full text-sm">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200">
+                <tr>
                   <th className="px-3 py-2 text-left font-semibold">代码</th>
                   <th className="px-3 py-2 text-left font-semibold">名称</th>
                   <th className="px-3 py-2 text-center font-semibold">完成度</th>
@@ -484,26 +486,21 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
               </thead>
               <tbody>
                 {paginatedItems.map((item, idx) => (
-                  <tr key={`${item.symbol}-${idx}`} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-3 py-2 font-mono text-blue-600">{item.symbol}</td>
+                  <tr key={`${item.symbol}-${idx}`}>
+                    <td className="px-3 py-2 font-mono text-[var(--primary)]">{item.symbol}</td>
                     <td className="px-3 py-2">{item.name || '-'}</td>
                     <td className="px-3 py-2 text-center">
-                      <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div className="w-full dark-progress">
                         <div
-                          className="bg-green-500 h-2 rounded-full"
+                          className="dark-progress-bar primary"
                           style={{ width: `${item.completion_percentage || 0}%` }}
                         />
                       </div>
-                      <span className="text-xs text-slate-600">{(item.completion_percentage || 0).toFixed(0)}%</span>
+                      <span className="text-xs text-[var(--text-muted)]">{(item.completion_percentage || 0).toFixed(0)}%</span>
                     </td>
                     <td className="px-3 py-2 text-center">{item.article_count || 0}</td>
                     <td className="px-3 py-2 text-center">
-                      <button
-                        onClick={() => onOpen(item.symbol)}
-                        className="text-blue-500 hover:text-blue-700 font-medium text-xs"
-                      >
-                        查看
-                      </button>
+                      <button onClick={() => onOpen(item.symbol)} className="dark-btn dark-btn-secondary">查看</button>
                     </td>
                   </tr>
                 ))}
@@ -514,21 +511,21 @@ export default function StocksNewsIndex({ onOpen }: { onOpen: (symbol: string)=>
           {/* 分页控制 */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-slate-600">
+              <div className="text-sm text-muted">
                 共 <strong>{items.length}</strong> 条数据，第 <strong>{currentPageNum}</strong> 页，共 <strong>{totalPages}</strong> 页
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => loadPageOnDemand(Math.max(1, currentPageNum - 1))}
                   disabled={currentPageNum === 1}
-                  className="px-3 py-1 border border-slate-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                  className="soft-button"
                 >
                   上一页
                 </button>
                 <button
                   onClick={() => loadPageOnDemand(Math.min(totalPages, currentPageNum + 1))}
                   disabled={currentPageNum === totalPages}
-                  className="px-3 py-1 border border-slate-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                  className="soft-button"
                 >
                   下一页
                 </button>

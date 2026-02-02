@@ -91,105 +91,54 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
 
   if (loading && !profile) {
     return (
-      <div style={{
-        padding: 16,
-        border: '1px solid #e5e7eb',
-        borderRadius: 8,
-        background: '#f9fafb'
-      }}>
-        <div style={{ color: '#9ca3af', textAlign: 'center' }}>Loading profile...</div>
+      <div className="card-panel" style={{ padding: 16 }}>
+        <div className="text-muted" style={{ textAlign: 'center' }}>Loading profile...</div>
       </div>
     )
   }
 
   if (error && !profile) {
     return (
-      <div style={{
-        padding: 16,
-        border: '1px solid #fee2e2',
-        borderRadius: 8,
-        background: '#fef2f2'
-      }}>
-        <div style={{ color: '#991b1b' }}>Error: {error}</div>
-        <button 
-          onClick={handleRefresh}
-          style={{
-            marginTop: 8,
-            padding: '6px 12px',
-            border: '1px solid #fca5a5',
-            borderRadius: 6,
-            background: '#fff',
-            color: '#dc2626',
-            cursor: 'pointer'
-          }}
-        >
-          Retry
-        </button>
+      <div className="card-panel" style={{ padding: 16 }}>
+        <div style={{ color: 'var(--danger)' }}>Error: {error}</div>
+        <button onClick={handleRefresh} className="dark-btn dark-btn-secondary" style={{ marginTop: 8 }}>Retry</button>
       </div>
     )
   }
 
   if (!profile) {
     return (
-      <div style={{
-        padding: 16,
-        border: '1px solid #e5e7eb',
-        borderRadius: 8,
-        background: '#f9fafb'
-      }}>
-        <div style={{ color: '#9ca3af' }}>No profile data available</div>
+      <div className="card-panel" style={{ padding: 16 }}>
+        <div className="text-muted">No profile data available</div>
       </div>
     )
   }
 
   return (
-    <div style={{
-      border: '1px solid #e5e7eb',
-      borderRadius: 8,
-      background: '#fff',
-      overflow: 'hidden'
-    }}>
+    <div className="card-panel stock-profile-card">
       {/* Header */}
-      <div style={{
-        padding: 12,
-        borderBottom: '1px solid #e5e7eb',
-        background: '#f8fafc',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        cursor: 'pointer'
-      }} onClick={() => setExpanded(!expanded)}>
-        <div style={{ fontWeight: 600, fontSize: 14 }}>
-          📊 公司画像 - {profile.company_name || symbol}
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="card-header" onClick={() => setExpanded(!expanded)}>
+        <div className="card-title">📊 公司画像 - {profile.company_name || symbol}</div>
+        <div className="card-actions">
           <button
             onClick={(e) => {
               e.stopPropagation()
               handleRefresh()
             }}
-            style={{
-              padding: '4px 8px',
-              border: '1px solid #d1d5db',
-              borderRadius: 4,
-              background: '#fff',
-              fontSize: 12,
-              cursor: 'pointer'
-            }}
+            className="dark-btn dark-btn-ghost"
+            aria-label="refresh"
           >
             🔄
           </button>
-          <span style={{ fontSize: 12, color: '#6b7280' }}>
-            {expanded ? '▼' : '▶'}
-          </span>
+          <span style={{color: 'var(--text-muted)'}}>{expanded ? '▼' : '▶'}</span>
         </div>
       </div>
 
       {expanded && (
         <>
           {/* Basic Information */}
-          <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 8 }}>
+          <div style={{ padding: 12, borderBottom: '1px solid var(--border-dark)' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
               基本信息
             </div>
             <div style={{
@@ -199,11 +148,11 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
               fontSize: 13
             }}>
               <div>
-                <span style={{ color: '#6b7280' }}>公司名称</span>
+                <span style={{ color: 'var(--text-muted)' }}>公司名称</span>
                 <div style={{ fontWeight: 500 }}>{profile.company_name || '-'}</div>
               </div>
               <div>
-                <span style={{ color: '#6b7280' }}>行业</span>
+                <span style={{ color: 'var(--text-muted)' }}>行业</span>
                 <div style={{ fontWeight: 500 }}>
                   {profile.industry || '-'}
                   {profile.sub_industry ? ` / ${profile.sub_industry}` : ''}
@@ -214,8 +163,8 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
 
           {/* Key Metrics */}
           {metrics && (
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 8 }}>
+            <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
                 关键指标
               </div>
               <div style={{
@@ -225,37 +174,37 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
               }}>
                 <div style={{
                   padding: 8,
-                  background: '#f0f9ff',
+                  background: 'rgba(59, 130, 246, 0.1)',
                   borderRadius: 6,
-                  border: '1px solid #bfdbfe',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
                   fontSize: 12
                 }}>
-                  <div style={{ color: '#6b7280', fontSize: 11 }}>主要产品</div>
-                  <div style={{ fontWeight: 600, fontSize: 16, color: '#1e40af' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>主要产品</div>
+                  <div style={{ fontWeight: 600, fontSize: 16, color: '#3b82f6' }}>
                     {metrics.totalProducts}
                   </div>
                 </div>
                 <div style={{
                   padding: 8,
-                  background: '#fef2f2',
+                  background: 'rgba(239, 68, 68, 0.1)',
                   borderRadius: 6,
-                  border: '1px solid #fecaca',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
                   fontSize: 12
                 }}>
-                  <div style={{ color: '#6b7280', fontSize: 11 }}>竞争对手</div>
-                  <div style={{ fontWeight: 600, fontSize: 16, color: '#dc2626' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>竞争对手</div>
+                  <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--accent-red)' }}>
                     {metrics.competitorCount}
                   </div>
                 </div>
                 <div style={{
                   padding: 8,
-                  background: '#fef3c7',
+                  background: 'rgba(245, 158, 11, 0.1)',
                   borderRadius: 6,
-                  border: '1px solid #fcd34d',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
                   fontSize: 12
                 }}>
-                  <div style={{ color: '#6b7280', fontSize: 11 }}>风险因素</div>
-                  <div style={{ fontWeight: 600, fontSize: 16, color: '#b45309' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>风险因素</div>
+                  <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--accent-amber)' }}>
                     {metrics.riskFactorCount}
                   </div>
                 </div>
@@ -265,14 +214,14 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
 
           {/* Business Summary */}
           {profile.business_summary && (
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 6 }}>
+            <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 业务介绍
               </div>
               <div style={{
                 fontSize: 13,
                 lineHeight: 1.6,
-                color: '#334155',
+                color: 'var(--text)',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word'
               }}>
@@ -283,21 +232,14 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
 
           {/* Strategic Keywords */}
           {profile.strategic_keywords && (
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 6 }}>
+            <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 战略关键词
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {profile.strategic_keywords.split(/[,，;；、]/).map((kw, i) => (
                   kw.trim() && (
-                    <span key={i} style={{
-                      padding: '3px 8px',
-                      background: '#dbeafe',
-                      color: '#1e40af',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      border: '1px solid #bfdbfe'
-                    }}>
+                    <span key={i} className="dark-badge dark-badge-info">
                       {kw.trim()}
                     </span>
                   )
@@ -308,21 +250,14 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
 
           {/* Products */}
           {profile.products && (
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 6 }}>
+            <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 主要产品
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {profile.products.split(/[,，;；、]/).map((prod, i) => (
                   prod.trim() && (
-                    <span key={i} style={{
-                      padding: '4px 10px',
-                      background: '#ecfdf5',
-                      color: '#065f46',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      border: '1px solid #a7f3d0'
-                    }}>
+                    <span key={i} className="dark-badge dark-badge-success">
                       {prod.trim()}
                     </span>
                   )
@@ -333,21 +268,14 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
 
           {/* Competitors */}
           {profile.competitors && (
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 6 }}>
+            <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 竞争对手
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {profile.competitors.split(/[,，;；、]/).map((comp, i) => (
                   comp.trim() && (
-                    <span key={i} style={{
-                      padding: '4px 10px',
-                      background: '#fef3c7',
-                      color: '#b45309',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      border: '1px solid #fcd34d'
-                    }}>
+                    <span key={i} className="dark-badge dark-badge-warning">
                       {comp.trim()}
                     </span>
                   )
@@ -359,20 +287,13 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
           {/* Risk Factors */}
           {profile.risk_factors && (
             <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 风险因素
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {profile.risk_factors.split(/[,，;；、]/).map((risk, i) => (
                   risk.trim() && (
-                    <span key={i} style={{
-                      padding: '4px 10px',
-                      background: '#fee2e2',
-                      color: '#991b1b',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      border: '1px solid #fca5a5'
-                    }}>
+                    <span key={i} className="dark-badge dark-badge-error">
                       {risk.trim()}
                     </span>
                   )
@@ -384,9 +305,9 @@ export default function StockProfileCard({ symbol, onRefresh }: StockProfileCard
           {/* Metadata */}
           <div style={{
             padding: 8,
-            background: '#f9fafb',
+            background: 'rgba(255,255,255,0.02)',
             fontSize: 11,
-            color: '#9ca3af',
+            color: 'var(--text-muted)',
             display: 'flex',
             justifyContent: 'space-between'
           }}>

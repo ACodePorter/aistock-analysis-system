@@ -105,9 +105,10 @@ import os
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy import select, insert
+from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import select, insert, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pandas as pd
 
 from ..core.db import SessionLocal, engine
@@ -128,6 +129,49 @@ AHEAD = int(os.getenv("FORECAST_AHEAD_DAYS", "5"))
 
 logger = logging.getLogger(__name__)
 
+
+# ========== A股交易日判断 ==========
+def is_trading_day(d: date = None) -> bool:
+    """判断是否为A股交易日
+    
+    简化版：排除周末，可扩展添加节假日
+    """
+    if d is None:
+        d = date.today()
+    
+    # 周末不交易
+    if d.weekday() >= 5:
+        return False
+    
+    # 已知节假日（2026年示例，可从数据库或API获取）
+    holidays = {
+        # 2026年元旦
+        date(2026, 1, 1),
+        # 2026年春节 (预估)
+        date(2026, 1, 26), date(2026, 1, 27), date(2026, 1, 28),
+        date(2026, 1, 29), date(2026, 1, 30), date(2026, 2, 2),
+        # 可根据实际情况补充
+    }
+    
+    if d in holidays:
+        return False
+    
+    return True
+
+
+def get_last_trading_day(d: date = None) -> date:
+    """获取最近的交易日"""
+    if d is None:
+        d = date.today()
+    while not is_trading_day(d):
+        d = d - timedelta(days=1)
+    return d
+
+
+# 记录上次增量分析的时间戳
+_last_incremental_analysis_time = None
+_last_watchlist_hash = None
+
 async def run_daily_pipeline() -> bool:
     """执行日常数据管道。
 
@@ -147,18 +191,26 @@ async def run_daily_pipeline() -> bool:
             if not df.empty:
                 # 只有成功拉取数据时才更新数据库
                 for _, row in df.iterrows():
-                    stmt = pg_insert(PriceDaily).values(
-                        symbol=row["symbol"],
-                        trade_date=row["trade_date"],
-                        open=row["open"],
-                        high=row["high"],
-                        low=row["low"],
-                        close=row["close"],
-                        pct_chg=row.get("pct_chg"),
-                        vol=(int(row["vol"]) if pd.notna(row["vol"]) else None),
-                        amount=row.get("amount"),
-                    ).on_conflict_do_nothing(index_elements=["symbol", "trade_date"])
-                    session.execute(stmt)
+                    # Guarded insert to avoid requiring a unique constraint for ON CONFLICT
+                    insert_price_sql = """
+                    INSERT INTO prices_daily (symbol, trade_date, open, high, low, close, pct_chg, vol, amount)
+                    SELECT :symbol, :trade_date, :open, :high, :low, :close, :pct_chg, :vol, :amount
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM prices_daily WHERE symbol = :symbol AND trade_date = :trade_date
+                    )
+                    """
+                    params_price = {
+                        "symbol": row["symbol"],
+                        "trade_date": row["trade_date"],
+                        "open": row["open"],
+                        "high": row["high"],
+                        "low": row["low"],
+                        "close": row["close"],
+                        "pct_chg": row.get("pct_chg"),
+                        "vol": (int(row["vol"]) if pd.notna(row["vol"]) else None),
+                        "amount": row.get("amount"),
+                    }
+                    session.execute(text(insert_price_sql), params_price)
                 session.commit()
 
             # 无论是否成功拉取新数据，都从数据库读取已有数据进行信号/预测计算
@@ -171,17 +223,26 @@ async def run_daily_pipeline() -> bool:
                 continue
             sig_df = compute_signals(qdf)
             last_sig = sig_df.iloc[-1]
-            stmt_sig = pg_insert(Signal).values(
-                symbol=w.symbol,
-                trade_date=last_sig["trade_date"],
-                ma_short=last_sig["ma_s"],
-                ma_long=last_sig["ma_l"],
-                rsi=last_sig["rsi"],
-                macd=last_sig["macd"],
-                signal_score=last_sig["signal_score"],
-                action=last_sig["action"],
-            ).on_conflict_do_nothing(index_elements=["symbol", "trade_date"])
-            session.execute(stmt_sig)
+            # Use a guarded INSERT to avoid requiring a unique constraint for ON CONFLICT
+            # Insert only when no existing (symbol, trade_date) row exists
+            insert_sig_sql = """
+            INSERT INTO signals (symbol, trade_date, ma_short, ma_long, rsi, macd, signal_score, action)
+            SELECT :symbol, :trade_date, :ma_short, :ma_long, :rsi, :macd, :signal_score, :action
+            WHERE NOT EXISTS (
+                SELECT 1 FROM signals WHERE symbol = :symbol AND trade_date = :trade_date
+            )
+            """
+            params_sig = {
+                "symbol": w.symbol,
+                "trade_date": last_sig["trade_date"],
+                "ma_short": last_sig["ma_s"],
+                "ma_long": last_sig["ma_l"],
+                "rsi": last_sig["rsi"],
+                "macd": last_sig["macd"],
+                "signal_score": last_sig["signal_score"],
+                "action": last_sig["action"],
+            }
+            session.execute(text(insert_sig_sql), params_sig)
 
             # 使用增强预测模型
             prediction_result = predict_stock_price(qdf, w.symbol, ahead_days=AHEAD)
@@ -224,21 +285,28 @@ async def run_daily_pipeline() -> bool:
                 for _, r in ff_df.iterrows():
                     if r.get("trade_date") == today:
                         continue
-                    stmt_ff = pg_insert(FundFlowDaily).values(
-                        symbol=r["symbol"],
-                        trade_date=r["trade_date"],
-                        main_net=r.get("main_net"),
-                        main_ratio=r.get("main_ratio"),
-                        super_net=r.get("super_net"),
-                        super_ratio=r.get("super_ratio"),
-                        large_net=r.get("large_net"),
-                        large_ratio=r.get("large_ratio"),
-                        medium_net=r.get("medium_net"),
-                        medium_ratio=r.get("medium_ratio"),
-                        small_net=r.get("small_net"),
-                        small_ratio=r.get("small_ratio"),
-                    ).on_conflict_do_nothing(index_elements=["symbol","trade_date"])
-                    session.execute(stmt_ff)
+                    insert_ff_sql = """
+                    INSERT INTO fundflow_daily (symbol, trade_date, main_net, main_ratio, super_net, super_ratio, large_net, large_ratio, medium_net, medium_ratio, small_net, small_ratio)
+                    SELECT :symbol, :trade_date, :main_net, :main_ratio, :super_net, :super_ratio, :large_net, :large_ratio, :medium_net, :medium_ratio, :small_net, :small_ratio
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM fundflow_daily WHERE symbol = :symbol AND trade_date = :trade_date
+                    )
+                    """
+                    params_ff = {
+                        "symbol": r["symbol"],
+                        "trade_date": r["trade_date"],
+                        "main_net": r.get("main_net"),
+                        "main_ratio": r.get("main_ratio"),
+                        "super_net": r.get("super_net"),
+                        "super_ratio": r.get("super_ratio"),
+                        "large_net": r.get("large_net"),
+                        "large_ratio": r.get("large_ratio"),
+                        "medium_net": r.get("medium_net"),
+                        "medium_ratio": r.get("medium_ratio"),
+                        "small_net": r.get("small_net"),
+                        "small_ratio": r.get("small_ratio"),
+                    }
+                    session.execute(text(insert_ff_sql), params_ff)
                 session.commit()
     # Run enhanced daily news collection
     await run_enhanced_daily_news_collection()
@@ -543,6 +611,188 @@ def configure_scheduler_jobs(sched: AsyncIOScheduler) -> dict[str, tuple[int, in
         max_instances=1
     )
 
+    # ===== 每日分析中心定时任务 =====
+    # 每日分析任务（收盘后18:00）- 仅在交易日执行
+    analysis_hour = int(os.getenv('ANALYSIS_CRON_HOUR', '18'))
+    analysis_minute = int(os.getenv('ANALYSIS_CRON_MINUTE', '0'))
+    def _daily_analysis_job():
+        try:
+            from ..core.db import SessionLocal
+            from ..analysis.analysis_engine import AnalysisEngine
+            from ..analysis.report_generator import DailyReportGenerator
+            from datetime import date
+            import logging
+            _logger = logging.getLogger(__name__)
+            
+            # 检查是否为交易日
+            today = date.today()
+            if not is_trading_day(today):
+                _logger.info(f"Skipping daily analysis - {today} is not a trading day")
+                return
+            
+            _logger.info("Starting scheduled daily analysis job...")
+            with SessionLocal() as session:
+                engine = AnalysisEngine(session)
+                results = engine.analyze_watchlist(today)
+                saved = engine.save_analysis_results(results)
+                _logger.info(f"Daily analysis completed: {len(results)} stocks analyzed, {saved} saved")
+                
+                # 生成综合报告
+                if results:
+                    generator = DailyReportGenerator(session)
+                    generator.generate_report(today, results)
+                    _logger.info("Daily report generated")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f'Scheduled daily analysis failed: {e}', exc_info=True)
+    
+    sched.add_job(
+        _daily_analysis_job,
+        CronTrigger(hour=analysis_hour, minute=analysis_minute),
+        id='daily_analysis_job',
+        replace_existing=True,
+        max_instances=1
+    )
+
+    # 每周投资潜力评估（周日02:00）
+    def _weekly_potential_evaluation():
+        try:
+            from ..core.db import SessionLocal
+            from ..core.models import Watchlist
+            from ..analysis.analysis_engine import AnalysisEngine
+            from sqlalchemy import select
+            import logging
+            _logger = logging.getLogger(__name__)
+            
+            _logger.info("Starting weekly investment potential evaluation...")
+            with SessionLocal() as session:
+                watchlist = session.execute(
+                    select(Watchlist).where(Watchlist.enabled == True)
+                ).scalars().all()
+                
+                engine = AnalysisEngine(session)
+                removal_suggestions = 0
+                
+                for item in watchlist:
+                    result = engine.evaluate_investment_potential(item.symbol, lookback_days=90)
+                    item.investment_potential = result['investment_potential']
+                    if result['should_remove']:
+                        item.remove_suggested = True
+                        item.remove_reason = result['remove_reason']
+                        removal_suggestions += 1
+                
+                session.commit()
+                _logger.info(f"Potential evaluation completed: {len(watchlist)} stocks, {removal_suggestions} removal suggestions")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f'Weekly potential evaluation failed: {e}', exc_info=True)
+    
+    sched.add_job(
+        _weekly_potential_evaluation,
+        CronTrigger(day_of_week='sun', hour=2, minute=0),
+        id='weekly_potential_evaluation',
+        replace_existing=True,
+        max_instances=1
+    )
+
+    # ===== 每小时增量分析任务 =====
+    # 检测新增股票并进行分析
+    def _hourly_incremental_analysis():
+        global _last_incremental_analysis_time, _last_watchlist_hash
+        try:
+            from ..core.db import SessionLocal
+            from ..analysis.analysis_engine import AnalysisEngine
+            from ..analysis.report_generator import DailyReportGenerator
+            from sqlalchemy import select, func
+            from datetime import date, datetime
+            import logging
+            import hashlib
+            _logger = logging.getLogger(__name__)
+            
+            # 检查是否为交易日
+            today = date.today()
+            if not is_trading_day(today):
+                return
+            
+            # 检查是否在交易时间内（9:30-15:00）
+            now = datetime.now()
+            if not (9 <= now.hour < 16):
+                return
+            
+            with SessionLocal() as session:
+                # 计算当前观察列表的hash
+                watchlist = session.execute(
+                    select(Watchlist).where(Watchlist.enabled == True)
+                ).scalars().all()
+                
+                symbols = sorted([w.symbol for w in watchlist])
+                current_hash = hashlib.md5(",".join(symbols).encode()).hexdigest()
+                
+                # 检查是否有新增股票
+                if _last_watchlist_hash == current_hash:
+                    return  # 没有变化，跳过
+                
+                _logger.info(f"Watchlist changed, running incremental analysis...")
+                
+                # 找出新增的股票
+                new_symbols = []
+                if _last_watchlist_hash:
+                    # 查找今天新增的（added_at在今天）
+                    for w in watchlist:
+                        if w.added_at and w.added_at.date() == today:
+                            if not session.execute(
+                                select(DailyAnalysis).where(
+                                    DailyAnalysis.symbol == w.symbol,
+                                    DailyAnalysis.analysis_date == today
+                                )
+                            ).scalar_one_or_none():
+                                new_symbols.append(w.symbol)
+                else:
+                    # 首次运行，分析所有未分析的
+                    for w in watchlist:
+                        if not session.execute(
+                            select(DailyAnalysis).where(
+                                DailyAnalysis.symbol == w.symbol,
+                                DailyAnalysis.analysis_date == today
+                            )
+                        ).scalar_one_or_none():
+                            new_symbols.append(w.symbol)
+                
+                if new_symbols:
+                    _logger.info(f"Analyzing {len(new_symbols)} new stocks: {new_symbols}")
+                    engine = AnalysisEngine(session)
+                    
+                    for symbol in new_symbols:
+                        try:
+                            result = engine.analyze_stock(symbol, today)
+                            if result:
+                                engine.save_analysis_results([result])
+                                _logger.info(f"Incremental analysis completed for {symbol}")
+                        except Exception as e:
+                            _logger.warning(f"Failed to analyze {symbol}: {e}")
+                    
+                    # 重新生成当日报告
+                    results = engine.analyze_watchlist(today)
+                    if results:
+                        generator = DailyReportGenerator(session)
+                        generator.generate_report(today, results)
+                        _logger.info("Daily report regenerated after incremental analysis")
+                
+                _last_watchlist_hash = current_hash
+                _last_incremental_analysis_time = datetime.now()
+                
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f'Hourly incremental analysis failed: {e}', exc_info=True)
+    
+    sched.add_job(
+        _hourly_incremental_analysis,
+        IntervalTrigger(hours=1),
+        id='hourly_incremental_analysis',
+        replace_existing=True,
+        max_instances=1
+    )
+
     return {
         "daily": (hour, minute),
         "daily_post_close": (hour2, minute2),
@@ -551,6 +801,9 @@ def configure_scheduler_jobs(sched: AsyncIOScheduler) -> dict[str, tuple[int, in
         "macro_report": (macro_report_hour, macro_report_minute),
         "news_center": (f"*/{news_center_every_hours}", news_center_minute),
         "agent_daily": (agent_hour, agent_minute),
+        "daily_analysis": (analysis_hour, analysis_minute),
+        "weekly_potential": "Sunday 02:00",
+        "hourly_incremental": "every 1 hour",
         "timezone": TZ,
     }
 

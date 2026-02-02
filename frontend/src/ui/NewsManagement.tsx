@@ -169,17 +169,17 @@ export default function NewsManagement() {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#f9fafb',
+        backgroundColor: 'var(--surface-dark)',
         padding: '24px',
         fontFamily: "'Inter', 'Noto Sans SC', sans-serif",
-        color: '#111827',
+        color: 'var(--text)',
       }}
     >
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>新闻管理 · 实时索引</div>
-            <h2 style={{ margin: 0, fontSize: 22, color: '#0f172a' }}>新闻管理中枢</h2>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>新闻管理 · 实时索引</div>
+            <h2 style={{ margin: 0, fontSize: 22, color: 'var(--text)' }}>新闻管理中枢</h2>
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>

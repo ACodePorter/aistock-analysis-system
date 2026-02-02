@@ -142,36 +142,36 @@ export default function ProfileValidationManager() {
   }
 
   const statusColors: Record<string, string> = {
-    'invalid': 'bg-red-100 text-red-800',
-    'risk_alert': 'bg-orange-100 text-orange-800',
-    'suspended': 'bg-yellow-100 text-yellow-800',
-    'delisted': 'bg-red-100 text-red-800',
-    'unknown': 'bg-gray-100 text-gray-800'
+    'invalid': 'dark-badge dark-badge-danger',
+    'risk_alert': 'dark-badge dark-badge-warning',
+    'suspended': 'dark-badge dark-badge-warning',
+    'delisted': 'dark-badge dark-badge-danger',
+    'unknown': 'dark-badge'
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4">Invalid Profile Management</h2>
+    <div className="dark-card p-6">
+      <h2 className="text-2xl font-bold mb-4 text-[var(--text)]">Invalid Profile Management</h2>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-red-50 p-4 rounded">
-          <div className="text-sm text-gray-600">Invalid Profiles</div>
-          <div className="text-3xl font-bold text-red-600">{total}</div>
+        <div className="dark-card p-4 border-l-4 border-l-[var(--accent-red)]">
+          <div className="dark-stat-label">Invalid Profiles</div>
+          <div className="dark-stat-value text-[var(--accent-red)]">{total}</div>
         </div>
-        <div className="bg-blue-50 p-4 rounded">
-          <div className="text-sm text-gray-600">Selected</div>
-          <div className="text-3xl font-bold text-blue-600">{selectedSymbols.size}</div>
+        <div className="dark-card p-4 border-l-4 border-l-[var(--primary)]">
+          <div className="dark-stat-label">Selected</div>
+          <div className="dark-stat-value text-[var(--primary)]">{selectedSymbols.size}</div>
         </div>
-        <div className="bg-green-50 p-4 rounded">
-          <div className="text-sm text-gray-600">Page {page}</div>
-          <div className="text-3xl font-bold text-green-600">{total > 0 ? Math.ceil(total / pageSize) : 0}</div>
+        <div className="dark-card p-4 border-l-4 border-l-[var(--accent-lime)]">
+          <div className="dark-stat-label">Page {page}</div>
+          <div className="dark-stat-value text-[var(--accent-lime)]">{total > 0 ? Math.ceil(total / pageSize) : 0}</div>
         </div>
       </div>
 
       {/* Message */}
       {deleteMessage && (
-        <div className={`p-3 rounded mb-4 ${deleteMessage.includes('failed') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+        <div className={`p-3 rounded mb-4 ${deleteMessage.includes('failed') ? 'dark-badge-danger' : 'dark-badge-success'}`} style={{ display: 'block', width: '100%', borderRadius: '8px', padding: '12px' }}>
           {deleteMessage}
         </div>
       )}
@@ -180,21 +180,22 @@ export default function ProfileValidationManager() {
       <div className="mb-4 flex gap-2">
         <button
           onClick={toggleSelectAll}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="dark-btn dark-btn-secondary"
         >
           {selectedSymbols.size === invalidProfiles.length ? 'Deselect All' : 'Select All'}
         </button>
         <button
           onClick={restoreSelected}
           disabled={selectedSymbols.size === 0 || deleteInProgress}
-          className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50"
+          className="dark-btn dark-btn-primary disabled:opacity-50"
         >
           Restore Selected ({selectedSymbols.size})
         </button>
         <button
           onClick={deleteSelected}
           disabled={selectedSymbols.size === 0 || deleteInProgress}
-          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+          className="dark-btn disabled:opacity-50"
+          style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}
         >
           {deleteInProgress ? 'Deleting...' : `Delete Selected (${selectedSymbols.size})`}
         </button>
@@ -202,59 +203,59 @@ export default function ProfileValidationManager() {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+        <table className="dark-table w-full">
           <thead>
-            <tr className="bg-gray-200">
-              <th className="border p-2 w-12">
+            <tr>
+              <th className="w-12">
                 <input
                   type="checkbox"
                   checked={selectedSymbols.size > 0 && selectedSymbols.size === invalidProfiles.length}
                   onChange={toggleSelectAll}
                 />
               </th>
-              <th className="border p-2 text-left">Symbol</th>
-              <th className="border p-2 text-left">Company</th>
-              <th className="border p-2 text-left">Industry</th>
-              <th className="border p-2 text-left">Status</th>
-              <th className="border p-2 text-left">Reason</th>
-              <th className="border p-2 text-left">Last Validated</th>
+              <th>Symbol</th>
+              <th>Company</th>
+              <th>Industry</th>
+              <th>Status</th>
+              <th>Reason</th>
+              <th>Last Validated</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="border p-4 text-center">
+                <td colSpan={7} className="p-4 text-center text-[var(--text-muted)]">
                   Loading...
                 </td>
               </tr>
             ) : invalidProfiles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="border p-4 text-center text-gray-500">
+                <td colSpan={7} className="p-4 text-center text-[var(--text-muted)]">
                   No invalid profiles found
                 </td>
               </tr>
             ) : (
               invalidProfiles.map(profile => (
-                <tr key={profile.symbol} className="hover:bg-gray-50">
-                  <td className="border p-2">
+                <tr key={profile.symbol}>
+                  <td>
                     <input
                       type="checkbox"
                       checked={selectedSymbols.has(profile.symbol)}
                       onChange={() => toggleSelect(profile.symbol)}
                     />
                   </td>
-                  <td className="border p-2 font-mono text-sm">{profile.symbol}</td>
-                  <td className="border p-2 text-sm">{profile.company_name || 'N/A'}</td>
-                  <td className="border p-2 text-sm">{profile.industry || 'N/A'}</td>
-                  <td className="border p-2">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${statusColors[profile.validation_status] || statusColors['unknown']}`}>
+                  <td className="font-mono text-sm">{profile.symbol}</td>
+                  <td className="text-sm">{profile.company_name || 'N/A'}</td>
+                  <td className="text-sm">{profile.industry || 'N/A'}</td>
+                  <td>
+                    <span className={statusColors[profile.validation_status] || statusColors['unknown']}>
                       {profile.validation_status}
                     </span>
                   </td>
-                  <td className="border p-2 text-sm max-w-xs truncate" title={profile.validation_reason}>
+                  <td className="text-sm max-w-xs truncate" title={profile.validation_reason}>
                     {profile.validation_reason || 'N/A'}
                   </td>
-                  <td className="border p-2 text-xs">
+                  <td className="text-xs">
                     {profile.last_validated_at ? new Date(profile.last_validated_at).toLocaleDateString() : 'N/A'}
                   </td>
                 </tr>
@@ -266,21 +267,21 @@ export default function ProfileValidationManager() {
 
       {/* Pagination */}
       <div className="mt-4 flex justify-between items-center">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-[var(--text-muted)]">
           Total: {total} | Page: {page} of {Math.ceil(total / pageSize) || 1}
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page <= 1}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
+            className="dark-btn dark-btn-secondary disabled:opacity-50"
           >
             Previous
           </button>
           <button
             onClick={() => setPage(Math.min(Math.ceil(total / pageSize), page + 1))}
             disabled={page >= Math.ceil(total / pageSize)}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
+            className="dark-btn dark-btn-secondary disabled:opacity-50"
           >
             Next
           </button>

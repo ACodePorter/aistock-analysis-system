@@ -38,7 +38,17 @@ def get_db_url():
     user = os.getenv("POSTGRES_USER")
     pwd = os.getenv("POSTGRES_PASSWORD")
     host = os.getenv("POSTGRES_HOST", "db")
-    port = os.getenv("POSTGRES_PORT", "5432")
+    # Allow explicit override via POSTGRES_PORT; otherwise choose sensible default
+    # If host is localhost (or loopback), prefer 5433 which matches
+    # docker-compose.local.yml mapping "5433:5432" used in local dev.
+    env_port = os.getenv("POSTGRES_PORT")
+    if env_port:
+        port = env_port
+    else:
+        if host in ("localhost", "127.0.0.1", "::1"):
+            port = "5433"
+        else:
+            port = "5432"
     db   = os.getenv("POSTGRES_DB")
     return f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{db}"
 

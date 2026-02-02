@@ -38,6 +38,31 @@ class TaskType(str, Enum):
     TRAIN_MODEL = "train_model"
     FETCH_NEWS = "fetch_news"
     ANALYZE_NEWS = "analyze_news"
+    DAILY_ANALYSIS = "daily_analysis"
+    GENERATE_DAILY_REPORT = "generate_daily_report"
+    EVALUATE_POTENTIAL = "evaluate_potential"
+
+
+class RecommendationType(str, Enum):
+    """推荐类型"""
+    BUY = "buy"
+    HOLD = "hold"
+    SELL = "sell"
+    WATCH = "watch"
+
+
+class RiskLevel(str, Enum):
+    """风险等级"""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class WatchlistSource(str, Enum):
+    """观察列表来源"""
+    MANUAL = "manual"           # 用户手动添加
+    TOP_MOVERS = "top_movers"   # 每日涨跌榜自动筛选
+    RECOMMENDATION = "recommendation"  # 系统推荐
 
 
 class NewsCategory(str, Enum):
@@ -53,6 +78,39 @@ class SentimentType(str, Enum):
     POSITIVE = "positive"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
+
+
+class WatchlistStatus(str, Enum):
+    """观察列表股票状态"""
+    ACTIVE = "active"              # 积极监控
+    COOLING = "cooling"            # 冷却期（暂停监控）
+    ARCHIVED = "archived"          # 归档
+
+
+class SourceLevel(str, Enum):
+    """信源等级（按可信度和权重排序）"""
+    L1 = "L1"  # 法定/监管披露（硬事实）
+    L2 = "L2"  # 专业财经媒体（传播层）
+    L3 = "L3"  # 官方/行业机构（宏观行业信号）
+    L4 = "L4"  # 研究与机构观点（解释层）
+
+
+class EventType(str, Enum):
+    """事件类型分类"""
+    EARNINGS = "earnings"          # 业绩
+    BUYBACK = "buyback"            # 回购
+    PENALTY = "penalty"            # 处罚
+    MERGER = "merger"              # 并购
+    CONTRACT = "contract"          # 重大合同
+    RISK_ALERT = "risk_alert"      # 风险提示
+    ANNOUNCEMENT = "announcement"  # 公告
+    LITIGATION = "litigation"      # 诉讼
+
+
+class BriefingPeriod(str, Enum):
+    """简报周期"""
+    DAILY = "daily"                # 日报
+    WEEKLY = "weekly"              # 周报
 
 
 # =========================
@@ -71,12 +129,18 @@ class Base(DeclarativeBase):
 
 
 class Watchlist(Base):
-    """自选股票表
+    """自选股票表（扩展：支持评分、来源、投资潜力评估、生命周期管理）
 
     - symbol: 股票代码（如 600519.SH）唯一
-    - enabled: 是否启用监控
+    - status: 观察列表状态（active/cooling/archived）
     - sector/name: 行业与名称（用于展示和新闻关键词）
     - last_updated_at: 最后一次更新完成时间（表示资讯更新状态）
+    - source: 来源（manual/top20|top_movers）
+    - score: 综合评分 0-100
+    - investment_potential: 投资潜力评估 0-100
+    - remove_suggested: 是否建议移除（长期无潜力）
+    - remove_reason: 建议移除原因
+    - clean_rule_tag: 清洗策略标签
     """
 
     __tablename__ = "watchlist"
@@ -85,12 +149,34 @@ class Watchlist(Base):
     symbol: Mapped[str] = mapped_column(String(16), unique=True, index=True)
     name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     sector: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # 生命周期管理
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否启用（deprecated，保留兼容性）")
+    status: Mapped[str] = mapped_column(String(20), default="active", comment="active/cooling/archived")
     added_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP, default=datetime.datetime.utcnow
     )
+    last_active_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        TIMESTAMP, nullable=True, comment="最后活跃时间"
+    )
     last_updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP, nullable=True, comment="最后一次资讯更新完成时间"
+    )
+    
+    # 扩展字段
+    source: Mapped[str] = mapped_column(String(32), default="manual", comment="来源: manual/top20")
+    score: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="综合评分 0-100")
+    investment_potential: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="投资潜力评估 0-100")
+    remove_suggested: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否建议移除")
+    remove_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="建议移除原因")
+    last_analysis_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True, comment="最后分析时间")
+    clean_rule_tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="清洗策略标签")
+
+    __table_args__ = (
+        Index("idx_watchlist_status", "status"),
+        Index("idx_watchlist_source", "source"),
+        Index("idx_watchlist_score", "score"),
+        Index("idx_watchlist_remove_suggested", "remove_suggested"),
     )
 
 
@@ -371,7 +457,7 @@ class AgentDailyReport(Base):
 
 
 class NewsSource(Base):
-    """新闻来源表（域名白/黑名单、可信度等）"""
+    """新闻来源表（域名白/黑名单、可信度、信源等级等）"""
 
     __tablename__ = "news_sources"
 
@@ -379,6 +465,10 @@ class NewsSource(Base):
     name: Mapped[str] = mapped_column(String(100))
     domain: Mapped[str] = mapped_column(String(255), unique=True)
     category: Mapped[str] = mapped_column(String(50))  # NewsCategory
+    
+    # 新增：信源等级（L1-L4）
+    source_level: Mapped[str] = mapped_column(String(2), default="L2", comment="L1/L2/L3/L4")
+    
     reliability_score: Mapped[float] = mapped_column(Float, default=0.5)
     language: Mapped[str] = mapped_column(String(10), default="zh-CN")
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -386,6 +476,11 @@ class NewsSource(Base):
 
     # 关系
     articles = relationship("NewsArticle", back_populates="source")
+    
+    __table_args__ = (
+        Index("idx_news_source_level", "source_level"),
+        Index("idx_news_source_enabled", "enabled"),
+    )
 
 
 class NewsArticle(Base):
@@ -555,6 +650,95 @@ class NewsQueryTemplate(Base):
         Index("idx_nqt_scope_target", "scope", "target"),
         Index("idx_nqt_enabled_priority", "enabled", "priority"),
     )
+
+
+# =========================
+# 事件中心化表
+# =========================
+
+class Event(Base):
+    """自动/半自动识别的结构化事件。（事件驱动系统核心）
+
+    设计要点：
+    - event_id：全局唯一标识
+    - symbol：关联股票
+    - event_type：事件分类（枚举）
+    - event_date：事件发生/披露日期
+    - source_level：信源等级(L1-L4)
+    - confidence：置信度(0-1)
+    - summary：LLM生成的结构化摘要
+    - entities：JSONB，主体/对手方/金额/产品等
+    - evidence：JSONB，引用的article_id和url列表
+    """
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    event_type: Mapped[str] = mapped_column(String(50), index=True)
+    event_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    
+    # 信源与可信度
+    source_level: Mapped[str] = mapped_column(String(2), comment="L1/L2/L3/L4")
+    confidence: Mapped[float] = mapped_column(Float, default=0.5, comment="置信度 0-1")
+    
+    # 内容
+    summary: Mapped[str] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # 结构化数据
+    entities: Mapped[Optional[JSONB]] = mapped_column(JSONB, nullable=True, comment="主体/对手方/金额等")
+    evidence: Mapped[Optional[JSONB]] = mapped_column(JSONB, nullable=True, comment="article_id/url列表")
+    
+    # 元数据
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    merged_into: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="合并目标event_id")
+    
+    __table_args__ = (
+        Index("idx_event_symbol_date", "symbol", "event_date"),
+        Index("idx_event_type", "event_type"),
+        Index("idx_event_source_level", "source_level"),
+    )
+
+
+class Briefing(Base):
+    """简报表：日报/周报 LLM生成的综合分析报告。
+
+    设计要点：
+    - symbol：关联股票（可选，为null表示市场综合简报）
+    - period：daily/weekly
+    - period_start/period_end：报告覆盖的时间窗
+    - risk_summary：风险总结（必须引用event_id）
+    - opportunity_summary：机会总结
+    - key_events：JSONB列表，关键事件及排序
+    """
+    __tablename__ = "briefings"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    briefing_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    symbol: Mapped[Optional[str]] = mapped_column(String(16), nullable=True, index=True)
+    period: Mapped[str] = mapped_column(String(10), comment="daily/weekly")
+    period_start: Mapped[datetime.date] = mapped_column(Date)
+    period_end: Mapped[datetime.date] = mapped_column(Date)
+    
+    # 内容
+    risk_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    opportunity_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    key_events: Mapped[Optional[JSONB]] = mapped_column(JSONB, nullable=True, comment="关键事件id/摘要/排序")
+    
+    # LLM元数据
+    llm_model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    llm_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    
+    # 生成时间
+    generated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    
+    __table_args__ = (
+        Index("idx_briefing_symbol_period", "symbol", "period"),
+        Index("idx_briefing_period_start", "period_start"),
+    )
+
 
 # =========================
 # 知识库扩展：日特征 / 事件 / 相关性 / 模型注册
@@ -767,4 +951,603 @@ class StockProfile(Base):
         Index("idx_stock_profile_symbol", "symbol"),
         Index("idx_stock_profile_industry", "industry"),
         Index("idx_stock_profile_is_valid", "is_valid"),
+    )
+
+
+# =========================
+# 每日分析中心相关表
+# =========================
+
+
+class DailyAnalysis(Base):
+    """每日股票分析记录（历史可追溯）
+
+    每日对观察列表中的每只股票进行分析，记录评分、推荐、风险等信息。
+    """
+    __tablename__ = "daily_analysis"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    analysis_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+
+    # 综合评分（0-100）
+    total_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # 分项评分
+    technical_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="技术面评分 0-100")
+    fundamental_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="基本面评分 0-100")
+    sentiment_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="新闻情感评分 0-100")
+    fund_flow_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="资金流向评分 0-100")
+    cycle_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="周期规律评分 0-100")
+    
+    # 推荐与风险
+    recommendation: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="buy/hold/sell/watch")
+    risk_level: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="low/medium/high")
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="置信度 0-1")
+    
+    # 价格与指标快照
+    close_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    pct_change: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    volume: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    
+    # 技术指标
+    ma5: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ma20: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    rsi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    macd: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # 新闻情感
+    news_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    news_sentiment_avg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # 分析摘要
+    analysis_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="AI分析摘要")
+    key_factors: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="关键因素 JSON")
+    risk_factors: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="风险因素 JSON")
+    
+    # 元数据
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_daily_analysis_symbol_date", "symbol", "analysis_date", unique=True),
+        Index("idx_daily_analysis_date", "analysis_date"),
+        Index("idx_daily_analysis_recommendation", "recommendation"),
+        Index("idx_daily_analysis_score", "total_score"),
+    )
+
+
+class DailyReport(Base):
+    """每日综合分析报告（LLM 生成）
+
+    每日生成一份综合报告，包含所有观察列表股票的综合分析。
+    """
+    __tablename__ = "daily_reports"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    report_date: Mapped[datetime.date] = mapped_column(Date, unique=True, index=True)
+    
+    # 统计摘要
+    total_stocks: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="分析股票数")
+    buy_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="推荐买入数")
+    hold_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="建议持有数")
+    sell_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="建议卖出数")
+    
+    # 市场概况
+    market_sentiment: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="bullish/bearish/neutral")
+    market_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="市场概况摘要")
+    
+    # 推荐列表 (JSON)
+    buy_recommendations: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="推荐买入列表 JSON")
+    hold_recommendations: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="建议持有列表 JSON")
+    sell_recommendations: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="建议卖出列表 JSON")
+    
+    # LLM 综合分析
+    comprehensive_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="LLM综合分析报告")
+    risk_warnings: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="风险预警 JSON")
+    opportunities: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="机会提示 JSON")
+    
+    # 行业分析
+    sector_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="行业分析 JSON")
+    
+    # 元数据
+    generated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    generation_model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="生成模型")
+    
+    __table_args__ = (
+        Index("idx_daily_report_date", "report_date"),
+    )
+
+
+class SimulatedTrade(Base):
+    """模拟交易记录（评估投资潜力）
+
+    记录模拟买入卖出，用于评估股票的投资潜力。
+    """
+    __tablename__ = "simulated_trades"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    
+    # 交易信息
+    trade_type: Mapped[str] = mapped_column(String(10), comment="buy/sell")
+    trade_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    price: Mapped[float] = mapped_column(Float)
+    quantity: Mapped[int] = mapped_column(Integer, default=100)
+    
+    # 触发原因
+    trigger_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="signal/manual/stop_loss/take_profit")
+    signal_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # 持仓信息（卖出时填写）
+    holding_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    profit_loss: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="盈亏金额")
+    profit_loss_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="盈亏百分比")
+    
+    # 元数据
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_simulated_trade_symbol_date", "symbol", "trade_date"),
+        Index("idx_simulated_trade_type", "trade_type"),
+    )
+
+
+class AnalysisHistory(Base):
+    """分析历史索引（用于快速查询历史分析记录）"""
+    __tablename__ = "analysis_history"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    analysis_date: Mapped[datetime.date] = mapped_column(Date, unique=True, index=True)
+    
+    # 统计信息
+    stocks_analyzed: Mapped[int] = mapped_column(Integer, default=0)
+    buy_recommendations: Mapped[int] = mapped_column(Integer, default=0)
+    sell_recommendations: Mapped[int] = mapped_column(Integer, default=0)
+    hold_recommendations: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # 状态
+    status: Mapped[str] = mapped_column(String(20), default="completed", comment="pending/running/completed/failed")
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # 时间戳
+    started_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    completed_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    
+    __table_args__ = (
+        Index("idx_analysis_history_date", "analysis_date"),
+        Index("idx_analysis_history_status", "status"),
+    )
+
+
+# =========================
+# 财务数据与市场情绪
+# =========================
+
+
+class FinancialMetrics(Base):
+    """股票财务指标表
+    
+    存储每日/每季度更新的财务指标数据：
+    - 估值指标：PE/PB/PS/PCF
+    - 盈利能力：ROE/ROA/毛利率/净利率
+    - 成长性：EPS/营收/净利润增长
+    - 偿债能力：资产负债率/流动比率
+    """
+    __tablename__ = "financial_metrics"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    trade_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    
+    # 估值指标
+    pe_ttm: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="滚动市盈率")
+    pe_static: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="静态市盈率")
+    pb: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="市净率")
+    ps_ttm: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="滚动市销率")
+    pcf_ttm: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="滚动市现率")
+    market_cap: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="总市值(亿元)")
+    circulating_cap: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="流通市值(亿元)")
+    
+    # 盈利能力
+    roe: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="净资产收益率%")
+    roa: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="总资产收益率%")
+    gross_margin: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="毛利率%")
+    net_margin: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="净利率%")
+    
+    # 成长性
+    eps: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="每股收益")
+    eps_yoy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="EPS同比增长%")
+    revenue: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="营收(亿元)")
+    revenue_yoy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="营收同比增长%")
+    net_profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="净利润(亿元)")
+    net_profit_yoy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="净利润同比增长%")
+    
+    # 偿债能力
+    debt_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="资产负债率%")
+    current_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="流动比率")
+    quick_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="速动比率")
+    
+    # 分红
+    dividend_yield: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="股息率%")
+    
+    # 财报期
+    report_period: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="财报期如2025Q3")
+    
+    # 元数据
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_financial_metrics_symbol_date", "symbol", "trade_date", unique=True),
+        Index("idx_financial_metrics_date", "trade_date"),
+        Index("idx_financial_metrics_pe", "pe_ttm"),
+        Index("idx_financial_metrics_roe", "roe"),
+    )
+
+
+class NorthboundFlow(Base):
+    """北向资金流向表
+    
+    存储每日北向资金（沪股通+深股通）流入流出数据
+    """
+    __tablename__ = "northbound_flow"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    trade_date: Mapped[datetime.date] = mapped_column(Date, unique=True, index=True)
+    
+    # 沪股通
+    sh_net: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="沪股通净流入(亿元)")
+    sh_buy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="沪股通买入(亿元)")
+    sh_sell: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="沪股通卖出(亿元)")
+    
+    # 深股通
+    sz_net: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="深股通净流入(亿元)")
+    sz_buy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="深股通买入(亿元)")
+    sz_sell: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="深股通卖出(亿元)")
+    
+    # 合计
+    total_net: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="北向资金净流入合计(亿元)")
+    
+    # 累计
+    sh_cumulative: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="沪股通累计净流入(亿元)")
+    sz_cumulative: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="深股通累计净流入(亿元)")
+    
+    # 元数据
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_northbound_flow_date", "trade_date"),
+    )
+
+
+class NorthboundHolding(Base):
+    """北向资金个股持仓表
+    
+    存储个股的北向资金持仓情况
+    """
+    __tablename__ = "northbound_holding"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    trade_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    
+    # 持仓信息
+    holding_shares: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="持股数量(万股)")
+    holding_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="持股市值(亿元)")
+    holding_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="持股占比%")
+    free_float_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="占自由流通股比%")
+    
+    # 变动
+    change_shares: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="日增持股数(万股)")
+    change_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="日增持市值(亿元)")
+    change_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="日增持比例%")
+    
+    # 元数据
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_northbound_holding_symbol_date", "symbol", "trade_date", unique=True),
+        Index("idx_northbound_holding_date", "trade_date"),
+        Index("idx_northbound_holding_ratio", "holding_ratio"),
+    )
+
+
+class DragonTiger(Base):
+    """龙虎榜数据表
+    
+    存储每日龙虎榜上榜股票及机构/游资买卖情况
+    """
+    __tablename__ = "dragon_tiger"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    trade_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    
+    # 上榜原因
+    reason: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, comment="上榜原因")
+    
+    # 价格表现
+    close_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="收盘价")
+    pct_change: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="涨跌幅%")
+    turnover_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="换手率%")
+    
+    # 买卖统计
+    net_buy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="净买额(亿元)")
+    buy_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="买入总额(亿元)")
+    sell_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="卖出总额(亿元)")
+    
+    # 买入席位明细 (JSON)
+    buy_seats: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="买入席位JSON")
+    # 卖出席位明细 (JSON)
+    sell_seats: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="卖出席位JSON")
+    
+    # 机构参与
+    institution_buy: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="机构买入(亿元)")
+    institution_sell: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="机构卖出(亿元)")
+    institution_net: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="机构净买(亿元)")
+    
+    # 元数据
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_dragon_tiger_symbol_date", "symbol", "trade_date"),
+        Index("idx_dragon_tiger_date", "trade_date"),
+        Index("idx_dragon_tiger_net_buy", "net_buy"),
+    )
+
+
+class AnalystRating(Base):
+    """机构评级表
+    
+    存储机构/券商对股票的评级和目标价
+    """
+    __tablename__ = "analyst_ratings"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    rating_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    
+    # 机构信息
+    institution: Mapped[str] = mapped_column(String(100), comment="机构名称")
+    analyst: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="分析师")
+    
+    # 评级
+    rating: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="buy/outperform/neutral/underperform/sell")
+    rating_change: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="upgrade/maintain/downgrade")
+    
+    # 目标价
+    target_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="目标价")
+    target_price_low: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="目标价下限")
+    target_price_high: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="目标价上限")
+    
+    # 预测
+    eps_forecast_1y: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="当年EPS预测")
+    eps_forecast_2y: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="明年EPS预测")
+    pe_forecast: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="预测PE")
+    
+    # 研报信息
+    report_title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="研报标题")
+    report_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="研报链接")
+    
+    # 元数据
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_analyst_rating_symbol_date", "symbol", "rating_date"),
+        Index("idx_analyst_rating_date", "rating_date"),
+        Index("idx_analyst_rating_institution", "institution"),
+    )
+
+
+# =========================
+# 回测与交易策略
+# =========================
+
+
+class BacktestResult(Base):
+    """回测结果表
+    
+    存储策略回测的详细结果
+    """
+    __tablename__ = "backtest_results"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    
+    # 策略信息
+    strategy_name: Mapped[str] = mapped_column(String(100), index=True)
+    strategy_params: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="策略参数JSON")
+    
+    # 回测区间
+    start_date: Mapped[datetime.date] = mapped_column(Date)
+    end_date: Mapped[datetime.date] = mapped_column(Date)
+    
+    # 股票范围
+    symbols: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="回测股票列表JSON")
+    symbol_count: Mapped[int] = mapped_column(Integer, default=1)
+    
+    # 绩效指标
+    initial_capital: Mapped[float] = mapped_column(Float, default=100000, comment="初始资金")
+    final_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="最终价值")
+    total_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="总收益率%")
+    annual_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="年化收益率%")
+    
+    # 风险指标
+    max_drawdown: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="最大回撤%")
+    sharpe_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="夏普比率")
+    sortino_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="索提诺比率")
+    calmar_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="卡玛比率")
+    volatility: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="波动率%")
+    
+    # 交易统计
+    total_trades: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="总交易次数")
+    winning_trades: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="盈利交易次数")
+    losing_trades: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="亏损交易次数")
+    win_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="胜率%")
+    avg_profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="平均盈利%")
+    avg_loss: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="平均亏损%")
+    profit_factor: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="盈亏比")
+    
+    # 基准对比
+    benchmark: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="基准指数")
+    benchmark_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="基准收益率%")
+    alpha: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Alpha")
+    beta: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Beta")
+    
+    # 详细数据
+    equity_curve: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="权益曲线JSON")
+    trades_detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="交易详情JSON")
+    monthly_returns: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="月度收益JSON")
+    
+    # 元数据
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    run_time_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="运行耗时(秒)")
+
+    __table_args__ = (
+        Index("idx_backtest_strategy", "strategy_name"),
+        Index("idx_backtest_dates", "start_date", "end_date"),
+        Index("idx_backtest_return", "annual_return"),
+    )
+
+
+class TradingSignal(Base):
+    """交易信号表
+    
+    存储系统生成的交易信号，支持信号验证和追踪
+    """
+    __tablename__ = "trading_signals"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    signal_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    signal_time: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    
+    # 信号类型
+    signal_type: Mapped[str] = mapped_column(String(20), comment="buy/sell/hold")
+    signal_strength: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="信号强度0-100")
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="置信度0-1")
+    
+    # 信号来源
+    source: Mapped[str] = mapped_column(String(50), comment="技术分析/基本面/情绪/综合")
+    strategy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="策略名称")
+    
+    # 价格信息
+    trigger_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="触发价格")
+    target_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="目标价")
+    stop_loss_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="止损价")
+    
+    # 信号详情
+    factors: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="触发因素JSON")
+    analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="分析说明")
+    
+    # 验证状态
+    is_validated: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否已验证")
+    validation_result: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="success/fail/partial")
+    actual_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="实际收益%")
+    validation_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    validation_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # 多周期确认
+    confirm_1d: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, comment="日线确认")
+    confirm_1w: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, comment="周线确认")
+    confirm_1m: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, comment="月线确认")
+    
+    # 元数据
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_trading_signal_symbol_date", "symbol", "signal_date"),
+        Index("idx_trading_signal_date", "signal_date"),
+        Index("idx_trading_signal_type", "signal_type"),
+        Index("idx_trading_signal_validated", "is_validated"),
+    )
+
+
+class PositionManagement(Base):
+    """仓位管理表
+    
+    记录虚拟/模拟投资组合的仓位情况
+    """
+    __tablename__ = "position_management"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), index=True, comment="组合ID")
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    
+    # 持仓信息
+    quantity: Mapped[int] = mapped_column(Integer, default=0, comment="持仓数量")
+    avg_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="平均成本")
+    current_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="当前价格")
+    market_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="市值")
+    
+    # 盈亏
+    unrealized_pnl: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="未实现盈亏")
+    unrealized_pnl_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="未实现盈亏%")
+    realized_pnl: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="已实现盈亏")
+    
+    # 仓位比例
+    weight: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="仓位权重%")
+    target_weight: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="目标权重%")
+    
+    # 风控
+    stop_loss_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="止损价")
+    take_profit_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="止盈价")
+    trailing_stop_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="追踪止损比例%")
+    max_loss_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="最大亏损比例%")
+    
+    # 时间信息
+    entry_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True, comment="建仓日期")
+    holding_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="持仓天数")
+    last_trade_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True, comment="最后交易日")
+    
+    # 元数据
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_position_portfolio_symbol", "portfolio_id", "symbol", unique=True),
+        Index("idx_position_portfolio", "portfolio_id"),
+    )
+
+
+class Portfolio(Base):
+    """投资组合表
+    
+    记录虚拟投资组合的整体情况
+    """
+    __tablename__ = "portfolios"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    
+    # 资金信息
+    initial_capital: Mapped[float] = mapped_column(Float, default=100000, comment="初始资金")
+    cash: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="可用现金")
+    total_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="总市值")
+    
+    # 绩效
+    total_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="总收益率%")
+    daily_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="当日收益率%")
+    max_drawdown: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="最大回撤%")
+    sharpe_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="夏普比率")
+    
+    # 仓位
+    position_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="持仓股票数")
+    cash_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="现金比例%")
+    
+    # 风控参数
+    max_single_position: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="单只最大仓位%")
+    max_total_position: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="最大总仓位%")
+    max_sector_position: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="行业最大仓位%")
+    
+    # 策略
+    strategy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="使用策略")
+    rebalance_frequency: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="再平衡频率")
+    
+    # 状态
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_portfolio_active", "is_active"),
     )

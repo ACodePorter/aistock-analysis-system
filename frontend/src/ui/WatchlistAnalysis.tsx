@@ -25,24 +25,24 @@ export default function WatchlistAnalysis(){
   useEffect(()=>{ load() }, [days])
 
   return (
-    <div style={{padding:12, border:'1px solid #e5e7eb', borderRadius:12}}>
+    <div style={{padding:12, border:'1px solid var(--border)', borderRadius:12}}>
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
         <div style={{fontWeight:600}}>近{days}日数据分析与建议</div>
         <div style={{display:'flex', gap:8, alignItems:'center'}}>
-          <span style={{fontSize:12, color:'#6b7280'}}>区间:</span>
-          <select value={days} onChange={e=>setDays(Number(e.target.value))} style={{padding:'4px 8px', border:'1px solid #e5e7eb', borderRadius:6}}>
+          <span style={{fontSize:12, color:'var(--text-muted)'}}>区间:</span>
+          <select value={days} onChange={e=>setDays(Number(e.target.value))} className="dark-select" style={{padding:'4px 8px'}}>
             {[7,10,14].map(d=> <option key={d} value={d}>{d}日</option>)}
           </select>
-          <button onClick={load} style={{padding:'4px 8px', border:'1px solid #e5e7eb', borderRadius:6, background:'#fff'}}>刷新</button>
+          <button onClick={load} className="dark-btn dark-btn-secondary" style={{padding:'4px 8px'}}>刷新</button>
         </div>
       </div>
-      {loading? <div style={{fontSize:12, color:'#6b7280'}}>加载中...</div> : error? <div style={{fontSize:12, color:'#ef4444'}}>错误：{error}</div> : (
+      {loading? <div style={{fontSize:12, color:'var(--text-muted)'}}>加载中...</div> : error? <div style={{fontSize:12, color:'var(--accent-red)'}}>错误：{error}</div> : (
         <div style={{display:'grid', gridTemplateColumns:'1fr', gap:12}}>
           {items.map((it:any)=> (
-            <div key={it.symbol} style={{border:'1px solid #e5e7eb', borderRadius:8}}>
-              <div style={{padding:'8px 12px', background:'#f9fafb', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <div key={it.symbol} style={{border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-dark)'}}>
+              <div style={{padding:'8px 12px', background:'rgba(255,255,255,0.02)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                 <div style={{fontWeight:600}}>{it.name || it.symbol} ({it.symbol})</div>
-                {!it.enough_data && <div style={{fontSize:12, color:'#9ca3af'}}>数据不足</div>}
+                {!it.enough_data && <div style={{fontSize:12, color:'var(--text-muted)'}}>数据不足</div>}
               </div>
               {it.enough_data && (
                 <div style={{padding:'10px 12px', display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8}}>
@@ -56,11 +56,11 @@ export default function WatchlistAnalysis(){
               <div style={{padding:'10px 12px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
                 <div>
                   <div style={{fontWeight:600, marginBottom:6}}>建议</div>
-                  {it.advice && it.advice.length? it.advice.map((t:string,idx:number)=> <li key={idx} style={{fontSize:12}}>{t}</li>) : <div style={{fontSize:12, color:'#9ca3af'}}>暂无</div>}
+                  {it.advice && it.advice.length? it.advice.map((t:string,idx:number)=> <li key={idx} style={{fontSize:12}}>{t}</li>) : <div style={{fontSize:12, color:'var(--text-muted)'}}>暂无</div>}
                 </div>
                 <div>
                   <div style={{fontWeight:600, marginBottom:6}}>风险</div>
-                  {it.risk && it.risk.length? it.risk.map((t:string,idx:number)=> <li key={idx} style={{fontSize:12}}>{t}</li>) : <div style={{fontSize:12, color:'#9ca3af'}}>暂无</div>}
+                  {it.risk && it.risk.length? it.risk.map((t:string,idx:number)=> <li key={idx} style={{fontSize:12}}>{t}</li>) : <div style={{fontSize:12, color:'var(--text-muted)'}}>暂无</div>}
                 </div>
               </div>
             </div>
@@ -72,8 +72,8 @@ export default function WatchlistAnalysis(){
 }
 
 function Metric({ label, value }: { label: string; value: string|number|null|undefined }){
-  return <div style={{padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:8}}>
-    <div style={{fontSize:11, color:'#6b7280'}}>{label}</div>
+  return <div style={{padding:'8px 10px', border:'1px solid var(--border)', borderRadius:8, background:'rgba(255,255,255,0.02)'}}>
+    <div style={{fontSize:11, color:'var(--text-muted)'}}>{label}</div>
     <div style={{fontSize:16, fontWeight:600}}>{value??'-'}</div>
   </div>
 }

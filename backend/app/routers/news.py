@@ -2574,14 +2574,36 @@ async def get_basic_profile(
 @router.get('/articles')
 async def get_news_articles(
     db: Session = Depends(get_db),
-    category: Optional[str] = Query(None),
-    sentiment: Optional[str] = Query(None),
-    symbol: Optional[str] = Query(None),
+    category: Optional[str] = Query(None, description="新闻类别"),
+    sentiment: Optional[str] = Query(None, description="情绪类型: positive/negative/neutral"),
+    symbol: Optional[str] = Query(None, description="关联股票代码"),
+    sector: Optional[str] = Query(None, description="行业筛选"),
+    keyword: Optional[str] = Query(None, description="关键词搜索"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     include_content: bool = Query(False),
-    days: Optional[int] = Query(None, ge=1, le=365, description="Filter to last N days by published/crawled time")
+    days: Optional[int] = Query(None, ge=1, le=365, description="过去N天内的新闻"),
+    start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD"),
+    sort_by: str = Query("time", description="排序方式: time/relevance/sentiment"),
+    sort_order: str = Query("desc", description="排序顺序: asc/desc")
 ):
+    """获取新闻文章列表
+    
+    支持多种筛选条件：
+    - category: 新闻类别
+    - sentiment: 情绪类型 (positive/negative/neutral)
+    - symbol: 关联股票代码
+    - sector: 行业筛选（通过关联股票的行业）
+    - keyword: 标题或摘要中的关键词
+    - days: 过去N天内的新闻
+    - start_date/end_date: 指定日期范围
+    
+    排序方式：
+    - time: 按发布时间
+    - relevance: 按相关性评分
+    - sentiment: 按情绪评分
+    """
     # 防御性限制，避免超大查询长时间占用连接
     limit = min(max(1, limit), 200)
     # 仅选择必要字段，避免 ORM 关系触发额外查询
@@ -2607,9 +2629,57 @@ async def get_news_articles(
         query = query.where(NewsArticle.sentiment_type == sentiment)
     if symbol:
         query = query.where(NewsArticle.related_stocks.contains([symbol]))
+    
+    # 行业筛选：通过关联股票的行业
+    if sector:
+        # 先获取该行业的所有股票
+        sector_symbols = db.execute(
+            select(Watchlist.symbol).where(Watchlist.sector == sector)
+        ).scalars().all()
+        if sector_symbols:
+            # 筛选关联了这些股票的新闻
+            sector_conditions = [NewsArticle.related_stocks.contains([s]) for s in sector_symbols]
+            query = query.where(or_(*sector_conditions))
+    
+    # 关键词搜索
+    if keyword:
+        keyword_pattern = f"%{keyword}%"
+        query = query.where(
+            or_(
+                NewsArticle.title.ilike(keyword_pattern),
+                NewsArticle.summary.ilike(keyword_pattern)
+            )
+        )
+    
     # 新增：只返回有有效摘要的文章
     query = query.where(and_(NewsArticle.summary.isnot(None), NewsArticle.summary != ''))
-    if days is not None:
+    
+    # 日期范围筛选
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            query = query.where(
+                or_(
+                    NewsArticle.published_at >= start_dt,
+                    and_(NewsArticle.published_at.is_(None), NewsArticle.crawled_at >= start_dt)
+                )
+            )
+        except ValueError:
+            pass
+    
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date) + timedelta(days=1)  # 包含结束日
+            query = query.where(
+                or_(
+                    NewsArticle.published_at < end_dt,
+                    and_(NewsArticle.published_at.is_(None), NewsArticle.crawled_at < end_dt)
+                )
+            )
+        except ValueError:
+            pass
+    
+    if days is not None and not start_date:
         cutoff = datetime.now() - timedelta(days=days)
         query = query.where(
             or_(
@@ -2617,8 +2687,35 @@ async def get_news_articles(
                 and_(NewsArticle.crawled_at.isnot(None), NewsArticle.crawled_at >= cutoff),
             )
         )
-    query = query.order_by(NewsArticle.published_at.desc().nullslast()).offset(offset).limit(limit)
+    
+    # 排序
+    if sort_by == "relevance":
+        order_col = NewsArticle.relevance_score
+    elif sort_by == "sentiment":
+        order_col = NewsArticle.sentiment_score
+    else:
+        order_col = NewsArticle.published_at
+    
+    if sort_order == "asc":
+        query = query.order_by(order_col.asc().nullslast())
+    else:
+        query = query.order_by(order_col.desc().nullslast())
+    
+    query = query.offset(offset).limit(limit)
     rows = db.execute(query).all()
+    
+    # 计算总数（用于分页）
+    count_query = select(func.count(NewsArticle.id))
+    # 应用相同的筛选条件（简化版）
+    if category:
+        count_query = count_query.where(NewsArticle.category == category)
+    if sentiment:
+        count_query = count_query.where(NewsArticle.sentiment_type == sentiment)
+    if symbol:
+        count_query = count_query.where(NewsArticle.related_stocks.contains([symbol]))
+    count_query = count_query.where(and_(NewsArticle.summary.isnot(None), NewsArticle.summary != ''))
+    total_count = db.execute(count_query).scalar() or 0
+    
     articles = []
     for r in rows:
         (
@@ -2642,7 +2739,93 @@ async def get_news_articles(
             "keywords": keywords,
         }
         articles.append(item)
-    return {"articles": articles}
+    return {
+        "articles": articles,
+        "total": total_count,
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + len(articles) < total_count
+    }
+
+
+# ==================== 新闻行业/主题统计 ====================
+
+@router.get('/sectors')
+async def get_news_sectors(
+    days: int = Query(7, ge=1, le=90, description="统计过去N天的新闻"),
+    db: Session = Depends(get_db)
+):
+    """获取新闻按行业分布的统计
+    
+    返回各行业的新闻数量和情绪分布，用于行业筛选器。
+    """
+    cutoff = datetime.now() - timedelta(days=days)
+    
+    # 获取所有行业
+    sectors = db.execute(
+        select(Watchlist.sector, func.count(Watchlist.symbol).label('stock_count'))
+        .where(and_(Watchlist.enabled == True, Watchlist.sector.isnot(None)))
+        .group_by(Watchlist.sector)
+    ).all()
+    
+    result = []
+    for sector, stock_count in sectors:
+        if not sector:
+            continue
+            
+        # 获取该行业的股票
+        symbols = db.execute(
+            select(Watchlist.symbol).where(
+                and_(Watchlist.sector == sector, Watchlist.enabled == True)
+            )
+        ).scalars().all()
+        
+        # 统计该行业相关的新闻数量
+        news_count = 0
+        sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
+        
+        for symbol in symbols:
+            # 统计该股票的新闻
+            count_result = db.execute(
+                select(
+                    func.count(NewsArticle.id),
+                    NewsArticle.sentiment_type
+                )
+                .where(
+                    and_(
+                        NewsArticle.related_stocks.contains([symbol]),
+                        or_(
+                            NewsArticle.published_at >= cutoff,
+                            and_(NewsArticle.published_at.is_(None), NewsArticle.crawled_at >= cutoff)
+                        )
+                    )
+                )
+                .group_by(NewsArticle.sentiment_type)
+            ).all()
+            
+            for cnt, sent in count_result:
+                news_count += cnt
+                if sent in sentiment_counts:
+                    sentiment_counts[sent] += cnt
+        
+        if news_count > 0:
+            result.append({
+                "sector": sector,
+                "stock_count": stock_count,
+                "news_count": news_count,
+                "sentiment_distribution": sentiment_counts,
+                "dominant_sentiment": max(sentiment_counts, key=sentiment_counts.get)
+            })
+    
+    # 按新闻数量排序
+    result.sort(key=lambda x: x["news_count"], reverse=True)
+    
+    return {
+        "period_days": days,
+        "sectors": result,
+        "total_sectors": len(result)
+    }
+
 
 @router.get('/stats')
 async def get_news_stats(db: Session = Depends(get_db)):

@@ -291,6 +291,30 @@ app = FastAPI(title="AI Stock API", version="1.1", default_response_class=Defaul
 app.include_router(news_router)
 app.include_router(movers_router)
 
+# 每日分析中心路由
+from .routers.analysis import router as analysis_router
+app.include_router(analysis_router)
+
+# 回测系统路由
+from .routers.backtest import router as backtest_router
+app.include_router(backtest_router)
+
+# 财务数据路由
+from .routers.financial import router as financial_router
+app.include_router(financial_router)
+
+# Web 数据查询路由 (天气、股票、百科、新闻、搜索)
+from .routers.webdata import router as webdata_router
+app.include_router(webdata_router, prefix="/api")
+
+# === v1.1 升级：事件、简报、RAG 路由 ===
+from .routers.events import router as events_router
+from .routers.briefings import router as briefings_router
+from .routers.rag import router as rag_router
+app.include_router(events_router)
+app.include_router(briefings_router)
+app.include_router(rag_router)
+
 # === Persisted Agent Daily Reports API ===
 from sqlalchemy import select as _select
 from .core.models import AgentDailyReport as _AgentDailyReport

@@ -20,6 +20,21 @@ import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 import statistics
 
+# 直接API信源模块 - 当SearXNG不可用时的备用信源
+try:
+    from app.utils.direct_news_api import fetch_news_direct, get_direct_api, DIRECT_API_ENABLED
+    DIRECT_API_AVAILABLE = True
+except ImportError:
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from app.utils.direct_news_api import fetch_news_direct, get_direct_api, DIRECT_API_ENABLED
+        DIRECT_API_AVAILABLE = True
+    except ImportError:
+        DIRECT_API_AVAILABLE = False
+        DIRECT_API_ENABLED = False
+        fetch_news_direct = None
+        get_direct_api = None
+
 # 尝试导入 NewsProcessor 用于正文抽取（无需依赖数据库写入）
 try:
     # 当以脚本方式运行时，确保可以定位到 backend/app 包
@@ -68,6 +83,7 @@ if not _SEARXNG_URLS:
 
 # 后端 API 基址（用于 DB 回退拉取已存文章）
 API_BASE = os.getenv("API_BASE", "http://localhost:8080").rstrip('/')
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", API_BASE)  # 兼容 enhanced_news_fetch 模块
 MOVERS_API_URL = os.getenv("MOVERS_API_URL", "http://localhost:8080/api/movers/live_insight?limit=20")
 
 # Azure OpenAI（根据现有 .env）
@@ -109,13 +125,13 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # 2) 若首次解析失败，进行一次轻量 Retry（同一提示再强调“只输出 JSON”）。
 # 3) 记录严格模式重试计数进入 diagnostics。
 # 默认开启严格 JSON；可通过 AGENT_STRICT_JSON=0 关闭
-AGENT_STRICT_JSON = os.getenv("AGENT_STRICT_JSON", "1") == "1"
+AGENT_STRICT_JSON = True  # 强制严格JSON模式，便于调试和修复400错误
 _STRICT_JSON_RETRY_STOCK = 0
 _STRICT_JSON_RETRY_MACRO = 0
 
 # 系统前缀：对多轮或不同函数共用，避免重复散落。
 STRICT_JSON_PREFIX = (
-    "你现在处于严格 JSON 输出模式。务必只输出一个 JSON 对象(json)，不要添加任何解释、注释、反引号、语言标记或额外文本。" if AGENT_STRICT_JSON else ""
+    "你现在处于严格 JSON 输出模式。务必只输出一个 JSON 对象(json)，不要添加任何解释、注释、反引号、语言标记或额外文本。Return json only. Output exactly one json object with no extra text." if AGENT_STRICT_JSON else ""
 )
 
 # 解析/验证统计
@@ -2913,6 +2929,59 @@ def search_news_searxng(query: str, max_results: int = MAX_STOCK_NEWS, symbol: O
         except Exception as e_media:
             print(f"[media-inc] 异常: {e_media}")
 
+    # 直接API信源 - 当SearXNG不可用或引擎被封时的关键备用信源
+    # 在所有SearXNG pass之前尝试直接API，因为日志显示SearXNG引擎全部被封
+    if DIRECT_API_AVAILABLE and DIRECT_API_ENABLED and len(results) < max_results:
+        try:
+            _SEARX_FILTER_METRICS['direct_api_try'] = _SEARX_FILTER_METRICS.get('direct_api_try', 0) + 1
+            print(f"[direct-api] 尝试直接API信源 (symbol={symbol}, query={query[:50] if query else 'N/A'})")
+            
+            # 提取股票代码和名称
+            stock_code = symbol.replace('.SH', '').replace('.SZ', '').replace('.BJ', '') if symbol else None
+            stock_name = query.split()[0] if query and ' ' in query else query
+            
+            # 调用直接API
+            direct_news = fetch_news_direct(
+                stock_code=stock_code,
+                stock_name=stock_name,
+                industry=None,
+                limit=max(max_results - len(results), 10)
+            )
+            
+            added = 0
+            for r in direct_news:
+                if len(results) >= max_results:
+                    break
+                t = (r.get('title') or '').strip()
+                u = (r.get('url') or '').strip()
+                if not t or not u:
+                    continue
+                nt = norm_title(t)
+                if nt in seen_titles or u in seen_urls:
+                    continue
+                content = (r.get('content') or r.get('summary') or '').strip()
+                cand = {'title': t, 'url': u, 'content': content}
+                # 可选：检查是否公司相关
+                if cn_context and not _is_company_related(cand):
+                    continue
+                results.append(cand)
+                seen_titles.add(nt)
+                seen_urls.add(u)
+                added += 1
+            
+            if added > 0:
+                _SEARX_FILTER_METRICS['direct_api_added'] = _SEARX_FILTER_METRICS.get('direct_api_added', 0) + added
+                print(f"[direct-api] 成功添加 {added} 条新闻")
+            else:
+                print(f"[direct-api] 无新增（返回 {len(direct_news)} 条，均已去重或不相关）")
+        except Exception as e_direct:
+            print(f"[direct-api] 异常: {e_direct}")
+
+    # 如果直接API已获得足够结果，可跳过SearXNG（节省时间）
+    if len(results) >= max_results and not _should_llm_requery(results):
+        print(f"[direct-api] 已获得足够结果 ({len(results)})，跳过SearXNG")
+        return _finalize_results()
+
     # Pass 1（带查询级缓存）
     cache_key = f"{params.get('q','')}|{params.get('categories','')}|{params.get('time_range','')}|{max_results}|{se_eng}"
     if SEARX_CACHE_TTL > 0:
@@ -3319,6 +3388,56 @@ def search_news_searxng(query: str, max_results: int = MAX_STOCK_NEWS, symbol: O
         except Exception as e_db:
             if AGENT_DEBUG_LOG:
                 print(f"[db-fallback] 失败: {e_db}")
+
+    # 直接API最终兜底 - 当SearXNG和DB都失败后的最后尝试
+    if DIRECT_API_AVAILABLE and DIRECT_API_ENABLED and len(results) < int(os.getenv('AGENT_ENSURE_MIN_NEWS', '5')):
+        try:
+            _SEARX_FILTER_METRICS['direct_api_fallback_try'] = _SEARX_FILTER_METRICS.get('direct_api_fallback_try', 0) + 1
+            print(f"[direct-api-fallback] SearXNG和DB结果不足({len(results)}条)，尝试直接API兜底")
+            
+            stock_code = symbol.replace('.SH', '').replace('.SZ', '').replace('.BJ', '') if symbol else None
+            stock_name = query.split()[0] if query and ' ' in query else query
+            
+            # 获取行业新闻作为补充
+            api = get_direct_api()
+            industry_news = []
+            try:
+                industry_news = api.fetch_eastmoney_industry_news(limit=5)
+            except Exception:
+                pass
+            
+            # 合并直接新闻
+            direct_news = fetch_news_direct(
+                stock_code=stock_code,
+                stock_name=stock_name,
+                industry=None,
+                limit=10
+            )
+            all_direct = direct_news + industry_news
+            
+            added = 0
+            for r in all_direct:
+                if len(results) >= max_results:
+                    break
+                t = (r.get('title') or '').strip()
+                u = (r.get('url') or '').strip()
+                if not t or not u:
+                    continue
+                nt = norm_title(t)
+                if nt in seen_titles or u in seen_urls:
+                    continue
+                content = (r.get('content') or r.get('summary') or '').strip()
+                results.append({'title': t, 'url': u, 'content': content})
+                seen_titles.add(nt)
+                seen_urls.add(u)
+                added += 1
+            
+            if added > 0:
+                _SEARX_FILTER_METRICS['direct_api_fallback_added'] = _SEARX_FILTER_METRICS.get('direct_api_fallback_added', 0) + added
+                print(f"[direct-api-fallback] 兜底添加 {added} 条新闻")
+        except Exception as e_direct_fb:
+            print(f"[direct-api-fallback] 异常: {e_direct_fb}")
+
     # Extreme fallback: if still below minimum, try DB search again (ensure) before ignoring filters
     ensure_min = int(os.getenv('AGENT_ENSURE_MIN_NEWS', '5'))
     if ensure_min > 0 and len(results) < ensure_min:
@@ -3688,7 +3807,7 @@ def _invoke_llm(prompt: str, temperature: float = 0.7) -> str:
                 messages = [{"role": "user", "content": prompt}]
                 if AGENT_STRICT_JSON:
                     messages = [
-                        {"role": "system", "content": "Return json only. Output exactly one json object with no extra text."},
+                        {"role": "system", "content": "你现在处于严格 JSON 输出模式。务必只输出一个 JSON 对象(json)，不要添加任何解释、注释、反引号、语言标记或额外文本。Return json only. Output exactly one json object with no extra text."},
                         {"role": "user", "content": prompt}
                     ]
                 payload = {
@@ -4509,6 +4628,48 @@ def llm_analyze_news(stock_name: str, news_list: List[Dict], symbol: Optional[st
     global _FALLBACK_STOCK_COUNT
     _FALLBACK_STOCK_COUNT += 1
     parse_mode = parse_mode or 'heuristic'
+    
+    # 动态生成摘要：基于实际新闻标题拼接，而非固定模板
+    def _build_dynamic_summary(titles: List[str], factors: List[Dict], stock_name: str) -> str:
+        parts = []
+        # 提取有效标题（去重、去空、截断）
+        valid_titles = []
+        seen = set()
+        for t in titles:
+            t_clean = (t or '').strip()
+            if not t_clean or len(t_clean) < 6:
+                continue
+            # 简单去重
+            t_key = t_clean[:30]
+            if t_key in seen:
+                continue
+            seen.add(t_key)
+            valid_titles.append(t_clean[:60])
+            if len(valid_titles) >= 4:
+                break
+        
+        # 构建摘要
+        if valid_titles:
+            parts.append(f"近期新闻：{'；'.join(valid_titles)}")
+        
+        # 添加因子关注点
+        if factors:
+            factor_names = [f['name'] for f in factors[:3] if f.get('name') and f['name'] not in ('新闻事件概览', '信息不足')]
+            if factor_names:
+                parts.append(f"关注点：{', '.join(factor_names)}")
+        
+        # 添加情绪判断
+        if sentiment_score > 0.3:
+            parts.append("整体偏正面")
+        elif sentiment_score < -0.3:
+            parts.append("存在负面信号")
+        
+        if parts:
+            return '。'.join(parts) + '。'
+        return f"当日{stock_name}相关新闻信息有限，建议关注后续公告披露。"
+    
+    dynamic_summary = _build_dynamic_summary(news_titles, extracted, stock_name)
+    
     return {
         'sentiment_score': sentiment_score,
         'sentiment_label_en': label,
@@ -4520,7 +4681,7 @@ def llm_analyze_news(stock_name: str, news_list: List[Dict], symbol: Optional[st
         'risk_flags': [],
         'correlation_watch': [],
         'confidence': round(0.3 + 0.4 * min(1, (pos+neg)/8),3) if news_list else 0.1,
-        'summary': ('基于公开新闻标题与摘要信息，提炼主要事件与影响因素。' + (f" 关注点: {', '.join([f['name'] for f in extracted[:3]])}。" if extracted else '')),
+        'summary': dynamic_summary,
         # Keep internal diagnostics under underscore-prefixed keys; strip before writing reports.
         '_llm_fallback': True,
         '_parse_mode': parse_mode,
@@ -4703,13 +4864,14 @@ def preflight():
     # 2. SearXNG
     try:
         base = SEARXNG_URL.rstrip('/')
-        r = requests.get(f"{base}/search", params={"q":"测试","format":"json"}, timeout=15)
+        # 使用更短的超时以避免在 preflight 阶段长时间阻塞
+        r = requests.get(f"{base}/search", params={"q":"测试","format":"json"}, timeout=3)
         if r.status_code not in (200, 403):
             print(f"[preflight] 警告: SearXNG 状态码 {r.status_code}")
         else:
             print(f"[preflight] SearXNG 可访问 status={r.status_code}")
     except Exception as e:
-        print(f"[preflight] 警告: SearXNG 不可访问: {e}")
+        print(f"[preflight] 警告: SearXNG 不可访问（已短超时）: {e}")
     # 3. LLM (Azure 或 通用)
     global USE_LLM
     if not USE_LLM:
@@ -4731,6 +4893,20 @@ def preflight():
 def _parallel_fetch_news(stocks: List[Dict]) -> List[Tuple[Dict, List[Dict], Dict[str, Any]]]:
     # parallel debug prints removed
     # 并行抓取每只股票新闻，返回 (stock, news_list, diagnostics) 列表
+    
+    # 尝试导入增强搜索模块
+    enhanced_search_available = False
+    enhance_func = None
+    try:
+        from app.utils.enhanced_news_fetch import enhance_stock_news_for_analysis
+        enhanced_search_available = os.getenv('ENHANCED_SEARCH_ENABLE', '1') in ('1', 'true', 'yes')
+        enhance_func = enhance_stock_news_for_analysis
+        if AGENT_DEBUG_LOG:
+            print(f"[parallel] 增强搜索模块已加载, enabled={enhanced_search_available}")
+    except ImportError as e:
+        if AGENT_DEBUG_LOG:
+            print(f"[parallel] 增强搜索模块不可用: {e}")
+    
     results: List[Tuple[Dict, List[Dict], Dict[str, Any]]] = []
     def task(stock: Dict):
         name = stock.get("name")
@@ -4767,6 +4943,27 @@ def _parallel_fetch_news(stocks: List[Dict]) -> List[Tuple[Dict, List[Dict], Dic
                 except Exception as e:
                     if AGENT_DEBUG_LOG:
                         print(f"[parallel-topup] failed to refresh DB news for {symbol}: {e}")
+        
+        # 增强搜索：当新闻仍不足时，使用行业/关键词扩展
+        if enhanced_search_available and enhance_func and len(news) < min_news_for_topup:
+            try:
+                enhanced_news, enhance_diag = enhance_func(
+                    stock, news,
+                    backend_url=BACKEND_BASE_URL,
+                    searxng_url=SEARXNG_URL,
+                )
+                if enhanced_news and len(enhanced_news) > len(news):
+                    if AGENT_DEBUG_LOG:
+                        print(f"[enhanced] {name}({symbol}): {len(news)} -> {len(enhanced_news)} 条新闻")
+                    news = enhanced_news
+                    diag['enhanced'] = True
+                    diag['enhance_strategies'] = enhance_diag.get('strategies', [])
+                    diag['enhance_industry'] = enhance_diag.get('industry', '')
+                    diag['industry_news_count'] = enhance_diag.get('industry_count', 0)
+            except Exception as e:
+                if AGENT_DEBUG_LOG:
+                    print(f"[enhanced] failed for {name}({symbol}): {e}")
+                diag['enhance_error'] = str(e)
         
         return stock, news, diag
     with ThreadPoolExecutor(max_workers=min(PARALLEL_WORKERS, len(stocks))) as ex:
@@ -4946,6 +5143,10 @@ def agent_main(*, report_date: Optional[date] = None):
     parallel_results = _parallel_fetch_news(top20)
     all_news: List[Dict] = []
     stock_reports: List[Dict[str, Any]] = []
+    
+    # 统计增强搜索效果
+    enhance_stats = {'enhanced_count': 0, 'industry_news_added': 0}
+    
     for stock, news_list, diag in parallel_results:
         name = stock.get("name")
         symbol = stock.get("symbol")
@@ -4953,21 +5154,51 @@ def agent_main(*, report_date: Optional[date] = None):
         all_news.extend(news_list)
         bp = None
         effective_news_count = len(news_list)
+        
+        # 记录增强搜索统计
+        if diag.get('enhanced'):
+            enhance_stats['enhanced_count'] += 1
+            enhance_stats['industry_news_added'] += diag.get('industry_news_count', 0)
+        
         # When public news hits are zero, try a lightweight company-profile fallback to avoid empty reports.
         if effective_news_count == 0:
             bp = _try_fetch_basic_profile(symbol)
             if isinstance(bp, dict) and (bp.get('profile_db') or bp.get('crawled_snippets') or bp.get('search_results')):
                 effective_news_count = 1
-        print("\n分析: {} ({}) 涨跌幅: {} | 新闻数: {}".format(name, symbol, pct_chg, effective_news_count))
+        
+        # 分离直接新闻和行业背景新闻
+        direct_news = [n for n in news_list if not n.get('_is_industry_context')]
+        industry_context_news = [n for n in news_list if n.get('_is_industry_context')]
+        
+        # 显示增强信息
+        enhance_info = ""
+        if diag.get('enhanced'):
+            industry = diag.get('enhance_industry', '')
+            strategies = diag.get('enhance_strategies', [])
+            if industry or strategies:
+                enhance_info = f" [增强: 行业={industry}, 策略={strategies}]"
+        
+        print("\n分析: {} ({}) 涨跌幅: {} | 直接新闻: {} | 行业背景: {}{}".format(
+            name, symbol, pct_chg, len(direct_news), len(industry_context_news), enhance_info))
         report = validate_stock_json(llm_analyze_news(name, news_list, symbol=symbol, basic_profile=bp))
-        stock_reports.append({
+        
+        # 在报告中添加增强搜索信息
+        report_entry = {
             "name": name,
             "symbol": symbol,
             "pct_chg": pct_chg,
             "news_count": effective_news_count,
+            "direct_news_count": len(direct_news),
+            "industry_context_count": len(industry_context_news),
             "report": report,
             "fetch_diagnostics": diag,
-        })
+        }
+        
+        # 如果有行业信息，添加到报告
+        if diag.get('enhance_industry'):
+            report_entry['industry'] = diag.get('enhance_industry')
+        
+        stock_reports.append(report_entry)
     # 输出评分与因子数量（防止 f-string 嵌套花括号问题引发解析错误）
     _score = report.get('score')
     _factors_len = len(report.get('factors', [])) if isinstance(report.get('factors'), list) else 0
@@ -5063,6 +5294,11 @@ def agent_main(*, report_date: Optional[date] = None):
         'force_no_response_format': _FORCE_NO_RESPONSE_FORMAT,
         'azure_fail_count': _AZURE_FAIL_COUNT,
         'searx_filter_metrics': dict(_SEARX_FILTER_METRICS),
+        # 增强搜索统计
+        'enhanced_search': {
+            'stocks_enhanced': enhance_stats.get('enhanced_count', 0),
+            'industry_news_added': enhance_stats.get('industry_news_added', 0),
+        },
     }
 
     token_list: List[int] = []
