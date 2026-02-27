@@ -25,7 +25,7 @@ from .news.news_service import NewsProcessor
 import logging
 
 from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request
-from fastapi.responses import ORJSONResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import ORJSONResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import select, text, and_, func
@@ -69,7 +69,7 @@ from pathlib import Path as _Path
 import threading as _threading
 import uuid as _uuid
 import traceback as _tb
-from collections import deque, Counter
+from collections import deque, Counter, OrderedDict
 import math
 
 _AGENT_JOBS: dict[str, dict] = {}  # legacy in-memory cache (will mirror DB subset)
@@ -82,6 +82,230 @@ _AGENT_METRICS = {
     'last_run_duration_sec': 0.0,
     'last_run_finished_at': ''
 }
+
+# --- Redis safe helpers with in-process fallback ---
+_redis_client = None
+# in-process LRU cache used as fallback when Redis is unavailable
+_LOCAL_CACHE_MAX = int(os.getenv('LOCAL_CACHE_MAX', '1024'))
+_local_cache: "OrderedDict[str, tuple]" = OrderedDict()
+_local_cache_lock = _threading.Lock()
+# simple stats
+_local_cache_hits = 0
+_local_cache_misses = 0
+# redis-layer stats (count only when redis client used)
+_redis_cache_hits = 0
+_redis_cache_misses = 0
+_redis_cache_sets = 0
+_local_cache_sets = 0
+# TTLs for watchlist snapshot cache (fresh + stale). Make configurable via env for testing.
+WATCHLIST_FRESH_TTL = int(os.getenv('WATCHLIST_FRESH_TTL', '8'))
+WATCHLIST_STALE_TTL = int(os.getenv('WATCHLIST_STALE_TTL', '300'))
+
+try:
+    import redis as _redis_lib
+    _redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_URI') or 'redis://127.0.0.1:6379/0'
+    try:
+        _redis_client = _redis_lib.from_url(_redis_url, socket_connect_timeout=1)
+        # quick ping to confirm
+        try:
+            _redis_client.ping()
+        except Exception:
+            _redis_client = None
+    except Exception:
+        _redis_client = None
+except Exception:
+    _redis_client = None
+
+def _redis_get(key: str):
+    """Get key from Redis with local fallback."""
+    # try redis first
+    try:
+        if _redis_client is not None:
+            v = _redis_client.get(key)
+            try:
+                global _redis_cache_hits, _redis_cache_misses
+            except Exception:
+                pass
+            if v is None:
+                try:
+                    _redis_cache_misses += 1
+                except Exception:
+                    pass
+                return None
+            try:
+                _redis_cache_hits += 1
+            except Exception:
+                pass
+            if isinstance(v, bytes):
+                return v.decode('utf-8')
+            return v
+    except Exception:
+        pass
+    # fallback to local cache
+    try:
+        global _local_cache_hits, _local_cache_misses
+        with _local_cache_lock:
+            entry = _local_cache.get(key)
+            if not entry:
+                _local_cache_misses += 1
+                return None
+            value, exp = entry
+            if exp is not None and time.time() > exp:
+                try:
+                    del _local_cache[key]
+                except Exception:
+                    pass
+                _local_cache_misses += 1
+                return None
+            # move to end (most recently used)
+            try:
+                _local_cache.pop(key)
+                _local_cache[key] = (value, exp)
+            except Exception:
+                pass
+            _local_cache_hits += 1
+            return value
+    except Exception:
+        return None
+
+def _redis_set(key: str, value: str, ex: Optional[int] = None):
+    """Set key to Redis with local fallback. value must be str."""
+    global _redis_cache_sets, _local_cache_sets
+    try:
+        if _redis_client is not None:
+            # redis-py accepts str/bytes
+            if ex is not None:
+                _redis_client.set(key, value, ex=ex)
+            else:
+                _redis_client.set(key, value)
+            try:
+                _redis_cache_sets += 1
+            except Exception:
+                try:
+                    logger.warning("failed to increment _redis_cache_sets")
+                except Exception:
+                    pass
+            try:
+                logger.debug("_redis_set success key=%s ex=%s", key, ex)
+            except Exception:
+                pass
+            try:
+                logger.info("redis write success key=%s ex=%s", key, ex)
+            except Exception:
+                pass
+            return True
+    except Exception:
+        try:
+            logger.warning("_redis_set failed for key %s: %s", key, str(sys.exc_info()[1]))
+        except Exception:
+            pass
+    # fallback to local cache
+    try:
+        with _local_cache_lock:
+            exp = time.time() + ex if ex is not None else None
+            # set/refresh and move to end
+            if key in _local_cache:
+                try:
+                    _local_cache.pop(key)
+                except Exception:
+                    pass
+            _local_cache[key] = (value, exp)
+            try:
+                _local_cache_sets += 1
+            except Exception:
+                pass
+            # evict least-recently-used if over capacity
+            try:
+                while len(_local_cache) > _LOCAL_CACHE_MAX:
+                    _local_cache.popitem(last=False)
+            except Exception:
+                pass
+        return True
+    except Exception:
+        return False
+
+
+def _acquire_refresh_lock(lock_key: str, ex: int = 30) -> bool:
+    """Try to acquire a refresh lock. Return True if acquired."""
+    try:
+        if _redis_client is not None:
+            # SET NX with expiration
+            return _redis_client.set(lock_key, "1", nx=True, ex=ex)
+    except Exception:
+        pass
+    # fallback: use local cache
+    try:
+        with _local_cache_lock:
+            entry = _local_cache.get(lock_key)
+            now = time.time()
+            if entry:
+                _, exp = entry
+                if exp is None or now <= exp:
+                    return False
+            _local_cache[lock_key] = ("1", now + ex)
+            return True
+    except Exception:
+        return False
+
+
+def _release_refresh_lock(lock_key: str):
+    try:
+        if _redis_client is not None:
+            _redis_client.delete(lock_key)
+            return True
+    except Exception:
+        pass
+    try:
+        with _local_cache_lock:
+            if lock_key in _local_cache:
+                del _local_cache[lock_key]
+        return True
+    except Exception:
+        return False
+
+
+async def _refresh_watchlist_snapshot_async(cache_key: str, stale_key: str, limit: int, fundflow_prefer: str):
+    """Asynchronously recompute watchlist snapshot and update fresh+stale cache keys."""
+    try:
+        # call the synchronous handler in a thread to reuse computation logic
+        result = await asyncio.to_thread(watchlist_snapshot, limit, fundflow_prefer, True)
+        # ensure we have a JSON-serializable dict
+        if isinstance(result, (dict, list)):
+            payload = json.dumps(result, ensure_ascii=False)
+        else:
+            try:
+                payload = json.dumps(result.json(), ensure_ascii=False)
+            except Exception:
+                payload = json.dumps({'result': str(result)}, ensure_ascii=False)
+        try:
+            _redis_set(cache_key, payload, ex=WATCHLIST_FRESH_TTL)
+            _redis_set(stale_key, payload, ex=WATCHLIST_STALE_TTL)
+        except Exception:
+            pass
+    except Exception:
+        logger.exception("_refresh_watchlist_snapshot_async failed")
+
+
+def _refresh_watchlist_snapshot(cache_key: str, stale_key: str, limit: int, fundflow_prefer: str):
+    """Schedule a background refresh using asyncio when available, else thread."""
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_refresh_watchlist_snapshot_async(cache_key, stale_key, limit, fundflow_prefer))
+        return True
+    except RuntimeError:
+        # no running loop, fallback to thread
+        def _bg():
+            try:
+                import asyncio as _asyncio
+                _asyncio.run(_refresh_watchlist_snapshot_async(cache_key, stale_key, limit, fundflow_prefer))
+            except Exception:
+                logger.exception("threaded _refresh_watchlist_snapshot failed")
+
+        _threading.Thread(target=_bg, daemon=True).start()
+        return True
+    except Exception:
+        return False
+
 _AGENT_DURATION_HISTORY: deque[float] = deque(maxlen=300)
 _AGENT_FAILURE_REASON_COUNTS: Counter = Counter()
 
@@ -314,6 +538,48 @@ from .routers.rag import router as rag_router
 app.include_router(events_router)
 app.include_router(briefings_router)
 app.include_router(rag_router)
+
+
+@app.get("/internal/metrics")
+def internal_metrics(request: Request):
+    """Internal metrics for caching and availability (for debugging/ops).
+
+    Access control:
+    - Always allow requests from localhost (127.0.0.1 or ::1).
+    - Allow remote access only when ENV is 'dev'/'development' or INTERNAL_METRICS_ENABLED=true.
+    """
+    try:
+        client_ip = None
+        try:
+            client_ip = request.client.host
+        except Exception:
+            client_ip = None
+
+        env = os.getenv('ENV', '').lower()
+        enabled_flag = os.getenv('INTERNAL_METRICS_ENABLED', '').lower() == 'true'
+        is_local = client_ip in ("127.0.0.1", "::1", "localhost")
+        if not (is_local or enabled_flag or env in ("dev", "development")):
+            raise HTTPException(status_code=403, detail="internal metrics access denied")
+
+        with _local_cache_lock:
+            size = len(_local_cache)
+        return {
+            "local_cache_hits": globals().get('_local_cache_hits', 0),
+            "local_cache_misses": globals().get('_local_cache_misses', 0),
+            "local_cache_sets": globals().get('_local_cache_sets', 0),
+            "local_cache_size": size,
+            "local_cache_max": globals().get('_LOCAL_CACHE_MAX', None),
+            "redis_available": bool(_redis_client),
+            "redis_cache_hits": globals().get('_redis_cache_hits', 0),
+            "redis_cache_misses": globals().get('_redis_cache_misses', 0),
+            "redis_cache_sets": globals().get('_redis_cache_sets', 0),
+            "client_ip": client_ip,
+            "env": env,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"error": "failed to collect metrics", "detail": str(e)}
 
 # === Persisted Agent Daily Reports API ===
 from sqlalchemy import select as _select
@@ -1842,6 +2108,7 @@ def latest_fundflow(limit: int = 50):
 def watchlist_snapshot(
     limit: int = Query(0, description="limit rows; 0 for all"),
     fundflow_prefer: str = Query("auto", description="Preferred fundflow source: auto|db|ak_today|eastmoney"),
+    _force_recompute: bool = False,
 ):
     """自选股快照（组合实时/历史/资金流向）。
 
@@ -1855,8 +2122,84 @@ def watchlist_snapshot(
     - fundflow_prefer: 资金流来源偏好 auto|db|ak_today|eastmoney
       auto：优先 DB（EOD），不足则回退到当日排行或东方财富
     """
+    # Simple fresh-cache fast path: try to return cached fresh snapshot
+    cache_key = f"watchlist_snapshot:{limit}:{fundflow_prefer}:v1"
+    stale_key = cache_key + ":stale"
+    try:
+        cached = _redis_get(cache_key)
+        if cached and not _force_recompute:
+            try:
+                return json.loads(cached)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # if not fresh, attempt stale-while-revalidate: return stale immediately and trigger background refresh
+    try:
+        stale = _redis_get(stale_key)
+        if stale and not _force_recompute:
+            try:
+                # attempt acquire lock to avoid stampede
+                lock_key = cache_key + ":lock"
+                if _acquire_refresh_lock(lock_key, ex=30):
+                    async def _async_bg():
+                        try:
+                            # run the synchronous recompute in a thread to avoid blocking event loop
+                            await asyncio.to_thread(watchlist_snapshot, limit, fundflow_prefer, True)
+                        except Exception:
+                            logger.exception("background watchlist refresh failed")
+                        finally:
+                            _release_refresh_lock(lock_key)
+
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(_async_bg())
+                    except RuntimeError:
+                        # no running event loop (e.g., started outside async context) -> fallback to thread
+                        def _bg():
+                            try:
+                                watchlist_snapshot(limit=limit, fundflow_prefer=fundflow_prefer, _force_recompute=True)
+                            except Exception:
+                                logger.exception("background watchlist refresh failed")
+                            finally:
+                                _release_refresh_lock(lock_key)
+
+                        _threading.Thread(target=_bg, daemon=True).start()
+                return json.loads(stale)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     from sqlalchemy import func
     from .core.models import FundFlowDaily
+    # Cold-start protection: acquire a refresh lock so only one process recomputes.
+    lock_key = cache_key + ":lock"
+    lock_acquired = False
+    try:
+        lock_acquired = _acquire_refresh_lock(lock_key, ex=30)
+        if not lock_acquired:
+            # another worker is recomputing — wait briefly for cache to appear
+            waited = 0.0
+            while waited < 2.0:
+                time.sleep(0.05)
+                cached = _redis_get(cache_key)
+                if cached:
+                    try:
+                        return json.loads(cached)
+                    except Exception:
+                        break
+                stale = _redis_get(stale_key)
+                if stale:
+                    try:
+                        return json.loads(stale)
+                    except Exception:
+                        break
+                waited += 0.05
+    except Exception:
+        # best-effort; continue to compute if lock system fails
+        lock_acquired = False
     with SessionLocal() as session:
         # Get enabled watchlist
         watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
@@ -2086,7 +2429,236 @@ def watchlist_snapshot(
                 "chg_20d_pct": near_20d,
                 "chg_ytd_pct": ytd_chg,
             })
-        return {"rows": rows, "count": len(rows)}
+        result = {"rows": rows, "count": len(rows)}
+        try:
+            _redis_set(cache_key, json.dumps(result, ensure_ascii=False), ex=WATCHLIST_FRESH_TTL)
+            _redis_set(stale_key, json.dumps(result, ensure_ascii=False), ex=WATCHLIST_STALE_TTL)
+        except Exception:
+            pass
+        finally:
+            # release refresh lock if we acquired it
+            try:
+                if lock_acquired:
+                    _release_refresh_lock(lock_key)
+            except Exception:
+                pass
+        return result
+
+
+# --- Watchlist Snapshot Streaming (NDJSON) ---
+@app.get("/api/watchlist/snapshot/stream")
+def watchlist_snapshot_stream(
+    limit: int = Query(0, description="limit rows; 0 for all"),
+    fundflow_prefer: str = Query("auto"),
+    batch_size: int = Query(20, ge=5, le=50),
+):
+    """分批流式返回自选股快照，NDJSON 格式。
+
+    每行一个 JSON 对象: {rows, progress, total, done}
+    前端可边接收边渲染，加速首屏展示。
+    """
+    # Fast path: if fresh cache exists, return as single chunk
+    cache_key = f"watchlist_snapshot:{limit}:{fundflow_prefer}:v1"
+    try:
+        cached = _redis_get(cache_key)
+        if cached:
+            data = json.loads(cached)
+            r_list = data.get("rows", [])
+            t = len(r_list)
+            def _one():
+                yield json.dumps({"rows": r_list, "progress": t, "total": t, "done": True}, ensure_ascii=False) + "\n"
+            return StreamingResponse(_one(), media_type="application/x-ndjson",
+                                     headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
+    except Exception:
+        pass
+
+    def _generate():
+        all_rows = []
+        try:
+            with SessionLocal() as session:
+                watches_all = session.execute(select(Watchlist).where(Watchlist.enabled == True)).scalars().all()
+                if limit and limit > 0:
+                    watches_all = watches_all[:limit]
+                total = len(watches_all)
+                if total == 0:
+                    yield json.dumps({"rows": [], "progress": 0, "total": 0, "done": True}, ensure_ascii=False) + "\n"
+                    return
+
+                symbols = [w.symbol for w in watches_all]
+                # Batch fetch spot data for ALL symbols at once
+                spot = get_spot_snapshot(symbols)
+
+                # Lazy fund flow rank map (computed once)
+                _rm: dict = {}
+                _rd: Optional[str] = None
+                _rm_loaded = False
+
+                def _get_rank():
+                    nonlocal _rm, _rd, _rm_loaded
+                    if _rm_loaded:
+                        return _rm, _rd
+                    _rm_loaded = True
+                    try:
+                        rdf = _ds_load_rank_today()
+                        if rdf is None or rdf.empty:
+                            return _rm, _rd
+                        cc = "代码" if "代码" in rdf.columns else ("symbol" if "symbol" in rdf.columns else None)
+                        if not cc:
+                            return _rm, _rd
+                        nc = ["今日主力净流入-净额", "主力净流入-净额", "main_net"]
+                        for _, rr in rdf.iterrows():
+                            b = str(rr[cc])
+                            val, matched_n = None, None
+                            for n in nc:
+                                if n in rdf.columns:
+                                    try:
+                                        val = rr.get(n)
+                                    except Exception:
+                                        val = None
+                                    if val is not None:
+                                        matched_n = n
+                                        break
+                            try:
+                                v = float(val) * 1e4 if (val is not None and matched_n != "main_net") else (float(val) if val is not None else None)
+                            except Exception:
+                                v = None
+                            _rm[b] = v
+                        _rd = datetime.now().date().isoformat()
+                    except Exception:
+                        pass
+                    return _rm, _rd
+
+                def _radar(symbol):
+                    try:
+                        qdf = pd.read_sql_query(
+                            "SELECT trade_date, close FROM prices_daily WHERE symbol = %s ORDER BY trade_date DESC LIMIT 40",
+                            con=engine, params=(symbol,))
+                        if qdf is None or qdf.empty:
+                            return {"momentum": 0.0, "trend": 0.0, "volatility": 0.0, "recent_return": 0.0}, 0.0
+                        qdf = qdf.iloc[::-1].reset_index(drop=True)
+                        closes = qdf["close"].astype(float)
+                        delta = closes.diff()
+                        avg_gain = delta.clip(lower=0).rolling(14, min_periods=14).mean()
+                        avg_loss = (-delta.clip(upper=0)).rolling(14, min_periods=14).mean()
+                        rsi = 100 - 100 / (1 + (avg_gain / (avg_loss.replace(0, pd.NA))))
+                        rsi_val = float(rsi.iloc[-1]) if pd.notna(rsi.iloc[-1]) else 0.0
+                        ma5 = closes.rolling(5, min_periods=5).mean()
+                        ma20 = closes.rolling(20, min_periods=20).mean()
+                        trend_val = float((ma5.iloc[-1] - ma20.iloc[-1]) / ma20.iloc[-1] * 100.0) if (pd.notna(ma20.iloc[-1]) and ma20.iloc[-1] != 0) else 0.0
+                        rets = closes.pct_change()
+                        vol_val = float(rets.tail(10).std() * 100.0) if len(rets) >= 2 else 0.0
+                        recent_ret = float((closes.iloc[-1] / closes.iloc[-10] - 1.0) * 100.0) if (len(closes) >= 10 and closes.iloc[-10] not in (None, 0)) else 0.0
+                        return {"momentum": rsi_val, "trend": trend_val, "volatility": vol_val, "recent_return": recent_ret}, trend_val
+                    except Exception:
+                        return {"momentum": 0.0, "trend": 0.0, "volatility": 0.0, "recent_return": 0.0}, 0.0
+
+                _nz = lambda v: v if v is not None else 0
+
+                def _pct(a, b):
+                    try:
+                        if a is None or b is None or b == 0:
+                            return None
+                        return (a - b) / b * 100.0
+                    except Exception:
+                        return None
+
+                # Process in batches and yield each batch as NDJSON line
+                for bi in range(0, total, batch_size):
+                    batch = watches_all[bi:bi + batch_size]
+                    rows = []
+                    for w in batch:
+                        try:
+                            sym = w.symbol
+                            base = sym.replace('.SH', '').replace('.SZ', '')
+                            sp = spot.get(sym, {})
+                            # Historical metrics
+                            if getattr(w, 'added_at', None):
+                                first_row = session.execute(
+                                    text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s AND trade_date >= :d ORDER BY trade_date ASC LIMIT 1"),
+                                    {"s": sym, "d": w.added_at.date()}).first()
+                                if not first_row:
+                                    first_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).first()
+                            else:
+                                first_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).first()
+                            last_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
+                            d3 = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC OFFSET 2 LIMIT 1"), {"s": sym}).scalar()
+                            d20 = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC OFFSET 19 LIMIT 1"), {"s": sym}).scalar()
+                            ytd = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s AND EXTRACT(YEAR FROM trade_date)=EXTRACT(YEAR FROM CURRENT_DATE) ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).scalar()
+                            latest_ff = session.execute(text("SELECT trade_date, main_net FROM fundflow_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
+
+                            ff_val, ff_date, ff_source = None, None, None
+                            if fundflow_prefer in ("auto", "db") and latest_ff and latest_ff.main_net is not None:
+                                try:
+                                    ff_val = float(latest_ff.main_net)
+                                    ff_date = latest_ff.trade_date.isoformat() if latest_ff.trade_date else None
+                                    ff_source = "db_latest"
+                                except Exception:
+                                    pass
+                            if ff_val is None and fundflow_prefer in ("auto", "ak_today"):
+                                rm, rd = _get_rank()
+                                v = rm.get(base)
+                                if v is not None:
+                                    ff_val, ff_date, ff_source = float(v), rd or datetime.now().date().isoformat(), "ak_today"
+                            if ff_val is None and fundflow_prefer in ("auto", "eastmoney"):
+                                try:
+                                    mk = "1" if sym.endswith(".SH") else "0"
+                                    with httpx.Client(timeout=4.0) as hc:
+                                        resp = hc.get("https://push2.eastmoney.com/api/qt/stock/get", params={"secid": f"{mk}.{base}", "fields": "f62"})
+                                        if resp.status_code == 200:
+                                            jd = resp.json().get("data") if isinstance(resp.json(), dict) else None
+                                            if jd and jd.get("f62") is not None:
+                                                ff_val, ff_date, ff_source = float(jd["f62"]), datetime.now().date().isoformat(), "eastmoney"
+                                except Exception:
+                                    pass
+
+                            price = sp.get('price') if sp else (float(last_row.close) if last_row and last_row.close is not None else None)
+                            radar, trend_val = _radar(sym)
+                            rows.append({
+                                "name": sp.get('name') or w.name, "symbol": sym, "price": price,
+                                "change": _nz(sp.get('change')), "pct_change": _nz(sp.get('pct_change')),
+                                "since_watch_pct": _pct(price, float(first_row.close) if first_row and first_row.close is not None else None),
+                                "radar": radar, "trend": trend_val,
+                                "speed": _nz(sp.get('speed')), "volume": _nz(sp.get('volume')), "amount": _nz(sp.get('amount')),
+                                "spot_source": sp.get('spot_source'), "amount_unit": "yuan",
+                                "turnover_rate": _nz(sp.get('turnover_rate')), "volume_ratio": _nz(sp.get('volume_ratio')),
+                                "amplitude": _nz(sp.get('amplitude')),
+                                "main_net": ff_val, "fundflow_unit": "yuan", "fundflow_date": ff_date, "fundflow_source": ff_source,
+                                "last_volume": _nz(sp.get('last_volume')),
+                                "high": _nz(sp.get('high')), "low": _nz(sp.get('low')),
+                                "open": _nz(sp.get('open')), "pre_close": _nz(sp.get('pre_close')),
+                                "order_ratio": _nz(sp.get('order_ratio')),
+                                "pe_ttm": _nz(sp.get('pe_ttm')), "pb": _nz(sp.get('pb')),
+                                "total_market_cap": _nz(sp.get('total_market_cap')),
+                                "chg_3d_pct": _pct(price, float(d3) if d3 is not None else None),
+                                "chg_20d_pct": _pct(price, float(d20) if d20 is not None else None),
+                                "chg_ytd_pct": _pct(price, float(ytd) if ytd is not None else None),
+                            })
+                        except Exception as e:
+                            logger.warning("stream row %s failed: %s", w.symbol, e)
+                            sp = spot.get(w.symbol, {})
+                            rows.append({"name": sp.get('name') or getattr(w, 'name', w.symbol), "symbol": w.symbol,
+                                         "price": sp.get('price'), "change": 0, "pct_change": 0})
+
+                    all_rows.extend(rows)
+                    progress = min(bi + batch_size, total)
+                    yield json.dumps({"rows": rows, "progress": progress, "total": total, "done": progress >= total}, ensure_ascii=False) + "\n"
+
+            # Cache full result after streaming completes
+            if all_rows:
+                try:
+                    full = {"rows": all_rows, "count": len(all_rows)}
+                    _ck = f"watchlist_snapshot:{limit}:{fundflow_prefer}:v1"
+                    _redis_set(_ck, json.dumps(full, ensure_ascii=False), ex=WATCHLIST_FRESH_TTL)
+                    _redis_set(_ck + ":stale", json.dumps(full, ensure_ascii=False), ex=WATCHLIST_STALE_TTL)
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.exception("watchlist_snapshot_stream error")
+            yield json.dumps({"error": str(e), "done": True}, ensure_ascii=False) + "\n"
+
+    return StreamingResponse(_generate(), media_type="application/x-ndjson",
+                             headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
+
 
 # --- Fund Flow Diagnostics ---
 @app.get("/api/fundflow/diagnostics")
@@ -3791,7 +4363,9 @@ async def get_stocks_update_progress(
                 stock_name = profile.company_name
             else:
                 # 回退方案：从 Watchlist 或使用符号
-                stock_name = watchlist_map.get(symbol, symbol)
+                # 注意：watchlist_map.get(symbol) 可能返回 None（key存在但值为空）
+                watchlist_name = watchlist_map.get(symbol)
+                stock_name = watchlist_name if watchlist_name else symbol
                 logger.warning(f"⚠️ Profile {symbol} 缺少 company_name，使用回退值: {stock_name}")
             
             comp_data = all_stocks_completion[symbol]
