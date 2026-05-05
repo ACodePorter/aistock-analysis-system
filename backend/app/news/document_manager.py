@@ -240,16 +240,18 @@ class LLMExtractor:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 if self.is_local:
-                    # OpenAI 兼容格式
-                    resp = await client.post(
-                        f"{self.api_url}/chat/completions",
-                        json={
-                            "model": self.model,
-                            "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0.3,
-                            "max_tokens": 2048,
-                        }
-                    )
+                    from .qwen_local_llm import get_qwen_semaphore
+                    sem = get_qwen_semaphore()
+                    async with sem:
+                        resp = await client.post(
+                            f"{self.api_url}/chat/completions",
+                            json={
+                                "model": self.model,
+                                "messages": [{"role": "user", "content": prompt}],
+                                "temperature": 0.3,
+                                "max_tokens": 2048,
+                            }
+                        )
                 else:
                     # Azure OpenAI
                     resp = await client.post(

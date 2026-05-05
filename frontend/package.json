@@ -27,6 +27,7 @@
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^5.0.2",
+    "autoprefixer": "^10.4.20",
     "baseline-browser-mapping": "^2.8.32",
     "jsdom": "^27.0.0",
     "typescript": "^5.4.5",

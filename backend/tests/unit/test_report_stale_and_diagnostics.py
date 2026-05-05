@@ -33,7 +33,7 @@ def test_report_stale_fallback():
 
 def test_report_diagnostics_no_data(monkeypatch):
     # Force fetch_daily to return empty and ensure no DB rows for another symbol
-    from app import data_source
+    from app.data import data_source
     import pandas as pd
     symbol2 = 'NODATA1.SZ'
     with engine.begin() as conn:

@@ -17,7 +17,7 @@ Agent 自动执行以下步骤：
 
 | 变量 | 说明 | 默认 |
 | ---- | ---- | ---- |
-| MOVERS_API_URL | 涨跌榜接口 | <http://localhost:8080/api/movers/live_insight?limit=20> |
+| MOVERS_API_URL | 涨跌榜接口 | <http://localhost:8081/api/movers/live_insight?limit=20> |
 | SEARXNG_URL | SearXNG 入口 | <http://localhost:10000> |
 | AGENT_STOCK_NEWS_LIMIT | 单股票新闻条数上限 | 10 |
 | AGENT_PARALLEL_WORKERS | 并行抓取线程数 | 8 |

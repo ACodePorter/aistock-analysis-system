@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import select, text, and_, or_
+from sqlalchemy import select, text, and_, or_, func
 from typing import List, Optional, Dict, Any, Tuple
 from pydantic import BaseModel, Field, validator
 import asyncio
@@ -426,9 +426,9 @@ async def crawler_feedback(payload: CrawlerFeedbackIn) -> CrawlerFeedbackOut:
 
 # --------- Endpoints ---------
 
-class SearxngHealthResponse(BaseModel):
+class RetrievalHealthResponse(BaseModel):
     ok: bool
-    searxng_url: str
+    retrieval_mode: str
     q: Optional[str] = None
     engines: Optional[str] = None
     time_range: Optional[str] = None
@@ -439,88 +439,34 @@ class SearxngHealthResponse(BaseModel):
     error: Optional[str] = None
 
 
+@router.get('/retrieval/health')
 @router.get('/searxng/health')
-async def searxng_health(
+async def retrieval_health(
     q: Optional[str] = Query(None, description="Test query override"),
-    engines: Optional[str] = Query(None, description="Comma-separated engines override"),
-    time_range: Optional[str] = Query(None, description="day|week|month or '7d' style supported by your SearXNG"),
-) -> SearxngHealthResponse:
-    """Minimal SearXNG connectivity diagnostic.
-
-    Purpose: quickly validate whether the backend process can reach the configured SearXNG,
-    and whether `/search` returns JSON.
-    """
-    searxng_url = (os.getenv('SEARXNG_URL', 'http://localhost:10000') or '').rstrip('/')
-    try:
-        timeout_s = float(os.getenv('SEARXNG_HEALTH_TIMEOUT', os.getenv('SEARXNG_TIMEOUT', '5')))
-    except Exception:
-        timeout_s = 5.0
-    query = (q or os.getenv('SEARXNG_HEALTH_QUERY', '延江股份')).strip() or 'test'
-
+) -> RetrievalHealthResponse:
+    from ..agent.web_agent import AgenticWebRetriever
     started = time.time()
-    base_status: Optional[int] = None
-    search_status: Optional[int] = None
-    results_count: Optional[int] = None
     error: Optional[str] = None
-    effective_engines: Optional[str] = None
-    effective_time_range: Optional[str] = None
-
-    def _probe() -> None:
-        nonlocal base_status, search_status, results_count, effective_engines, effective_time_range
-        sess = requests.Session()
-        # Ensure we do not accidentally route localhost through proxy env in long-running processes.
-        sess.trust_env = False
-        # 1) Base page reachable?
-        r0 = sess.get(searxng_url, timeout=timeout_s, proxies={})
-        base_status = r0.status_code
-
-        # 2) Search endpoint returns JSON?
-        params = {
-            'q': query,
-            'categories': 'general',
-            'format': 'json',
-            'time_range': (time_range or os.getenv('SEARXNG_TIME_RANGE', 'month')),
-        }
-        engines_cfg = (engines or os.getenv('SEARXNG_ENGINES', '') or '').strip()
-        if engines_cfg:
-            params['engines'] = engines_cfg
-        effective_engines = engines_cfg or None
-        effective_time_range = params.get('time_range')
-
-        r1 = sess.post(
-            f"{searxng_url}/search",
-            data=params,
-            headers={
-                'Accept': 'application/json, text/plain;q=0.9, */*;q=0.8',
-                'User-Agent': os.getenv('SEARXNG_USER_AGENT', 'aistock-backend/health'),
-            },
-            timeout=timeout_s,
-            proxies={},
-        )
-        search_status = r1.status_code
-        r1.raise_for_status()
-        data = r1.json() if (r1.text or '').strip() else {}
-        results = data.get('results', []) if isinstance(data, dict) else []
-        results_count = len(results) if isinstance(results, list) else 0
-
+    results_count: Optional[int] = None
+    readable_count: Optional[int] = None
     try:
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, _probe)
+        health = await AgenticWebRetriever().health_check(query=(q or 'A股 公司 新闻'))
+        results_count = health.get('search_results')
+        readable_count = health.get('readable_results')
+        ok = bool(health.get('ok'))
     except Exception as e:
+        ok = False
         error = f"{type(e).__name__}: {str(e)}"
-
-    elapsed_ms = int((time.time() - started) * 1000)
-    ok = (error is None) and (search_status == 200)
-    return SearxngHealthResponse(
+    return RetrievalHealthResponse(
         ok=ok,
-        searxng_url=searxng_url,
-        q=query,
-        engines=effective_engines,
-        time_range=effective_time_range,
-        base_status=base_status,
-        search_status=search_status,
-        results_count=results_count,
-        elapsed_ms=elapsed_ms,
+        retrieval_mode='openclaw_web',
+        q=q,
+        engines=None,
+        time_range=None,
+        base_status=200 if ok else None,
+        search_status=200 if ok else None,
+        results_count=results_count or readable_count,
+        elapsed_ms=int((time.time() - started) * 1000),
         error=error,
     )
 
@@ -3108,3 +3054,5 @@ async def update_news_article(article_id: int, payload: NewsArticleUpdate, db: S
     except HTTPException: raise
     except Exception as e:
         db.rollback(); raise HTTPException(status_code=500, detail=f"Error updating article: {str(e)}")
+
+

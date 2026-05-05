@@ -14,6 +14,9 @@ apscheduler==3.10.4
 statsmodels==0.14.2
 scikit-learn==1.5.1
 scipy>=1.10.0,<1.14.0
+lightgbm>=4.0.0
+xgboost>=2.0.0
+joblib>=1.3.0
 python-dotenv==1.1.1
 orjson>=3.10.7
 
@@ -43,3 +46,6 @@ schedule==1.2.1
 
 # FastAPI dependencies  
 python-multipart==0.0.20
+
+# Process monitoring
+psutil>=5.9

@@ -13,7 +13,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./initdb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./infra/initdb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     networks: [local-services]
 
   redis:
@@ -39,11 +39,14 @@ services:
 
   searxng:
     container_name: aistock-searxng
-    image: searxng/searxng:latest
+    build:
+      context: ./infra/searxng
+      dockerfile: Dockerfile
+    image: aistock-searxng-custom:latest
     ports:
       - "10000:8080"
     volumes:
-      - ./searxng:/etc/searxng:rw
+      - ./infra/searxng:/etc/searxng:rw
     environment:
       - SEARXNG_BASE_URL=http://localhost:10000/
     cap_drop:
@@ -71,7 +74,7 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./mongodb/init:/docker-entrypoint-initdb.d
+      - ./infra/mongodb/init:/docker-entrypoint-initdb.d
     networks: [local-services]
     command: --noauth
 
@@ -111,3 +114,4 @@ volumes:
 
 networks:
   local-services:
+ 

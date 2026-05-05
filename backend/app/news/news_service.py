@@ -104,12 +104,14 @@ from ..utils.metrics import NewsMetrics
 from ..core.models import NewsURLPattern
 from .llm_processor import LLMNewsProcessor, NewsAnalysisResult
 from .news_deduplication import NewsDeduplicator
+from ..agent.web_agent import AgenticWebRetriever
 
 
 class NewsSearchService:
     def __init__(self, searxng_url: str = None):
-        self.searxng_url = searxng_url or os.getenv("SEARXNG_URL", "http://localhost:10000")
-        self.timeout = int(os.getenv("SEARXNG_TIMEOUT", "30"))
+        self.timeout = int(os.getenv("WEB_SEARCH_TIMEOUT", os.getenv("SEARXNG_TIMEOUT", "30")))
+        self.retrieval_mode = "openclaw"
+        self._web_retriever: Optional[AgenticWebRetriever] = AgenticWebRetriever()
         
     async def search_news(
         self,
@@ -124,164 +126,93 @@ class NewsSearchService:
         since: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
-        使用 SearXNG 搜索新闻
-
-        Args:
-            query: 查询词（建议包含股票/行业/政策等关键词组合）
-            category: SearXNG 分类（默认 general）
-            time_range: 时间窗（day/week/month）
-            max_results: 限制返回条数（默认20）
-
-        Returns:
-            List[Dict]: 原始搜索结果列表（不改动字段，保留来源链接）
+        使用 OpenClaw 风格检索模式搜索新闻：
+        Search -> Fetch -> Read -> Reason
         """
-        # Engines can be configured via env to adapt to installed searxng plugins
-        # Prefer a finance/news focused default engine set. Can be overridden via env or argument.
-        engines_cfg = engines or os.getenv(
-            "SEARXNG_ENGINES",
-            "reuters,yahoo news,bing news,google news,duckduckgo news,qwant news,baidu news",
-        )
-        search_params = {
-            "q": query,
-            "categories": category,
-            "format": "json",
-            # language: when None, omit to let SearXNG auto-detect/return more
-            "time_range": time_range or "month",
-            "engines": engines_cfg
-        }
-        if language:
-            search_params["language"] = language
-        
         start_time = datetime.utcnow()
-        success = True
-        error_message = None
-        results = []
-        
         try:
-            # NOTE: httpx has been observed to trigger empty-body 502 against some local SearXNG setups.
-            # Use requests in a thread executor for stability.
-            def _do_request() -> Dict[str, Any]:
-                base_url = (self.searxng_url or "").rstrip("/")
-                url = f"{base_url}/search"
-                headers = {
-                    "User-Agent": os.getenv(
-                        "SEARXNG_USER_AGENT",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-                    ),
-                    "Accept": "application/json, text/plain;q=0.9, */*;q=0.8",
-                    "Accept-Language": os.getenv("SEARXNG_ACCEPT_LANGUAGE", "zh-CN,zh;q=0.9,en;q=0.8"),
-                }
-
-                max_retries = int(os.getenv("SEARXNG_RETRIES", "2"))
-                backoff = float(os.getenv("SEARXNG_RETRY_BACKOFF", "0.4"))
-                last_exc: Exception = None
-
-                for attempt in range(max_retries + 1):
-                    try:
-                        resp = requests.post(
-                            url,
-                            data=search_params,
-                            headers=headers,
-                            timeout=self.timeout,
-                            proxies={},
-                        )
-
-                        # Retry for transient responses only.
-                        if resp.status_code in (429, 502, 503, 504) or resp.status_code >= 500:
-                            if attempt < max_retries:
-                                time.sleep(backoff * (attempt + 1))
-                                continue
-                        resp.raise_for_status()
-                        return resp.json() or {}
-                    except Exception as exc:
-                        last_exc = exc
-                        if attempt < max_retries:
-                            time.sleep(backoff * (attempt + 1))
-                            continue
-                        raise
-
-                # Should be unreachable
-                raise last_exc or RuntimeError("SearXNG request failed")
-
-            loop = asyncio.get_running_loop()
-            data = await loop.run_in_executor(None, _do_request)
-            results = data.get("results", [])
-
-            # Optional domain filters (post-filtering)
-            if include_domains:
-                allow = {d.strip().lower() for d in include_domains if d and d.strip()}
-                if allow:
-                    tmp = []
-                    for r in results:
-                        u = r.get("url") if isinstance(r, dict) else None
-                        host = (urlparse(u).netloc or "").lower() if u else ""
-                        if any(host.endswith(d) or host == d or host.endswith("."+d) for d in allow):
-                            tmp.append(r)
-                    results = tmp
-            if exclude_domains:
-                block = {d.strip().lower() for d in exclude_domains if d and d.strip()}
-                if block:
-                    tmp = []
-                    for r in results:
-                        u = r.get("url") if isinstance(r, dict) else None
-                        host = (urlparse(u).netloc or "").lower() if u else ""
-                        if not any(host.endswith(d) or host == d or host.endswith("."+d) for d in block):
-                            tmp.append(r)
-                    results = tmp
-
-            # Optional incremental filter by since (ISO date/time)
-            if since:
-                latest_after_filter: Optional[datetime] = None
-                try:
-                    since_dt = datetime.fromisoformat(since)
-                except Exception:
-                    # Accept YYYY-MM-DD
-                    try:
-                        from datetime import date as _date
-                        since_dt = datetime.combine(_date.fromisoformat(since), datetime.min.time())
-                    except Exception:
-                        since_dt = None
-                if since_dt:
-                    tmp = []
-                    for r in results:
-                        pub_dt = self._extract_published_datetime(r)
-                        if pub_dt is None or pub_dt >= since_dt:
-                            tmp.append(r)
-                            if latest_after_filter is None or (pub_dt and pub_dt > latest_after_filter):
-                                latest_after_filter = pub_dt
-                    results = tmp
-
-            # Cap after filtering
+            results = await self._web_retriever.retrieve(
+                question=query,
+                max_results=max_results,
+                category=category,
+                time_range=time_range,
+                language=language,
+                engines=engines,
+            )
+            results = self._apply_result_filters(
+                results=results,
+                include_domains=include_domains,
+                exclude_domains=exclude_domains,
+                since=since,
+            )
             results = results[:max_results]
-            
-            # Log search
             await self._log_search(
                 query=query,
                 query_type="api",
-                source_engine="searxng",
+                source_engine="openclaw_web",
                 results_count=len(results),
                 processing_time=(datetime.utcnow() - start_time).total_seconds(),
-                success=True
+                success=True,
             )
-            
             return results
-            
-        except Exception as e:
-            error_message = str(e)
-            success = False
-            
-            # Log failed search
+        except Exception as error:
             await self._log_search(
                 query=query,
                 query_type="api",
-                source_engine="searxng",
+                source_engine="openclaw_web",
                 results_count=0,
                 processing_time=(datetime.utcnow() - start_time).total_seconds(),
                 success=False,
-                error_message=error_message
+                error_message=str(error),
             )
-            
-            raise Exception(f"News search failed: {error_message}")
+            raise Exception(f"News search failed: {error}")
+
+    def _apply_result_filters(
+        self,
+        results: List[Dict[str, Any]],
+        include_domains: Optional[List[str]] = None,
+        exclude_domains: Optional[List[str]] = None,
+        since: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        filtered = list(results or [])
+        if include_domains:
+            allow = {d.strip().lower() for d in include_domains if d and d.strip()}
+            if allow:
+                tmp = []
+                for r in filtered:
+                    u = r.get("url") if isinstance(r, dict) else None
+                    host = (urlparse(u).netloc or "").lower() if u else ""
+                    if any(host.endswith(d) or host == d or host.endswith("." + d) for d in allow):
+                        tmp.append(r)
+                filtered = tmp
+        if exclude_domains:
+            block = {d.strip().lower() for d in exclude_domains if d and d.strip()}
+            if block:
+                tmp = []
+                for r in filtered:
+                    u = r.get("url") if isinstance(r, dict) else None
+                    host = (urlparse(u).netloc or "").lower() if u else ""
+                    if not any(host.endswith(d) or host == d or host.endswith("." + d) for d in block):
+                        tmp.append(r)
+                filtered = tmp
+
+        if since:
+            try:
+                since_dt = datetime.fromisoformat(since)
+            except Exception:
+                try:
+                    from datetime import date as _date
+                    since_dt = datetime.combine(_date.fromisoformat(since), datetime.min.time())
+                except Exception:
+                    since_dt = None
+            if since_dt:
+                tmp = []
+                for r in filtered:
+                    pub_dt = self._extract_published_datetime(r)
+                    if pub_dt is None or pub_dt >= since_dt:
+                        tmp.append(r)
+                filtered = tmp
+        return filtered
 
     def _extract_published_datetime(self, result: Dict[str, Any]) -> Optional[datetime]:
         """Best-effort extraction of published datetime from a searxng result item.
@@ -1864,3 +1795,4 @@ class NewsScheduler:
             session.commit()
         finally:
             session.close()
+

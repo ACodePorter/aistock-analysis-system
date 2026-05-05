@@ -839,7 +839,7 @@ class BaikeScraper:
 
         网页内容:
         ---
-        {text_content[:3000]}
+        {text_content[:1500]}
         ---
 
         要求:

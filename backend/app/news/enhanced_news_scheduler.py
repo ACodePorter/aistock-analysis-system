@@ -68,6 +68,7 @@
 import asyncio
 import json
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 import os
@@ -339,14 +340,26 @@ class EnhancedNewsScheduler:
                 task = self._collect_news_for_stock_with_semaphore(semaphore, stock)
                 tasks.append(task)
             
-            # 等待所有任务完成
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # 等待所有任务完成（总超时 30 分钟防止无限挂起）
+            news_timeout = int(os.getenv("NEWS_COLLECTION_TIMEOUT_SECONDS", "1800"))
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=news_timeout,
+                )
+            except asyncio.TimeoutError:
+                logging.warning(f"Daily news collection timed out after {news_timeout}s, partial results only")
+                results = []
+            except asyncio.CancelledError:
+                logging.warning("Daily news collection cancelled (server shutting down?)")
+                return self._create_result("cancelled", start_time, "Cancelled")
             
             # 处理结果
             success_count = 0
             for i, result in enumerate(results):
-                if isinstance(result, Exception):
-                    logging.error(f"Failed to collect news for {enabled_stocks[i].symbol}: {result}")
+                if isinstance(result, (Exception, BaseException)):
+                    sym = enabled_stocks[i].symbol if i < len(enabled_stocks) else "?"
+                    logging.error(f"Failed to collect news for {sym}: {result}")
                     self.stats["errors"] += 1
                 else:
                     success_count += 1
@@ -370,8 +383,12 @@ class EnhancedNewsScheduler:
         """
         带信号量控制的股票新闻收集
         """
-        async with semaphore:
-            return await self._collect_news_for_stock(stock)
+        try:
+            async with semaphore:
+                return await self._collect_news_for_stock(stock)
+        except asyncio.CancelledError:
+            logging.debug(f"News collection for {stock.symbol} was cancelled")
+            raise  # let gather handle it
     
     async def _collect_news_for_stock(self, stock: Watchlist) -> Dict[str, Any]:
         """
@@ -776,6 +793,8 @@ class EnhancedNewsScheduler:
         
         async with LLMNewsProcessor() as llm_processor:
             for article_data in crawl_results:
+                t_article_start = time.perf_counter()
+                url_short = (article_data.get('url') or '')[:160]
                 try:
                     # 去重检查
                     duplicate_result = await self.deduplicator.check_duplicate(
@@ -883,11 +902,14 @@ class EnhancedNewsScheduler:
                         )
                     else:
                         # 使用传统 LLM 分析
-                        analysis_result = await llm_processor.analyze_news(
-                            title=title,
-                            content=analysis_content,
-                            url=article_data.get('url', '')
-                        )
+                            t_llm0 = time.perf_counter()
+                            analysis_result = await llm_processor.analyze_news(
+                                title=title,
+                                content=analysis_content,
+                                url=article_data.get('url', '')
+                            )
+                            t_llm1 = time.perf_counter()
+                            logging.info("[PERF] llm_analyze url=%s symbol=%s duration=%.3f", url_short, symbol, (t_llm1 - t_llm0))
                     
                     # 保存到数据库（附带 PDF 元数据）
                     pdf_meta = None
@@ -902,10 +924,14 @@ class EnhancedNewsScheduler:
                         article_data['pdf_meta'] = pdf_meta
                         article_data['extracted_text'] = pdf_processed_doc.extracted_text
                     
-                    if await self._save_article_to_db(article_data, analysis_result, symbol):
+                    t_save0 = time.perf_counter()
+                    saved = await self._save_article_to_db(article_data, analysis_result, symbol)
+                    t_save1 = time.perf_counter()
+                    if saved:
                         saved_count += 1
                         self.stats["articles_processed"] += 1
                         self.stats["articles_saved"] += 1
+                    logging.info("[PERF] save_article url=%s symbol=%s saved=%s db_duration=%.3f total_article_duration=%.3f", url_short, symbol, saved, (t_save1 - t_save0), (time.perf_counter() - t_article_start))
                 
                 except Exception as e:
                     logging.error(f"Failed to process article {article_data.get('url', 'unknown')}: {e}")
@@ -960,7 +986,10 @@ class EnhancedNewsScheduler:
             )
             
             session.add(article)
+            t_commit0 = time.perf_counter()
             session.commit()
+            t_commit1 = time.perf_counter()
+            logging.info("[PERF] db_commit article=%s symbol=%s commit_duration=%.3f", (article.title or '')[:60], symbol, (t_commit1 - t_commit0))
             
             # 保存到MongoDB主集合
             mongo_article_data = {

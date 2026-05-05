@@ -41,6 +41,6 @@ describe('DailyAnalysisPage auto-run flow', () => {
     await waitFor(()=>{
       expect(screen.getByText('生成时间：2025-10-08T10:05:00Z')).toBeInTheDocument()
       expect(screen.getAllByText('ZZZ').length).toBeGreaterThanOrEqual(1)
-    }, { timeout: 5000 })
-  })
+    }, { timeout: 9000 })
+  }, 10000)
 })

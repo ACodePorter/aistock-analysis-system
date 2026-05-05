@@ -63,7 +63,7 @@ python tests/run_tests.py --data-only
 
 ### 5. 指定API服务器地址
 ```bash
-python tests/run_tests.py --api-url http://localhost:8080
+python tests/run_tests.py --api-url http://localhost:8081
 ```
 
 ## 测试说明

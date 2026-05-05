@@ -12,12 +12,12 @@ def setup_module(module):
 def test_report_endpoint_fallback_no_data(monkeypatch):
     # Monkeypatch fetch_daily to return empty DataFrame to force diagnostics skeleton
     import pandas as pd
-    from app import data_source
+    from app.data import data_source
     def _empty_fetch(sym, start_date=None):
         return pd.DataFrame(columns=['symbol','trade_date','open','high','low','close','pct_chg','vol','amount'])
     monkeypatch.setattr(data_source, 'fetch_daily', _empty_fetch)
     client = TestClient(app)
-    r = client.get('/api/report/ZZTEST.SZ/full?timeRange=5d')
+    r = client.get('/api/report/ZZTEST.SZ/full?timeRange=5d&showDiagnostics=1')
     assert r.status_code == 200, r.text
     js = r.json()
     assert js['symbol'] == 'ZZTEST.SZ'

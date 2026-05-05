@@ -29,10 +29,46 @@ from app.core.models import (
 )
 from app.analysis.analysis_engine import AnalysisEngine
 from app.analysis.report_generator import DailyReportGenerator
+from app.tasks.scheduler import is_trading_day, get_last_trading_day
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/analysis", tags=["Analysis Center"])
+
+# ── 股票名称缓存 ──────────────────────────
+_stock_name_map: dict = {}
+
+def _resolve_name(symbol: str, watchlist_name: Optional[str], db: Session) -> Optional[str]:
+    """解析股票名称：优先 watchlist，其次 AKShare 缓存"""
+    if watchlist_name:
+        return watchlist_name
+    global _stock_name_map
+    if not _stock_name_map:
+        try:
+            import akshare as _ak
+            df = _ak.stock_info_a_code_name()
+            for _, row in df.iterrows():
+                code = str(row['code'])
+                nm = str(row['name'])
+                if code.startswith('6') or code.startswith('9'):
+                    _stock_name_map[f"{code}.SH"] = nm
+                if code.startswith(('0', '1', '2', '3')):
+                    _stock_name_map[f"{code}.SZ"] = nm
+                _stock_name_map[code] = nm
+            logger.info(f"Stock name map loaded: {len(_stock_name_map)} entries")
+        except Exception as e:
+            logger.warning(f"Failed to load stock name map: {e}")
+    resolved = _stock_name_map.get(symbol)
+    if resolved:
+        # 顺便回填 watchlist
+        try:
+            wl = db.execute(select(Watchlist).where(Watchlist.symbol == symbol)).scalar_one_or_none()
+            if wl and not wl.name:
+                wl.name = resolved
+                db.flush()
+        except Exception:
+            pass
+    return resolved
 
 
 # ==================== 报告类型枚举 ====================
@@ -152,6 +188,56 @@ class AddToWatchlistRequest(BaseModel):
 class RunAnalysisRequest(BaseModel):
     symbols: Optional[List[str]] = None  # 如果为空则分析整个观察列表
     generate_report: bool = True
+    refresh_data: bool = False  # 分析前是否刷新行情/资金流数据（默认关闭以加速）
+    fetch_latest_news: bool = False  # 分析前是否搜索最新新闻（默认关闭以加速）
+
+
+# ==================== 交易日与数据新鲜度接口 ====================
+
+@router.get("/latest-trading-day")
+async def get_latest_trading_day_info(db: Session = Depends(get_db)):
+    """获取最新交易日信息及分析数据新鲜度
+    
+    返回最新交易日、是否有该日分析数据、是否需要触发分析
+    """
+    today = date.today()
+    latest_td = get_last_trading_day(today)
+    
+    # 检查该交易日是否有分析数据
+    analysis_count = db.execute(
+        select(func.count(DailyAnalysis.id)).where(
+            DailyAnalysis.analysis_date == latest_td
+        )
+    ).scalar() or 0
+    
+    # 检查是否有报告
+    has_report = db.execute(
+        select(DailyReport.id).where(
+            DailyReport.report_date == latest_td
+        ).limit(1)
+    ).scalar_one_or_none() is not None
+    
+    # 获取最近有数据的日期
+    last_data_date = db.execute(
+        select(DailyAnalysis.analysis_date)
+        .order_by(desc(DailyAnalysis.analysis_date))
+        .limit(1)
+    ).scalar_one_or_none()
+    
+    # 判断是否需要触发
+    needs_analysis = analysis_count == 0
+    data_stale = last_data_date is not None and last_data_date < latest_td
+    
+    return {
+        "today": today.isoformat(),
+        "latest_trading_day": latest_td.isoformat(),
+        "is_today_trading_day": is_trading_day(today),
+        "analysis_count": analysis_count,
+        "has_report": has_report,
+        "last_data_date": last_data_date.isoformat() if last_data_date else None,
+        "needs_analysis": needs_analysis,
+        "data_stale": data_stale,
+    }
 
 
 # ==================== 每日分析接口 ====================
@@ -197,9 +283,11 @@ async def get_daily_analysis(
             select(Watchlist).where(Watchlist.symbol == a.symbol)
         ).scalar_one_or_none()
         
+        stock_name = _resolve_name(a.symbol, watchlist.name if watchlist else None, db)
+        
         results.append(StockAnalysisResponse(
             symbol=a.symbol,
-            name=watchlist.name if watchlist else None,
+            name=stock_name,
             sector=watchlist.sector if watchlist else None,
             analysis_date=a.analysis_date.isoformat(),
             scores=ScoreBreakdownResponse(
@@ -343,11 +431,21 @@ async def get_daily_report(
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     
     generator = DailyReportGenerator(db)
+    # 首先尝试直接读取已存在的报告
     report = generator.get_report(target_date)
-    
+
+    # 如果不存在，尝试自动生成（若当天有分析数据）并返回新生成的报告
+    if not report:
+        try:
+            generated = generator.generate_report(target_date)
+            if generated:
+                report = generator.get_report(target_date)
+        except Exception as e:
+            logger.exception(f"Failed to auto-generate report for {report_date}: {e}")
+
     if not report:
         raise HTTPException(status_code=404, detail=f"No report found for {report_date}")
-    
+
     return DailyReportResponse(**report)
 
 
@@ -359,8 +457,22 @@ async def run_analysis(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    """手动触发分析任务"""
-    analysis_date = date.today()
+    """手动触发分析任务
+    
+    自动使用最近交易日而非当天日期（周末/假日不产出新数据）。
+    分析前可选刷新行情数据和搜索最新新闻以保证数据新鲜度。
+    """
+    # 使用最近交易日作为分析日期
+    analysis_date = get_last_trading_day(date.today())
+    
+    # ---- 分析前刷新数据 ----
+    data_refresh_summary = {}
+    if request.refresh_data:
+        data_refresh_summary = _refresh_market_data(db, analysis_date, request.symbols)
+    
+    if request.fetch_latest_news:
+        news_summary = await _fetch_latest_news_for_stocks(db, request.symbols)
+        data_refresh_summary['news'] = news_summary
     
     engine = AnalysisEngine(db)
     
@@ -378,6 +490,9 @@ async def run_analysis(
     # 保存结果
     saved_count = engine.save_analysis_results(results)
     
+    # ---- 分析结果验证 ----
+    validation_summary = _validate_analysis_results(results)
+    
     # 生成报告
     report_generated = False
     if request.generate_report and results:
@@ -391,12 +506,310 @@ async def run_analysis(
         "stocks_analyzed": len(results),
         "results_saved": saved_count,
         "report_generated": report_generated,
+        "data_refresh": data_refresh_summary,
+        "validation": validation_summary,
         "summary": {
             "buy": sum(1 for r in results if r.recommendation == 'buy'),
             "hold": sum(1 for r in results if r.recommendation == 'hold'),
             "sell": sum(1 for r in results if r.recommendation == 'sell')
         }
     }
+
+
+def _refresh_market_data(db: Session, analysis_date: date, symbols: Optional[List[str]] = None) -> dict:
+    """分析前刷新行情和资金流数据"""
+    from app.core.models import PriceDaily, FundFlowDaily, Watchlist
+    
+    refresh_result = {"prices_updated": 0, "fund_flow_updated": 0, "errors": []}
+    
+    # 确定需要刷新的股票
+    if symbols:
+        target_symbols = symbols
+    else:
+        items = db.execute(
+            select(Watchlist.symbol).where(Watchlist.enabled == True)
+        ).scalars().all()
+        target_symbols = list(items)
+    
+    if not target_symbols:
+        return refresh_result
+    
+    try:
+        from app.data.data_source import fetch_daily, fetch_fund_flow_daily
+    except ImportError:
+        refresh_result["errors"].append("data_source module unavailable")
+        return refresh_result
+    
+    for sym in target_symbols:
+        try:
+            # 检查是否已有当天价格数据
+            existing_price = db.execute(
+                select(PriceDaily).where(
+                    and_(PriceDaily.symbol == sym, PriceDaily.trade_date == analysis_date)
+                )
+            ).scalar_one_or_none()
+            
+            if not existing_price:
+                start_str = (analysis_date - timedelta(days=5)).strftime('%Y%m%d')
+                df = fetch_daily(sym, start_date=start_str)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        td = row.get('trade_date')
+                        if td is None:
+                            continue
+                        if hasattr(td, 'date'):
+                            td = td.date()
+                        elif isinstance(td, str):
+                            td = date.fromisoformat(td[:10])
+                        
+                        exists = db.execute(
+                            select(PriceDaily).where(
+                                and_(PriceDaily.symbol == sym, PriceDaily.trade_date == td)
+                            )
+                        ).scalar_one_or_none()
+                        
+                        if not exists:
+                            price_rec = PriceDaily(
+                                symbol=sym,
+                                trade_date=td,
+                                open=row.get('open'),
+                                high=row.get('high'),
+                                low=row.get('low'),
+                                close=row.get('close'),
+                                pct_chg=row.get('pct_chg'),
+                                vol=row.get('vol'),
+                                amount=row.get('amount'),
+                            )
+                            db.add(price_rec)
+                            refresh_result["prices_updated"] += 1
+            
+            # 刷新资金流向
+            existing_flow = db.execute(
+                select(FundFlowDaily).where(
+                    and_(FundFlowDaily.symbol == sym, FundFlowDaily.trade_date == analysis_date)
+                )
+            ).scalar_one_or_none()
+            
+            if not existing_flow:
+                start_str = (analysis_date - timedelta(days=5)).strftime('%Y%m%d')
+                ff_df = fetch_fund_flow_daily(sym, start_date=start_str)
+                if ff_df is not None and not ff_df.empty:
+                    for _, row in ff_df.iterrows():
+                        td = row.get('trade_date')
+                        if td is None:
+                            continue
+                        if hasattr(td, 'date'):
+                            td = td.date()
+                        elif isinstance(td, str):
+                            td = date.fromisoformat(td[:10])
+                        
+                        exists = db.execute(
+                            select(FundFlowDaily).where(
+                                and_(FundFlowDaily.symbol == sym, FundFlowDaily.trade_date == td)
+                            )
+                        ).scalar_one_or_none()
+                        
+                        if not exists:
+                            flow_rec = FundFlowDaily(
+                                symbol=sym,
+                                trade_date=td,
+                                main_net=row.get('main_net'),
+                                main_ratio=row.get('main_ratio'),
+                                super_net=row.get('super_net'),
+                                super_ratio=row.get('super_ratio'),
+                                large_net=row.get('large_net'),
+                                large_ratio=row.get('large_ratio'),
+                                medium_net=row.get('medium_net'),
+                                medium_ratio=row.get('medium_ratio'),
+                                small_net=row.get('small_net'),
+                                small_ratio=row.get('small_ratio'),
+                            )
+                            db.add(flow_rec)
+                            refresh_result["fund_flow_updated"] += 1
+        except Exception as e:
+            refresh_result["errors"].append(f"{sym}: {str(e)[:80]}")
+    
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        refresh_result["errors"].append(f"commit failed: {str(e)[:80]}")
+    
+    return refresh_result
+
+
+async def _fetch_latest_news_for_stocks(db: Session, symbols: Optional[List[str]] = None) -> dict:
+    """分析前搜索最新新闻并保存到数据库"""
+    from app.core.models import Watchlist, NewsArticle, NewsSource
+    
+    news_result = {"searched": 0, "new_articles": 0, "errors": []}
+    
+    # 获取或创建 web_search 新闻来源
+    web_source = db.execute(
+        select(NewsSource).where(NewsSource.domain == "web_search")
+    ).scalar_one_or_none()
+    if not web_source:
+        web_source = NewsSource(
+            name="Web Search",
+            domain="web_search",
+            category="finance",
+            source_level="L3",
+            reliability_score=0.5,
+            language="zh-CN",
+            enabled=True,
+        )
+        db.add(web_source)
+        db.flush()
+    
+    # 确定目标股票
+    if symbols:
+        target_symbols = symbols
+    else:
+        items = db.execute(
+            select(Watchlist).where(Watchlist.enabled == True)
+        ).scalars().all()
+        target_symbols = [(item.symbol, item.name) for item in items]
+    
+    if not target_symbols:
+        return news_result
+    
+    try:
+        from app.news.news_service import NewsSearchService
+        search_service = NewsSearchService()
+    except Exception:
+        news_result["errors"].append("NewsSearchService unavailable")
+        return news_result
+    
+    for item in target_symbols:
+        if isinstance(item, tuple):
+            sym, name = item
+        else:
+            sym = item
+            wl = db.execute(select(Watchlist).where(Watchlist.symbol == sym)).scalar_one_or_none()
+            name = wl.name if wl else None
+        
+        # 搜索关键词：股票名称 + 代码
+        search_query = f"{name or ''} {sym.split('.')[0]} 股票 最新消息".strip()
+        
+        try:
+            results = await search_service.search_news(
+                query=search_query,
+                category="news",
+                time_range="week",
+                max_results=5,
+                language="zh",
+            )
+            news_result["searched"] += 1
+            
+            for article_data in results:
+                title = article_data.get('title', '')
+                url = article_data.get('url', '')
+                if not title or not url:
+                    continue
+                
+                # 去重：检查URL是否已存在
+                existing = db.execute(
+                    select(NewsArticle).where(NewsArticle.url == url).limit(1)
+                ).scalar_one_or_none()
+                
+                if not existing:
+                    # 简单情感判断：基于标题关键词
+                    sentiment = article_data.get('sentiment_score')
+                    if sentiment is None:
+                        pos_kw = ['利好', '上涨', '增长', '突破', '大涨', '利润', '盈利', '反弹']
+                        neg_kw = ['利空', '下跌', '下滑', '亏损', '风险', '暴跌', '减持', '处罚']
+                        pos = sum(1 for k in pos_kw if k in title)
+                        neg = sum(1 for k in neg_kw if k in title)
+                        if pos > neg:
+                            sentiment = 0.3 + min(pos * 0.15, 0.5)
+                        elif neg > pos:
+                            sentiment = -(0.3 + min(neg * 0.15, 0.5))
+                        else:
+                            sentiment = 0.0
+                    
+                    article = NewsArticle(
+                        title=title,
+                        url=url,
+                        content=article_data.get('content') or article_data.get('snippet', ''),
+                        source_id=web_source.id,
+                        category="finance",
+                        published_at=datetime.utcnow(),
+                        crawled_at=datetime.utcnow(),
+                        related_stocks=[sym],
+                        sentiment_score=sentiment,
+                        sentiment_type="positive" if (sentiment or 0) > 0.1 else ("negative" if (sentiment or 0) < -0.1 else "neutral"),
+                    )
+                    db.add(article)
+                    news_result["new_articles"] += 1
+                    
+        except Exception as e:
+            news_result["errors"].append(f"{sym}: {str(e)[:60]}")
+    
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        news_result["errors"].append(f"commit: {str(e)[:60]}")
+    
+    return news_result
+
+
+def _validate_analysis_results(results: list) -> dict:
+    """验证分析结果的质量和一致性"""
+    if not results:
+        return {"valid": False, "reason": "no results", "quality_score": 0}
+    
+    validation = {
+        "total": len(results),
+        "quality_score": 0,
+        "issues": [],
+        "dimension_coverage": {},
+    }
+    
+    quality_points = 0
+    max_points = 0
+    
+    for r in results:
+        max_points += 5
+        item_points = 0
+        
+        # 检查各维度评分是否有实际数据支撑（不全是默认值50）
+        scores = [r.scores.technical, r.scores.fundamental, r.scores.sentiment,
+                  r.scores.fund_flow, r.scores.cycle]
+        non_default = sum(1 for s in scores if abs(s - 50.0) > 0.01)
+        item_points += min(non_default, 5)
+        
+        if r.news_count == 0:
+            validation["issues"].append(f"{r.symbol}: 无新闻数据支撑情感分析")
+        
+        if r.confidence < 0.4:
+            validation["issues"].append(f"{r.symbol}: 置信度过低({r.confidence:.2f})")
+        
+        quality_points += item_points
+    
+    validation["quality_score"] = round(quality_points / max_points * 100, 1) if max_points > 0 else 0
+    validation["valid"] = validation["quality_score"] >= 40
+    
+    # 统计各维度覆盖情况
+    tech_valid = sum(1 for r in results if abs(r.scores.technical - 50) > 0.01)
+    fund_valid = sum(1 for r in results if abs(r.scores.fundamental - 50) > 0.01)
+    sent_valid = sum(1 for r in results if abs(r.scores.sentiment - 50) > 0.01)
+    flow_valid = sum(1 for r in results if abs(r.scores.fund_flow - 50) > 0.01)
+    cycle_valid = sum(1 for r in results if abs(r.scores.cycle - 50) > 0.01)
+    
+    total = len(results)
+    validation["dimension_coverage"] = {
+        "technical": f"{tech_valid}/{total}",
+        "fundamental": f"{fund_valid}/{total}",
+        "sentiment": f"{sent_valid}/{total}",
+        "fund_flow": f"{flow_valid}/{total}",
+        "cycle": f"{cycle_valid}/{total}",
+    }
+    
+    # 截断issues避免返回太多
+    validation["issues"] = validation["issues"][:20]
+    
+    return validation
 
 
 # ==================== 投资潜力评估 ====================
@@ -489,7 +902,7 @@ async def get_watchlist(
     return [
         WatchlistItemResponse(
             symbol=item.symbol,
-            name=item.name,
+            name=_resolve_name(item.symbol, item.name, db),
             sector=item.sector,
             enabled=item.enabled,
             source=item.source or 'manual',
@@ -805,7 +1218,7 @@ async def get_movers_analysis(
         
         results.append({
             "symbol": p.symbol,
-            "name": watchlist_item.name if watchlist_item else None,
+            "name": _resolve_name(p.symbol, watchlist_item.name if watchlist_item else None, db),
             "pct_change": float(p.pct_chg) if p.pct_chg else 0.0,
             "close_price": float(p.close) if p.close else 0.0,
             "volume": int(p.vol) if p.vol else 0,

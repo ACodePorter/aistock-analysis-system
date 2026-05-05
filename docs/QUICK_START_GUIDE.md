@@ -96,13 +96,13 @@ EOF
 
 ```bash
 # 获取基本 Profile
-curl http://localhost:8080/api/stock-profile/000001.SZ
+curl http://localhost:8081/api/stock-profile/000001.SZ
 
 # 获取详细 Profile（含分析数据）
-curl http://localhost:8080/api/stock-profile/000001.SZ/details
+curl http://localhost:8081/api/stock-profile/000001.SZ/details
 
 # 刷新 Profile 数据
-curl -X POST http://localhost:8080/api/stock-profile/000001.SZ/refresh
+curl -X POST http://localhost:8081/api/stock-profile/000001.SZ/refresh
 ```
 
 **完整文档**:

@@ -4,7 +4,7 @@
  */
 
 // 从全局变量获取 API_BASE，或使用默认后端地址
-export const API_BASE = (window as any).API_BASE || 'http://localhost:8080';
+export const API_BASE = (window as any).API_BASE || 'http://localhost:8090';
 
 // 导出一个函数，方便其他地方调用
 export const getApiBase = (): string => {
@@ -54,18 +54,31 @@ export const API_ENDPOINTS = {
 
   // 动态股票池 & 成员/画像
   STOCK_POOL: {
-    LIST: (page:number=1, page_size:number=50, industry?:string, sort?:string, order?:'asc'|'desc') => {
+    LIST: (page:number=1, page_size:number=50, industry?:string, sort?:string, order?:'asc'|'desc', profile_filter?:string) => {
       const params = new URLSearchParams()
-      params.set('page', String(page))
-      params.set('page_size', String(page_size))
+      params.set('limit', String(page_size))
+      params.set('offset', String((page - 1) * page_size))
       if(industry) params.set('industry', industry)
       if(sort) params.set('sort', sort)
       if(order) params.set('order', order)
+      if(profile_filter && profile_filter !== 'all') params.set('profile_filter', profile_filter)
       return `/api/stock-pool?${params.toString()}`
     },
+    SEARCH: (q: string) => `/api/stock-pool/search?q=${encodeURIComponent(q)}`,
+    ADD: '/api/stock-pool/add',
+    REMOVE: (symbol: string) => `/api/stock-pool/${encodeURIComponent(symbol)}`,
+    STATS: '/api/stock-pool/stats',
+    IMPORT_TODAY: '/api/stock-pool/import-today',
+    BACKFILL: '/api/stock-pool/backfill',
+    BACKFILL_STATUS: '/api/stock-pool/backfill/status',
     PROFILE: (symbol:string) => `/api/stock-profile/${symbol}`,
     PROFILE_DETAILS: (symbol:string) => `/api/stock-profile/${symbol}/details`,
     PROFILE_REFRESH: (symbol:string) => `/api/stock-profile/${symbol}/refresh`,
+    PROFILE_STATUS: '/api/stock-pool/profile-status',
+    PROFILE_COMPLETION: '/api/stock-pool/profile-completion',
+    PROFILE_COMPLETION_STATUS: '/api/stock-pool/profile-completion/status',
+    STOCK_PROFILE: (symbol: string) => `/api/stock-pool/${encodeURIComponent(symbol)}/profile`,
+    REBUILD_PROFILE: (symbol: string) => `/api/stock-pool/${encodeURIComponent(symbol)}/rebuild-profile`,
   },
 
   // 机器学习模型在线预测
@@ -76,6 +89,28 @@ export const API_ENDPOINTS = {
   // 仪表板相关
   DASHBOARD: {
     REPORTS: '/api/dashboard/reports',
+    DECISION_SUMMARY: '/api/dashboard/decision-summary',
+    TOMORROW_RETAIL_ACTIONS: '/api/dashboard/tomorrow-retail-actions',
+    TOMORROW_PLAYBOOK: '/api/dashboard/tomorrow-playbook',
+  },
+
+  // 个股决策相关
+  STOCKS: {
+    RETAIL_DECISION: (symbol: string) => `/api/stocks/${encodeURIComponent(symbol)}/retail-decision`,
+    TRADE_PLAYBOOK: (symbol: string) => `/api/stocks/${encodeURIComponent(symbol)}/trade-playbook`,
+  },
+
+  USER_PORTFOLIO: {
+    POSITIONS: '/api/user-portfolio/positions',
+    TRADES: '/api/user-portfolio/trades',
+    TRADE: (id: number | string) => `/api/user-portfolio/trades/${id}`,
+    RECOMPUTE: '/api/user-portfolio/recompute',
+  },
+
+  OPPORTUNITIES: {
+    LIST: '/api/opportunities',
+    DISCOVER: '/api/opportunities/discover',
+    APPROVE: (symbol: string) => `/api/opportunities/${encodeURIComponent(symbol)}/approve`,
   },
 
   // 宏观数据相关
@@ -98,7 +133,18 @@ export const API_ENDPOINTS = {
   WATCHLIST: '/watchlist',
   WATCHLIST_API: {
     SNAPSHOT: '/api/watchlist/snapshot',
+    SNAPSHOT_STREAM: '/api/watchlist/snapshot/stream',
     ANALYSIS: '/api/watchlist/analysis',
+  },
+
+  // 预测复盘
+  FORECAST_REVIEW: '/api/forecast/review',
+
+  // AI 量化引擎
+  QUANT: {
+    INSIGHT: (symbol: string) => `/api/report/${encodeURIComponent(symbol)}/insight`,
+    SIGNALS_TOP: (n: number = 10) => `/api/quant/signals/top?n=${n}`,
+    SIGNALS_RANKED: '/api/quant/signals/ranked',
   },
 
   // 动态股票相关
@@ -196,13 +242,113 @@ export interface MacroReportModelInsights {
 
 export interface MacroReportTopic extends MacroTopicSummary {
   sentiment_label?: string;
+  confidence?: number;
+  signal_type?: 'risk' | 'opportunity' | 'neutral' | string;
+}
+
+export interface MacroReportSignal {
+  topic: string;
+  severity: 'high' | 'medium' | 'low' | string;
+  confidence: number;
+  reason: string;
+}
+
+export interface MacroReportDiagnosticsItem {
+  name: string;
+  value: number | null;
+  status: 'good' | 'warn' | 'risk' | string;
+  detail?: string;
+}
+
+export interface MacroReportActionItems {
+  focus: string[];
+  avoid: string[];
+  verify: string[];
+}
+
+export interface MacroReportValidation {
+  is_valid: boolean;
+  is_high_quality?: boolean;
+  feature_enabled: boolean;
+  checked_at: string;
+  rules?: Record<string, number>;
+  stats?: Record<string, number | boolean | null>;
+  invalid_reasons?: string[];
+  quality_notes?: string[];
+  message?: string;
+}
+
+export interface MacroTopicDetailKeyNews {
+  title: string;
+  url?: string | null;
+  summary?: string | null;
+  sentiment_score?: number | null;
+  sentiment_type?: string | null;
+}
+
+export interface MacroTopicDetail {
+  topic: string;
+  cn_name: string;
+  mood: string;
+  article_count: number;
+  sentiment: number | null;
+  summary_text: string;
+  keywords: string[];
+  key_news: MacroTopicDetailKeyNews[];
+  companies: string[];
+  people: string[];
+}
+
+export interface MacroTrendDailyPoint {
+  date: string;
+  avg_sentiment: number;
+  topic_count: number;
+}
+
+export interface MacroTrendTopicPoint {
+  date: string;
+  sentiment: number;
+  article_count: number;
+}
+
+export interface MacroTrendMover {
+  topic: string;
+  delta: number;
+  direction: string;
+  from_sentiment: number;
+  to_sentiment: number;
+}
+
+export interface MacroTrendAnalysis {
+  days_covered: number;
+  daily_overall: MacroTrendDailyPoint[];
+  topic_trends: Record<string, MacroTrendTopicPoint[]>;
+  trend_direction: string;
+  biggest_movers: MacroTrendMover[];
+}
+
+export interface MacroHotKeyword {
+  keyword: string;
+  count: number;
+  topics: string[];
 }
 
 export interface MacroReportPayload {
   report_date: string;
   generated_at: string;
+  plain_summary?: string;
+  outline?: string[];
+  validation?: MacroReportValidation;
   metrics: MacroReportMetrics;
+  executive_summary?: string[];
+  risk_signals?: MacroReportSignal[];
+  opportunity_signals?: MacroReportSignal[];
+  action_items?: MacroReportActionItems;
+  data_diagnostics?: MacroReportDiagnosticsItem[];
   topics: MacroReportTopic[];
+  topic_details?: MacroTopicDetail[];
+  trend_analysis?: MacroTrendAnalysis;
+  hot_keywords?: MacroHotKeyword[];
   top_positive_topics: MacroReportTopic[];
   top_negative_topics: MacroReportTopic[];
   most_covered_topics: MacroReportTopic[];

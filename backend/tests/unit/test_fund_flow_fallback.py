@@ -5,7 +5,7 @@ import pandas as pd
 
 def test_fund_flow_fallback_graceful(monkeypatch):
     """Simulate akshare failures to ensure fetch_fund_flow_daily returns empty dataframe (not exception)."""
-    from app import data_source as ds
+    from app.data import data_source as ds
 
     # Force disable real network by mocking akshare functions to raise
     class DummyAk:

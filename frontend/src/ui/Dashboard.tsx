@@ -3,6 +3,8 @@ import AgentPanel from './AgentPanel';
 import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 import useMacroOverview from './hooks/useMacroOverview';
 import useMacroReport from './hooks/useMacroReport';
+import HelpTooltip from './components/HelpTooltip';
+import { helpTips } from '../config/helpTips';
 
 // 统一的图标组件 - 模块化设计
 const RefreshIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -398,26 +400,26 @@ const Dashboard: React.FC = () => {
               gap: '8px',
               flexWrap: 'wrap'
             }}>
-              <button onClick={handleRefresh} disabled={tabLoading || tabRefreshing} className="dark-btn dark-btn-primary">
+              <HelpTooltip {...helpTips.refreshData}><span style={{ display: 'inline-flex' }}><button onClick={handleRefresh} disabled={tabLoading || tabRefreshing} className="dark-btn dark-btn-primary">
                 {tabLoading || tabRefreshing ? <LoadingSpinner /> : <RefreshIcon />}
                 <span style={{ marginLeft: 8 }}>{tabRefreshing ? '刷新中...' : tabLoading ? '加载中...' : '刷新'}</span>
-              </button>
-              <button onClick={() => setActiveTab('reports')} className={activeTab === 'reports' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
+              </button></span></HelpTooltip>
+              <HelpTooltip {...helpTips.dashboardReports}><button onClick={() => setActiveTab('reports')} className={activeTab === 'reports' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <ChartIcon />
                 <span style={{ marginLeft: 8 }}>报告</span>
-              </button>
-              <button onClick={() => setActiveTab('tasks')} className={activeTab === 'tasks' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
+              </button></HelpTooltip>
+              <HelpTooltip {...helpTips.dashboardStats}><button onClick={() => setActiveTab('tasks')} className={activeTab === 'tasks' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <TaskIcon />
                 <span style={{ marginLeft: 8 }}>统计</span>
-              </button>
-              <button onClick={() => setActiveTab('macro')} className={activeTab === 'macro' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
+              </button></HelpTooltip>
+              <HelpTooltip {...helpTips.dashboardMacro}><button onClick={() => setActiveTab('macro')} className={activeTab === 'macro' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <StatsIcon className="w-4 h-4" />
                 <span style={{ marginLeft: 8 }}>宏观</span>
-              </button>
-              <button onClick={() => setActiveTab('agent')} className={activeTab === 'agent' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
+              </button></HelpTooltip>
+              <HelpTooltip {...helpTips.dashboardAgent}><button onClick={() => setActiveTab('agent')} className={activeTab === 'agent' ? 'dark-btn dark-btn-primary' : 'dark-btn dark-btn-secondary'}>
                 <StatsIcon className="w-4 h-4" />
                 <span style={{ marginLeft: 8 }}>Agent</span>
-              </button>
+              </button></HelpTooltip>
             </div>
           </div>
         </div>

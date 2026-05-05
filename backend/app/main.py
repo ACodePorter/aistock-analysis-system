@@ -45,17 +45,33 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Windows 兼容：确保 asyncio 子进程 API 可用
+# 在 Windows 的 SelectorEventLoopPolicy 下，create_subprocess_exec 会抛 NotImplementedError。
+# 某些历史代码路径/第三方库仍可能触发该 API，因此统一切到 Proactor 策略兜底。
+try:
+    if sys.platform.startswith("win") and hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+except Exception:
+    # best-effort；失败不阻塞服务启动
+    pass
+
 from .core.db import SessionLocal, init_database, engine
 from .data.data_source import get_stock_info, search_stocks, get_realtime_stock, fetch_daily, get_spot_snapshot
 # 使用数据源中的带缓存的资金流“今日排行”加载器，减少日志与请求频率
 from .data.data_source import _load_fund_flow_rank_today as _ds_load_rank_today
-from .core.models import Watchlist, PriceDaily, Forecast, Signal, Task, Report, TaskStatus, TaskType, Stock, AgentJob, AgentJobStatus, StockDailyFeature, FeatureCorrelation, StockEvent, StockPoolMember, StockProfile
+from .core.models import Watchlist, PriceDaily, Forecast, Signal, Task, Report, TaskStatus, TaskType, Stock, AgentJob, AgentJobStatus, StockDailyFeature, FeatureCorrelation, StockEvent, StockPoolMember, StockProfile, TradingSignal, PositionManagement, Portfolio, PaperTradingSnapshot, PaperTradeLog, PredictionEvaluation, ModelLifecycleEvent, PipelineRun
 from .prediction.model_inference import predict_symbol as _predict_symbol  # inference utility
 from .prediction.forecast import predict_stock_price
 from .reports.report import generate_report_data
 from .reports.macro_report import generate_and_store_macro_report
+from .reports.macro_pipeline import run_pipeline as run_macro_observation_pipeline
 from .tasks.task_manager import TaskManager
 from .tasks.scheduler import run_daily_pipeline, attach_scheduler
+from .core.trading_calendar import (
+    is_trading_day as _calendar_is_trading_day,
+    next_trading_day as _calendar_next_trading_day,
+    last_trading_day_on_or_before as _calendar_last_trading_day_on_or_before,
+)
 import pandas as pd
 import httpx
 from urllib.parse import urlparse
@@ -71,6 +87,43 @@ import uuid as _uuid
 import traceback as _tb
 from collections import deque, Counter, OrderedDict
 import math
+
+# --- 子进程生命周期跟踪 ---
+_CHILD_PROCESSES: list = []  # List[subprocess.Popen]
+_CHILD_PROCS_LOCK = _threading.Lock()
+
+
+def _track_child_process(proc) -> None:
+    """注册一个 subprocess.Popen 实例以便 shutdown 时清理"""
+    with _CHILD_PROCS_LOCK:
+        # 顺便清理已经结束的进程
+        _CHILD_PROCESSES[:] = [p for p in _CHILD_PROCESSES if p.poll() is None]
+        _CHILD_PROCESSES.append(proc)
+
+
+def _cleanup_child_processes() -> None:
+    """终止所有仍在运行的子进程（优雅关闭 → 强制杀死）"""
+    with _CHILD_PROCS_LOCK:
+        alive = [p for p in _CHILD_PROCESSES if p.poll() is None]
+    if not alive:
+        return
+    logger.info("正在清理 %d 个子进程...", len(alive))
+    for p in alive:
+        try:
+            p.terminate()
+        except Exception:
+            pass
+    # 等待 5 秒后强制杀死
+    import time as _t
+    _t.sleep(5)
+    for p in alive:
+        try:
+            if p.poll() is None:
+                p.kill()
+                logger.warning("强制杀死子进程 PID=%s", p.pid)
+        except Exception:
+            pass
+
 
 _AGENT_JOBS: dict[str, dict] = {}  # legacy in-memory cache (will mirror DB subset)
 _AGENT_JOBS_LOCK = _threading.Lock()
@@ -342,7 +395,7 @@ def _dispatch_next_agent_if_possible():
         }
     t = _threading.Thread(target=_run_agent_job, args=(job_id, strict_flag), daemon=True)
     t.start()
-_AGENT_SCRIPT_PATH = _Path(__file__).resolve().parent / "scripts" / "top20_llm_agent_full.py"
+_AGENT_SCRIPT_PATH = _Path(__file__).resolve().parent / "scripts" / "top20_llm_agent_full.py"  # deprecated: script removed
 
 def _run_agent_job(job_id: str, strict: bool):
     start_ts = time.time()
@@ -353,6 +406,7 @@ def _run_agent_job(job_id: str, strict: bool):
         cmd = [sys.executable, str(_AGENT_SCRIPT_PATH)]
         import subprocess, json as _json
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        _track_child_process(proc)
         stdout, stderr = proc.communicate()
         rc = proc.returncode
         report_paths = []
@@ -408,13 +462,14 @@ def _run_agent_job(job_id: str, strict: bool):
                         import subprocess, sys as _sys, shlex
                         script_path = _Path(__file__).resolve().parent.parent / 'scripts' / 'build_daily_features.py'
                         if script_path.exists():
-                            # date param omitted to infer from report
-                            subprocess.Popen([_sys.executable, str(script_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            _p1 = subprocess.Popen([_sys.executable, str(script_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            _track_child_process(_p1)
                         # trigger stock pool update (will call enrichment for new symbols)
                         try:
                             pool_script = _Path(__file__).resolve().parent.parent / 'scripts' / 'update_stock_pool.py'
                             if pool_script.exists():
-                                subprocess.Popen([_sys.executable, str(pool_script)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                _p2 = subprocess.Popen([_sys.executable, str(pool_script)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                _track_child_process(_p2)
                         except Exception as e2:
                             logger.warning("auto update_stock_pool failed: %s", e2, exc_info=True)
                         # Persist daily agent report (best-effort)
@@ -531,6 +586,18 @@ app.include_router(financial_router)
 from .routers.webdata import router as webdata_router
 app.include_router(webdata_router, prefix="/api")
 
+# 股票池管理路由
+from .routers.stock_pool import router as stock_pool_router
+app.include_router(stock_pool_router)
+
+# 用户真实持仓/交易流水路由
+from .routers.user_portfolio import router as user_portfolio_router
+app.include_router(user_portfolio_router)
+
+# 潜力股票机会发现路由
+from .routers.opportunities import router as opportunities_router
+app.include_router(opportunities_router)
+
 # === v1.1 升级：事件、简报、RAG 路由 ===
 from .routers.events import router as events_router
 from .routers.briefings import router as briefings_router
@@ -538,6 +605,16 @@ from .routers.rag import router as rag_router
 app.include_router(events_router)
 app.include_router(briefings_router)
 app.include_router(rag_router)
+
+from .routers.pipeline_status import router as pipeline_status_router
+app.include_router(pipeline_status_router)
+
+from .routers.agent_runtime import router as agent_runtime_router
+app.include_router(agent_runtime_router)
+
+# AI 量化引擎路由
+from .quant_engine.api import quant_router
+app.include_router(quant_router)
 
 
 @app.get("/internal/metrics")
@@ -750,7 +827,7 @@ async def run_agent(strict_json: bool = False):
     返回：job_id 用于后续查询状态。
     """
     if not _AGENT_SCRIPT_PATH.exists():
-        raise HTTPException(status_code=500, detail="Agent script not found")
+        raise HTTPException(status_code=501, detail="Agent script has been removed; this endpoint is deprecated")
     job_id = _uuid.uuid4().hex
     limit = _agent_max_concurrent()
     with _AGENT_JOBS_LOCK:
@@ -912,77 +989,7 @@ async def get_latest_agent_metrics():
 # Knowledge Base Endpoints
 # =========================
 
-@app.get("/api/stock-pool")
-def get_stock_pool(
-    active: bool = Query(True, description="仅显示当前在池中的标的"),
-    limit: int = Query(100, le=500),
-    offset: int = Query(0, ge=0),
-    since: Optional[str] = Query(None, description="first_seen_date >= since (YYYY-MM-DD)"),
-    industry: Optional[str] = Query(None, description="按行业过滤 (exact match)"),
-    sort: str = Query("first_seen_date", description="排序字段: first_seen_date|last_seen_date|symbol|days_active"),
-    order: str = Query("asc", description="asc|desc")
-):
-    if sort not in {"first_seen_date", "last_seen_date", "symbol", "days_active"}:
-        raise HTTPException(status_code=400, detail="invalid sort field")
-    if order not in {"asc", "desc"}:
-        raise HTTPException(status_code=400, detail="invalid order param")
-    with SessionLocal() as session:
-        from sqlalchemy import func, case, literal_column
-        # 基础查询
-        q = session.query(StockPoolMember)
-        if active:
-            q = q.filter(StockPoolMember.exit_date.is_(None))
-        if since:
-            try:
-                d = date.fromisoformat(since)
-                q = q.filter(StockPoolMember.first_seen_date >= d)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="since 格式需 YYYY-MM-DD")
-        if industry:
-            # join profiles to filter by industry
-            q = q.join(StockProfile, StockProfile.symbol==StockPoolMember.symbol).filter(StockProfile.industry==industry)
-        # total before pagination
-        total = q.count()
-        if sort == 'days_active':
-            # days_active 定义：若 exit_date 为空，则使用 (current_date - first_seen_date)；否则 (exit_date - first_seen_date)
-            # 兼容 PostgreSQL 的日期差（返回整数天）。对于历史已退出的标的，保持固定天数；对于仍在池中的，实时增长。
-            today = func.current_date()
-            sort_col = case(
-                (StockPoolMember.exit_date.is_(None), today - StockPoolMember.first_seen_date),
-                else_=StockPoolMember.exit_date - StockPoolMember.first_seen_date
-            )
-        else:
-            sort_col = getattr(StockPoolMember, sort)
-        if order == 'desc':
-            sort_col = sort_col.desc()
-        q = q.order_by(sort_col).offset(offset).limit(limit)
-        rows = q.all()
-        symbols = [r.symbol for r in rows]
-        profiles = {}
-        if symbols:
-            prof_rows = session.query(StockProfile).filter(StockProfile.symbol.in_(symbols)).all()
-            for p in prof_rows:
-                profiles[p.symbol] = p
-        out = []
-        for r in rows:
-            if sort == 'days_active':
-                # 计算 days_active 值（以返回值增强前端可见性）
-                ref_end = r.exit_date or date.today()
-                try:
-                    days_active_val = (ref_end - r.first_seen_date).days if r.first_seen_date else None
-                except Exception:
-                    days_active_val = None
-            prof = profiles.get(r.symbol)
-            out.append({
-                'symbol': r.symbol,
-                'company_name': prof.company_name if prof else None,
-                'first_seen_date': r.first_seen_date.isoformat() if r.first_seen_date else None,
-                'last_seen_date': r.last_seen_date.isoformat() if r.last_seen_date else None,
-                'exit_date': r.exit_date.isoformat() if r.exit_date else None,
-                'industry': prof.industry if prof else None,
-                **({'days_active': days_active_val} if sort == 'days_active' else {})
-            })
-        return {'count': len(out), 'total': total, 'rows': out, 'limit': limit, 'offset': offset}
+# NOTE: GET /api/stock-pool 已迁移至 routers/stock_pool.py
 
 @app.get("/api/stock-profile/{symbol}")
 def get_stock_profile(symbol: str):
@@ -1306,32 +1313,36 @@ async def log_requests(request: Request, call_next):
             duration_ms,
         )
 
-# Startup: attach scheduler if enabled
+# Startup: DB init + optional scheduler (legacy single-process mode)
 @app.on_event("startup")
 async def _startup_attach_scheduler():
     """应用启动钩子：
     - 保证数据库 schema 存在（create_all）
-    - 根据环境变量 ENABLE_SCHEDULER 决定是否挂载调度器
+    - 仅当 ENABLE_SCHEDULER=1 **且** 未使用独立 worker 时挂载调度器
     - 在后台线程预热 watchlist 的实时快照，避免首个请求出现空/null
 
-    兼容性说明：
-    - Windows 下使用守护线程执行预热，规避事件循环生命周期偶发问题
+    推荐架构：API 进程设 ENABLE_SCHEDULER=0，由独立 worker 进程运行调度器。
     """
     try:
-        # Ensure DB schema is up to date (idempotent)
         init_database()
-        if os.getenv("ENABLE_SCHEDULER", "1").lower() in ("1", "true", "yes", "y"):
+        # 推荐架构: API 进程不跑调度器; 仅在显式开启且没有独立 worker 时启用
+        _sched_enabled = os.getenv("ENABLE_SCHEDULER", "0").lower() in ("1", "true", "yes", "y")
+        if _sched_enabled:
+            logger.warning(
+                "API 进程内启动调度器 (ENABLE_SCHEDULER=1)。"
+                "建议使用独立 worker 进程以避免重型任务导致 API OOM。"
+            )
             attach_scheduler(app)
         else:
-            logger.warning("Scheduler disabled by ENABLE_SCHEDULER env var")
+            logger.info("调度器已禁用 — 请确保独立 worker 进程正在运行")
     # Pre-warm snapshot cache in background so first request is not empty/null
         async def _prewarm_snapshot():
             try:
                 # tiny delay to ensure app ready
                 await asyncio.sleep(0.5)
                 with SessionLocal() as session:
-                    watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
-                    symbols = [w.symbol for w in watches]
+                    rows = session.execute(text("SELECT symbol FROM stock_pool_members WHERE exit_date IS NULL")).fetchall()
+                    symbols = [r.symbol for r in rows]
                 if symbols:
                     # call once to fill caches; ignore result
                     try:
@@ -1353,10 +1364,10 @@ async def _startup_attach_scheduler():
             def _bg_prewarm():
                 try:
                     time.sleep(0.4)
-                    # 预热 watchlist snapshot
+                    # 预热 watchlist snapshot (从统一股票池读取)
                     with SessionLocal() as session:
-                        watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
-                        symbols = [w.symbol for w in watches]
+                        rows = session.execute(text("SELECT symbol FROM stock_pool_members WHERE exit_date IS NULL")).fetchall()
+                        symbols = [r.symbol for r in rows]
                     if symbols:
                         try:
                             _ = get_spot_snapshot(symbols)
@@ -1380,37 +1391,168 @@ async def _startup_attach_scheduler():
         logger.exception("Scheduler initialization failed on startup: %s", e)
 
 
-# 启动后台任务调度器（每周自动更新股票数据）
+# 注册信号处理器，确保优雅关闭
+@app.on_event("startup")
+async def _startup_signal_handlers():
+    """注册 SIGTERM/SIGINT 处理器以确保子进程被清理。
+
+    注意：必须把 *前一个* 处理器（通常是 uvicorn 自己的 handler）保存下来，
+    清理完子进程后**链式调用**它，否则进程会吞掉 SIGINT 永远不退出 —— 这是
+    之前用户按 Ctrl+C 多次也无法关闭后端的直接原因。
+    """
+    import signal as _signal
+
+    _prev_sigterm = None
+    _prev_sigint = None
+    _SHUTDOWN_FLAG = {"count": 0}
+
+    def _graceful_shutdown(signum, frame):
+        sig_name = _signal.Signals(signum).name if hasattr(_signal, 'Signals') else str(signum)
+        _SHUTDOWN_FLAG["count"] += 1
+        logger.warning("收到信号 %s，正在执行优雅关闭...（第 %d 次）", sig_name, _SHUTDOWN_FLAG["count"])
+        try:
+            _cleanup_child_processes()
+        except Exception as _e:
+            logger.warning("清理子进程时出错: %s", _e)
+
+        # 链式调用原处理器，触发 uvicorn / asyncio 真正退出
+        prev = _prev_sigint if signum == _signal.SIGINT else _prev_sigterm
+        try:
+            if callable(prev) and prev not in (_signal.SIG_DFL, _signal.SIG_IGN):
+                prev(signum, frame)
+                return
+        except Exception as _e:
+            logger.warning("链式调用原信号处理器失败: %s", _e)
+
+        # 兜底：连按两次直接强退；单次则恢复默认并重发，让内核处理
+        if _SHUTDOWN_FLAG["count"] >= 2:
+            logger.warning("二次信号，强制退出进程")
+            os._exit(130 if signum == _signal.SIGINT else 143)
+        try:
+            _signal.signal(signum, _signal.SIG_DFL)
+            os.kill(os.getpid(), signum)
+        except Exception:
+            os._exit(1)
+
+    try:
+        _prev_sigterm = _signal.signal(_signal.SIGTERM, _graceful_shutdown)
+        _prev_sigint = _signal.signal(_signal.SIGINT, _graceful_shutdown)
+    except (OSError, ValueError):
+        # Windows 上不支持部分信号，或非主线程
+        pass
+
+
+# 内存监控后台线程
+@app.on_event("startup")
+async def _startup_memory_monitor():
+    """定期记录进程内存使用，便于排查 OOM"""
+    import threading
+
+    def _monitor_loop():
+        try:
+            import psutil
+        except ImportError:
+            logger.info("psutil 未安装，跳过内存监控")
+            return
+        proc = psutil.Process()
+        while True:
+            try:
+                mem = proc.memory_info()
+                rss_mb = mem.rss / (1024 * 1024)
+                if rss_mb > 1024:
+                    logger.warning(
+                        "内存使用偏高: RSS=%.0fMB (VMS=%.0fMB)，可能面临 OOM 风险",
+                        rss_mb, mem.vms / (1024 * 1024),
+                    )
+                elif rss_mb > 512:
+                    logger.info("内存使用: RSS=%.0fMB", rss_mb)
+            except Exception:
+                pass
+            time.sleep(60)
+
+    threading.Thread(target=_monitor_loop, daemon=True, name="mem-monitor").start()
+
+
+# 启动后台任务调度器（仅在 ENABLE_SCHEDULER 开启时 — 即 legacy 单进程模式）
 @app.on_event("startup")
 async def _startup_init_task_scheduler():
-    """应用启动时初始化后台任务调度器
-    
-    功能：
-    - 每周一 02:00 自动更新所有股票的公司画像数据
-    - 无需用户手动刷新
-    - 记录任务执行日志和统计
-    """
+    """仅在单进程模式下初始化画像调度器；推荐由独立 worker 运行。"""
+    if os.getenv("ENABLE_SCHEDULER", "0").lower() not in ("1", "true", "yes", "y"):
+        return
     try:
         from .tasks.task_scheduler import init_task_scheduler
         init_task_scheduler()
-        logger.info("✅ 后台任务调度器已初始化")
+        logger.info("后台任务调度器已初始化（单进程模式）")
     except ImportError:
-        logger.warning("⚠️ APScheduler 未安装，跳过后台任务调度器初始化")
-        logger.info("   请运行: pip install apscheduler")
+        logger.warning("APScheduler 未安装，跳过后台任务调度器初始化")
     except Exception as e:
-        logger.error(f"❌ 初始化后台任务调度器失败: {e}")
+        logger.error("初始化后台任务调度器失败: %s", e)
 
 
-# 应用关闭时停止任务调度器
+# 应用关闭时停止所有调度器和子进程
 @app.on_event("shutdown")
-async def _shutdown_task_scheduler():
-    """应用关闭时关闭任务调度器"""
+async def _shutdown_all_schedulers():
+    """应用关闭时关闭所有调度器并清理子进程"""
+    # 1) 关闭主 AsyncIOScheduler
+    try:
+        sched = getattr(app.state, "scheduler", None)
+        if sched and sched.running:
+            sched.shutdown(wait=False)
+            logger.info("主调度器 (AsyncIOScheduler) 已关闭")
+    except Exception as e:
+        logger.error("关闭主调度器失败: %s", e)
+
+    # 2) 关闭 BackgroundScheduler (task_scheduler)
     try:
         from .tasks.task_scheduler import shutdown_task_scheduler
         shutdown_task_scheduler()
-        logger.info("✅ 后台任务调度器已关闭")
+        logger.info("后台任务调度器 (BackgroundScheduler) 已关闭")
     except Exception as e:
-        logger.error(f"❌ 关闭任务调度器失败: {e}")
+        logger.error("关闭后台任务调度器失败: %s", e)
+
+    # 3) 终止所有跟踪的子进程
+    _cleanup_child_processes()
+
+
+@app.on_event("startup")
+async def _startup_stock_pool():
+    """启动时：预加载 A 股名录 + 可选回填。"""
+    try:
+        from .services.stock_pool_service import preload_stock_list
+        preload_stock_list()
+    except Exception as e:
+        logger.warning("股票名录预加载失败: %s", e)
+
+    if os.getenv("STOCK_POOL_BACKFILL", "1").lower() in ("1", "true", "yes"):
+        try:
+            from .services.stock_pool_service import start_backfill_background
+            start_backfill_background(months=6)
+        except Exception as e:
+            logger.warning("股票池回填启动失败: %s", e)
+    else:
+        logger.info("股票池回填已禁用 (STOCK_POOL_BACKFILL=0)")
+
+    # 启动时自动检查 & 补全未完成画像
+    if os.getenv("STOCK_POOL_AUTO_PROFILE", "1").lower() in ("1", "true", "yes"):
+        def _delayed_profile_check():
+            """延迟 30 秒后检查并启动画像补全，避免与回填任务冲突。"""
+            import time as _t
+            _t.sleep(30)
+            try:
+                from .services.stock_pool_service import check_pool_profile_status, start_profile_completion_background
+                status = check_pool_profile_status()
+                incomplete = status.get("incomplete", 0)
+                if incomplete > 0:
+                    logger.info("启动画像自动补全: %d 只股票画像未完成", incomplete)
+                    start_profile_completion_background(batch_limit=0, delay=3.0, force=False)
+                else:
+                    logger.info("所有股票池画像已完成，无需补全")
+            except Exception as e:
+                logger.warning("启动画像自动补全失败: %s", e)
+        import threading
+        threading.Thread(target=_delayed_profile_check, daemon=True, name="pool-auto-profile").start()
+    else:
+        logger.info("画像自动补全已禁用 (STOCK_POOL_AUTO_PROFILE=0)")
 
 
 # CORS middleware
@@ -1475,9 +1617,298 @@ class WatchItem(BaseModel):
     name: str | None = None
     sector: str | None = None
     enabled: bool = True
+    pinned: bool | None = None  # 首页看板展示
 
 # 全局缓存股票基础数据
 _stock_basic_cache = None
+# 全局缓存：股票名称映射表（code/symbol → name）
+_stock_name_map_cache: dict[str, str] | None = None
+_stock_name_map_cache_ts: float = 0  # 缓存时间戳
+# 全局缓存：新闻挖掘到的名称
+_news_name_map_cache: dict[str, str] = {}
+# 全局缓存：文章→股票索引（all_symbols, symbol_count, symbol_times）
+_article_data_cache: dict | None = None
+_article_data_cache_ts: float = 0  # 缓存时间戳（300s TTL）
+# 全局缓存：名称回填完成标记
+_name_backfill_done_ts: float = 0
+
+
+def _backfill_stock_names_sync():
+    """在后台线程中运行的名称回填任务。
+    使用独立 DB Session，不阻塞 API 请求。
+    加载 akshare/HK 名称 → Watchlist → 新闻挖掘 → 代码模式回退。
+    """
+    import time as _time
+    import re as _re
+    import json
+
+    global _stock_name_map_cache, _stock_name_map_cache_ts
+    global _news_name_map_cache, _name_backfill_done_ts
+
+    _t0 = _time.time()
+    logger.info("🔄 [后台] 开始股票名称回填任务...")
+
+    try:
+        db = SessionLocal()
+        try:
+            # 1. 提取所有新闻中的股票代码
+            all_articles = db.query(
+                NewsArticle.related_stocks
+            ).filter(
+                NewsArticle.related_stocks.isnot(None)
+            ).all()
+
+            all_symbols_set: set[str] = set()
+            for row in all_articles:
+                rs = row[0]
+                if not rs:
+                    continue
+                try:
+                    stocks = json.loads(rs) if isinstance(rs, str) else rs
+                except:
+                    continue
+                if isinstance(stocks, list):
+                    all_symbols_set.update(stocks)
+
+            all_symbols_list = sorted(list(all_symbols_set))
+            if not all_symbols_list:
+                logger.info("ℹ️ [后台] 无新闻引用的股票代码，跳过回填")
+                _name_backfill_done_ts = _time.time()
+                return
+
+            # 2. 批量查询所有 StockProfile
+            all_profiles = db.query(StockProfile).filter(
+                StockProfile.symbol.in_(all_symbols_list)
+            ).all()
+            profile_map = {p.symbol: p for p in all_profiles}
+
+            # 3. 判断缺名的 symbols
+            def _is_name_missing(sym: str, profile) -> bool:
+                name = profile.company_name if profile else None
+                if not name or not name.strip():
+                    return True
+                name_stripped = name.strip()
+                if name_stripped == sym:
+                    return True
+                base = sym.replace(".SH", "").replace(".SZ", "").replace(".HK", "").replace(".BJ", "")
+                if name_stripped == base:
+                    return True
+                return False
+
+            symbols_missing_profile = [s for s in all_symbols_list if s not in profile_map]
+            symbols_missing_name = [s for s, p in profile_map.items() if _is_name_missing(s, p)]
+            symbols_needing_name = set(symbols_missing_profile + symbols_missing_name)
+
+            if not symbols_needing_name:
+                logger.info("✅ [后台] 所有股票已有名称，无需回填")
+                _name_backfill_done_ts = _time.time()
+                return
+
+            logger.info(f"🔄 [后台] 发现 {len(symbols_needing_name)} 个股票需要名称回填")
+
+            # ① A 股名称：ak.stock_info_a_code_name()
+            _name_cache_age = _time.time() - _stock_name_map_cache_ts
+            if _stock_name_map_cache is not None and _name_cache_age < 21600:
+                stock_name_map = _stock_name_map_cache
+                logger.info(f"✅ [后台] 使用缓存名称映射（{int(_name_cache_age)}s 前，{len(stock_name_map)} 条）")
+            else:
+                stock_name_map: dict[str, str] = {}
+                try:
+                    import akshare as _ak_lookup
+                    _name_df = _ak_lookup.stock_info_a_code_name()
+                    for _, _row in _name_df.iterrows():
+                        _code = str(_row['code'])
+                        _name = str(_row['name'])
+                        stock_name_map[_code] = _name
+                        if _code.startswith('6') or _code.startswith('9'):
+                            stock_name_map[f"{_code}.SH"] = _name
+                        if _code.startswith(('0', '1', '2', '3')):
+                            stock_name_map[f"{_code}.SZ"] = _name
+                        if _code.startswith(('4', '8', '9')):
+                            stock_name_map[f"{_code}.BJ"] = _name
+                    logger.info(f"✅ [后台] A 股名称映射已加载: {len(_name_df)} 条")
+                except Exception as _e:
+                    logger.warning(f"⚠️ [后台] 加载 A 股名称映射失败: {_e}")
+
+                # ② 港股名称
+                hk_needed = [s for s in symbols_needing_name if '.HK' in s.upper() or (len(s) == 5 and s.isdigit())]
+                if hk_needed:
+                    try:
+                        _hk_df = _ak_lookup.stock_hk_spot_em()
+                        for _, _row in _hk_df.iterrows():
+                            _hk_code = str(_row.get('代码', ''))
+                            _hk_name = str(_row.get('名称', ''))
+                            if _hk_code and _hk_name:
+                                stock_name_map[_hk_code] = _hk_name
+                                stock_name_map[f"{_hk_code}.HK"] = _hk_name
+                                stripped = _hk_code.lstrip('0')
+                                if stripped:
+                                    stock_name_map[stripped] = _hk_name
+                                    stock_name_map[f"0{stripped}.HK"] = _hk_name
+                                    stock_name_map[f"00{stripped}.HK"] = _hk_name
+                        logger.info(f"✅ [后台] 港股名称映射已加载: {len(_hk_df)} 条")
+                    except Exception as _e:
+                        logger.warning(f"⚠️ [后台] 加载港股名称映射失败: {_e}")
+
+                _stock_name_map_cache = stock_name_map
+                _stock_name_map_cache_ts = _time.time()
+
+            # ③ Watchlist 名称
+            _wl_names = db.query(Watchlist.symbol, Watchlist.name).filter(
+                Watchlist.symbol.in_(list(symbols_needing_name))
+            ).all()
+            wl_name_map = {r[0]: r[1] for r in _wl_names if r[1]}
+
+            # ④ 新闻内容挖掘
+            _unresolved_after_api = [
+                s for s in symbols_needing_name
+                if not stock_name_map.get(s)
+                and not stock_name_map.get(s.replace(".SH","").replace(".SZ","").replace(".HK","").replace(".BJ",""))
+                and not wl_name_map.get(s)
+                and s not in _news_name_map_cache
+            ]
+            if _unresolved_after_api:
+                try:
+                    _news_rows = db.query(NewsArticle.title, NewsArticle.content).filter(
+                        NewsArticle.related_stocks.isnot(None)
+                    ).all()
+                    _unresolved_bases = {}
+                    for _s in _unresolved_after_api:
+                        _b = _s.replace(".SH","").replace(".SZ","").replace(".HK","").replace(".BJ","").replace(".NQ","").replace(".OC","")
+                        _unresolved_bases[_b] = _s
+                    for _title, _content in _news_rows:
+                        if not _unresolved_bases:
+                            break
+                        _text = (_title or '') + ' ' + ((_content or '')[:2000])
+                        _found_bases = []
+                        for _b, _sym in list(_unresolved_bases.items()):
+                            _patterns = [
+                                rf'([\u4e00-\u9fff]{{2,10}})\s*[\(\uff08]{_re.escape(_b)}',
+                                rf'([\u4e00-\u9fffA-Za-z]{{2,15}}(?:ETF|LOF|基金|指数))\s*[\(\uff08]?{_re.escape(_b)}',
+                                rf'{_re.escape(_b)}\s*[\)\uff09]\s*([\u4e00-\u9fff]{{2,10}})',
+                            ]
+                            for _pat in _patterns:
+                                _m = _re.search(_pat, _text)
+                                if _m:
+                                    _extracted = _m.group(1).strip()
+                                    if len(_extracted) >= 2:
+                                        _news_name_map_cache[_sym] = _extracted
+                                        _news_name_map_cache[_b] = _extracted
+                                        _found_bases.append(_b)
+                                        break
+                        for _b in _found_bases:
+                            del _unresolved_bases[_b]
+                    logger.info(f"✅ [后台] 新闻挖掘名称: {len(_news_name_map_cache)} 条")
+                except Exception as _e:
+                    logger.warning(f"⚠️ [后台] 新闻挖掘名称失败: {_e}")
+
+            # ⑤ 代码模式识别回退
+            def _code_pattern_name(sym: str) -> str | None:
+                base = sym.replace(".SH","").replace(".SZ","").replace(".HK","").replace(".BJ","")
+                if not base.isdigit():
+                    return None
+                c = int(base)
+                if (510000 <= c <= 520999 or 560000 <= c <= 563999 or 588000 <= c <= 588999):
+                    return "ETF基金"
+                if 513000 <= c <= 513999:
+                    return "跨境ETF"
+                if 518000 <= c <= 518999:
+                    return "商品ETF"
+                if 511000 <= c <= 511999:
+                    return "债券ETF"
+                if 159000 <= c <= 159999:
+                    return "ETF基金"
+                if 160000 <= c <= 169999:
+                    return "LOF基金"
+                if 501000 <= c <= 502999:
+                    return "LOF基金"
+                if 515000 <= c <= 516999:
+                    return "ETF基金"
+                if (200000 <= c <= 200999 or 900000 <= c <= 900999):
+                    return "B股"
+                if 880000 <= c <= 884999:
+                    return "板块指数"
+                if c >= 700000:
+                    return "指数"
+                return None
+
+            # 名称解析函数
+            def _resolve_name(sym: str) -> str | None:
+                name = stock_name_map.get(sym)
+                if name:
+                    return name
+                base = sym.replace(".SH","").replace(".SZ","").replace(".HK","").replace(".BJ","").replace(".NQ","").replace(".OC","")
+                name = stock_name_map.get(base)
+                if name:
+                    return name
+                if '.HK' in sym.upper():
+                    stripped = base.lstrip('0')
+                    for prefix in ['', '0', '00', '000', '0000']:
+                        name = stock_name_map.get(f"{prefix}{stripped}")
+                        if name:
+                            return name
+                        name = stock_name_map.get(f"{prefix}{stripped}.HK")
+                        if name:
+                            return name
+                name = wl_name_map.get(sym)
+                if name:
+                    return name
+                name = _news_name_map_cache.get(sym)
+                if name:
+                    return name
+                name = _news_name_map_cache.get(base)
+                if name:
+                    return name
+                return _code_pattern_name(sym)
+
+            # 创建/更新 Profile
+            created_count = 0
+            for sym in symbols_missing_profile:
+                resolved_name = _resolve_name(sym)
+                if resolved_name:
+                    new_profile = StockProfile(
+                        symbol=sym,
+                        company_name=resolved_name,
+                        market=infer_market_from_symbol(sym),
+                        is_valid=True,
+                    )
+                    db.add(new_profile)
+                    created_count += 1
+
+            updated_count = 0
+            for sym in symbols_missing_name:
+                resolved_name = _resolve_name(sym)
+                if resolved_name and sym in profile_map:
+                    profile_map[sym].company_name = resolved_name
+                    updated_count += 1
+
+            if created_count > 0 or updated_count > 0:
+                try:
+                    db.commit()
+                    logger.info(f"✅ [后台] 名称补全完成：新建 {created_count} 条，回填 {updated_count} 条")
+                except Exception as _commit_err:
+                    db.rollback()
+                    logger.error(f"❌ [后台] 名称补全提交失败: {_commit_err}")
+            else:
+                logger.info(f"ℹ️ [后台] {len(symbols_needing_name)} 个 symbol 无法从数据源解析到名称")
+
+            _name_backfill_done_ts = _time.time()
+            _elapsed = _time.time() - _t0
+            logger.info(f"✅ [后台] 名称回填任务完成，耗时 {_elapsed:.1f}s")
+
+        finally:
+            db.close()
+    except Exception as _e:
+        logger.error(f"❌ [后台] 名称回填任务异常: {_e}", exc_info=True)
+
+
+@app.on_event("startup")
+def _startup_name_backfill():
+    """启动时在后台线程中运行名称回填，不阻塞 API。"""
+    import threading
+    t = threading.Thread(target=_backfill_stock_names_sync, daemon=True, name="name-backfill")
+    t.start()
+    logger.info("🚀 [后台] 名称回填线程已启动")
 
 def retry_with_backoff(max_retries=3, base_delay=1.0):
     """重试装饰器，支持指数退避。
@@ -1617,35 +2048,63 @@ def cache_status():
 
 @app.get("/watchlist")
 def get_watchlist():
-    """获取已启用的自选股列表。"""
+    """获取股票池列表（统一数据源：stock_pool_members），置顶状态从 watchlist 表读取。"""
     with SessionLocal() as session:
-        res = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+        rows = session.execute(text("""
+            SELECT spm.symbol,
+                   COALESCE(sp.company_name, w.name) AS name,
+                   COALESCE(sp.industry, w.sector) AS sector,
+                   COALESCE(w.pinned, false) AS pinned
+            FROM stock_pool_members spm
+            LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+            LEFT JOIN watchlist w ON spm.symbol = w.symbol
+            WHERE spm.exit_date IS NULL
+            ORDER BY COALESCE(w.pinned, false) DESC, spm.last_seen_date DESC
+        """)).fetchall()
         return [
             {
                 "symbol": r.symbol,
                 "name": r.name,
                 "sector": r.sector,
-                "enabled": r.enabled,
+                "enabled": True,
+                "pinned": bool(r.pinned),
             }
-            for r in res
+            for r in rows
         ]
 
 
 @app.post("/watchlist")
 def add_watch(item: WatchItem):
-    """新增或更新自选股。
+    """新增股票到统一股票池（stock_pool_members）。
 
-    - 冲突键：symbol；存在则更新 name/sector/enabled
+    同时在 watchlist 表中创建记录以支持置顶(pin)功能。
     """
+    sym = item.symbol.upper()
+    today = datetime.now().date()
     with SessionLocal() as session:
-        stmt = pg_insert(Watchlist).values(
-            symbol=item.symbol.upper(),
-            name=item.name,
-            sector=item.sector,
-            enabled=item.enabled,
-        ).on_conflict_do_update(
+        existing = session.execute(
+            text("SELECT id, exit_date FROM stock_pool_members WHERE symbol = :sym"),
+            {"sym": sym}
+        ).fetchone()
+        if existing:
+            session.execute(
+                text("UPDATE stock_pool_members SET exit_date = NULL, last_seen_date = :today WHERE symbol = :sym"),
+                {"sym": sym, "today": today}
+            )
+        else:
+            session.execute(
+                text("""INSERT INTO stock_pool_members (symbol, first_seen_date, last_seen_date, source)
+                        VALUES (:sym, :today, :today, 'manual')"""),
+                {"sym": sym, "today": today}
+            )
+        wl_values = dict(symbol=sym, name=item.name, sector=item.sector, enabled=True)
+        wl_update = {"name": item.name, "sector": item.sector, "enabled": True}
+        if item.pinned is not None:
+            wl_values["pinned"] = item.pinned
+            wl_update["pinned"] = item.pinned
+        stmt = pg_insert(Watchlist).values(**wl_values).on_conflict_do_update(
             index_elements=["symbol"],
-            set_={"name": item.name, "sector": item.sector, "enabled": item.enabled},
+            set_=wl_update,
         )
         session.execute(stmt)
         session.commit()
@@ -1710,14 +2169,39 @@ async def download_job_markdown(job_id: str):
 # 删除自选股接口
 @app.delete("/watchlist/{symbol}")
 def delete_watch(symbol: str):
-    """从自选列表中删除指定股票。"""
+    """从统一股票池中移除指定股票（软删除 stock_pool_members + 删除 watchlist 记录）。"""
+    sym = symbol.upper()
+    today = datetime.now().date()
     with SessionLocal() as session:
-        affected = session.execute(
+        session.execute(
+            text("UPDATE stock_pool_members SET exit_date = :today WHERE symbol = :sym AND exit_date IS NULL"),
+            {"sym": sym, "today": today}
+        )
+        session.execute(
             text("DELETE FROM watchlist WHERE symbol=:sym"),
-            {"sym": symbol.upper()}
+            {"sym": sym}
         )
         session.commit()
     return {"ok": True}
+
+@app.patch("/watchlist/{symbol}/pin")
+def toggle_pin(symbol: str, pinned: bool = True):
+    """切换股票在首页看板的展示状态（自动创建 watchlist 行以保存 pin 状态）。"""
+    sym = symbol.upper()
+    with SessionLocal() as session:
+        pool_exists = session.execute(
+            text("SELECT 1 FROM stock_pool_members WHERE symbol = :sym AND exit_date IS NULL"),
+            {"sym": sym}
+        ).fetchone()
+        if not pool_exists:
+            raise HTTPException(status_code=404, detail="symbol not in stock pool")
+        stmt = pg_insert(Watchlist).values(symbol=sym, enabled=True, pinned=pinned).on_conflict_do_update(
+            index_elements=["symbol"],
+            set_={"pinned": pinned},
+        )
+        session.execute(stmt)
+        session.commit()
+    return {"ok": True, "symbol": sym, "pinned": pinned}
 
 @app.post("/run/daily")
 async def run_daily_now():
@@ -1896,6 +2380,36 @@ def get_profile_update_progress():
         )
 
 
+@app.post("/api/profile/enrich-all")
+def trigger_profile_enrichment(
+    batch_size: int = Query(100, ge=1, le=5000, description="本批次处理股票数量上限"),
+    delay: float = Query(1.5, ge=0.5, le=10, description="每只股票之间的延迟(秒)"),
+):
+    """手动触发股票池全量 Profile 画像充填（后台执行）。"""
+    from .tasks.task_scheduler import get_task_manager
+    import threading
+
+    manager = get_task_manager()
+    if manager.is_running:
+        return {
+            "status": "already_running",
+            "message": "画像充填任务已在运行中",
+            "progress": manager.get_progress(),
+        }
+
+    def _run():
+        manager.update_all_stock_profiles(delay_between_stocks=delay, batch_limit=batch_size)
+
+    t = threading.Thread(target=_run, daemon=True, name="manual-enrich-all")
+    t.start()
+
+    return {
+        "status": "started",
+        "message": f"画像充填任务已启动，本批次上限 {batch_size} 只，间隔 {delay}s",
+        "batch_size": batch_size,
+    }
+
+
 def _parse_observation_date(value: Any) -> Optional[date]:
     if value is None:
         return None
@@ -2021,13 +2535,29 @@ async def macro_report(
     else:
         report = await storage.get_latest_macro_report()
 
-    if report is None and refresh:
+    if refresh:
+        # 支持强制重算：无论是否已有快照，都重新跑观测与报告生成。
+        await run_macro_observation_pipeline(for_date=target_date)
         refreshed = await generate_and_store_macro_report(target_date=target_date)
         report = refreshed or (
             await storage.get_macro_report_by_date(target_date)
             if target_date
             else await storage.get_latest_macro_report()
         )
+
+    # 自动触发：如果没有找到任何报告，自动运行流水线生成
+    if report is None and not refresh:
+        try:
+            logger.info("No existing macro report found; auto-triggering pipeline")
+            await run_macro_observation_pipeline(for_date=target_date)
+            refreshed = await generate_and_store_macro_report(target_date=target_date)
+            report = refreshed or (
+                await storage.get_macro_report_by_date(target_date)
+                if target_date
+                else await storage.get_latest_macro_report()
+            )
+        except Exception as auto_exc:
+            logger.warning("Auto-trigger macro pipeline failed: %s", auto_exc)
 
     if report is None:
         raise HTTPException(status_code=404, detail="Macro report not found")
@@ -2075,11 +2605,13 @@ def latest_fundflow(limit: int = 50):
         rows = session.execute(
             text(
                 """
-                SELECT symbol, trade_date, main_net, main_ratio, super_net, super_ratio,
-                       large_net, large_ratio, medium_net, medium_ratio, small_net, small_ratio
-                FROM fundflow_daily
-                WHERE trade_date = :d
-                ORDER BY COALESCE(main_net,0) DESC
+                SELECT f.symbol, f.trade_date, f.main_net, f.main_ratio, f.super_net, f.super_ratio,
+                       f.large_net, f.large_ratio, f.medium_net, f.medium_ratio, f.small_net, f.small_ratio,
+                       w.name AS stock_name
+                FROM fundflow_daily f
+                LEFT JOIN watchlist w ON f.symbol = w.symbol
+                WHERE f.trade_date = :d
+                ORDER BY COALESCE(f.main_net,0) DESC
                 LIMIT :lim
                 """
             ),
@@ -2087,8 +2619,13 @@ def latest_fundflow(limit: int = 50):
         ).fetchall()
         out = []
         for r in rows:
+            stock_name = r.stock_name or ""
+            sym = r.symbol
+            display_name = f"{stock_name} ({sym})" if stock_name else sym
             out.append({
-                "symbol": r.symbol,
+                "symbol": sym,
+                "name": stock_name,
+                "display_name": display_name,
                 "trade_date": r.trade_date.isoformat(),
                 "main_net": float(r.main_net) if r.main_net is not None else None,
                 "main_ratio": float(r.main_ratio) if r.main_ratio is not None else None,
@@ -2101,6 +2638,157 @@ def latest_fundflow(limit: int = 50):
                 "small_net": float(r.small_net) if r.small_net is not None else None,
                 "small_ratio": float(r.small_ratio) if r.small_ratio is not None else None,
             })
+        # 如果数据库中可用行数少于请求的 limit，则尝试回退到当日排行补齐（盘中口径）
+        try:
+            if len(out) < limit:
+                try:
+                    rdf = _ds_load_rank_today()
+                except Exception:
+                    rdf = None
+                if rdf is not None and not rdf.empty:
+                    # columns may be 中文 from akshare: '代码','名称','今日主力净流入-净额' etc.
+                    code_col = '代码' if '代码' in rdf.columns else ('symbol' if 'symbol' in rdf.columns else None)
+                    name_col = '名称' if '名称' in rdf.columns else ('name' if 'name' in rdf.columns else None)
+                    val_col = None
+                    for c in ['今日主力净流入-净额', '主力净流入-净额', 'main_net']:
+                        if c in rdf.columns:
+                            val_col = c
+                            break
+
+                    def _mk_symbol(code_val: Any) -> str:
+                        try:
+                            s = str(code_val).strip()
+                            if s.endswith('.SH') or s.endswith('.SZ'):
+                                return s.upper()
+                            if s.startswith('6'):
+                                return s + '.SH'
+                            return s + '.SZ'
+                        except Exception:
+                            return str(code_val)
+
+                    # iterate rank rows in descending inflow order and append until limit
+                    for _, rr in rdf.iterrows():
+                        if len(out) >= limit:
+                            break
+                        try:
+                            codev = rr.get(code_col) if code_col else None
+                            sym = _mk_symbol(codev)
+                            # skip duplicates
+                            if any(x.get('symbol') == sym for x in out):
+                                continue
+                            raw = rr.get(val_col) if val_col else None
+                            try:
+                                main_net_yuan = float(raw) * 1e4 if raw is not None else None
+                            except Exception:
+                                main_net_yuan = None
+                            namev = rr.get(name_col) if name_col else None
+                            name_str = namev or ''
+                            display = f"{name_str} ({sym})" if name_str else sym
+                            out.append({
+                                'symbol': sym,
+                                'name': name_str,
+                                'display_name': display,
+                                'trade_date': latest_date.isoformat(),
+                                'main_net': main_net_yuan,
+                                'main_ratio': None,
+                                'super_net': None,
+                                'super_ratio': None,
+                                'large_net': None,
+                                'large_ratio': None,
+                                'medium_net': None,
+                                'medium_ratio': None,
+                                'small_net': None,
+                                'small_ratio': None,
+                            })
+                        except Exception:
+                            continue
+        except Exception:
+            # 保持向后兼容，若回退失败直接返回已有 DB 数据
+            pass
+        # 若仍然不足，则尝试从最近若干日的 DB 聚合中补齐（保守回退，不依赖外部 API）
+        try:
+            if len(out) < limit:
+                from datetime import timedelta as _td
+                # 尝试多阶段聚合回退：7天 -> 30天 -> 90天，以增加在 DB 中找到候选的概率
+                for days in (7, 30, 90):
+                    if len(out) >= limit:
+                        break
+                    min_dt = latest_date - _td(days=days)
+                    agg_rows = session.execute(text(
+                        """
+                        SELECT f.symbol, MAX(f.trade_date) AS trade_date, MAX(f.main_net) AS main_net
+                        FROM fundflow_daily f
+                        WHERE f.trade_date >= :min_date
+                        GROUP BY f.symbol
+                        ORDER BY COALESCE(MAX(f.main_net),0) DESC
+                        LIMIT :lim
+                        """
+                    ), {"min_date": min_dt, "lim": limit}).fetchall()
+                    for r in agg_rows:
+                        if len(out) >= limit:
+                            break
+                        sym = r.symbol
+                        if any(x.get('symbol') == sym for x in out):
+                            continue
+                        display = sym
+                        out.append({
+                            "symbol": sym,
+                            "name": "",
+                            "display_name": display,
+                            "trade_date": (r.trade_date.isoformat() if getattr(r, 'trade_date', None) is not None else latest_date.isoformat()),
+                            "main_net": (float(r.main_net) if r.main_net is not None else None),
+                            "main_ratio": None,
+                            "super_net": None,
+                            "super_ratio": None,
+                            "large_net": None,
+                            "large_ratio": None,
+                            "medium_net": None,
+                            "medium_ratio": None,
+                            "small_net": None,
+                            "small_ratio": None,
+                        })
+        except Exception:
+            pass
+        # Ensure display_name uses company name when available: fetch spot snapshot for missing names
+        try:
+            missing = [r['symbol'] for r in out if not r.get('name')]
+            if missing:
+                try:
+                    from .data.data_source import get_spot_snapshot
+                    snaps = get_spot_snapshot(missing) or {}
+                    for row in out:
+                        if not row.get('name'):
+                            s = row.get('symbol')
+                            info = snaps.get(s)
+                            if info and info.get('name'):
+                                row['name'] = info.get('name')
+                                row['display_name'] = f"{info.get('name')} ({s})"
+                            else:
+                                # leave for next fallback
+                                row['display_name'] = row.get('display_name') or None
+                except Exception:
+                    # ignore snapshot errors
+                    pass
+                # Fallback: try to read from local `stocks` table
+                try:
+                    from .core.models import Stock
+                    for row in out:
+                        if not row.get('name'):
+                            s = row.get('symbol')
+                            try:
+                                rec = session.execute(text("SELECT name FROM stocks WHERE symbol = :s LIMIT 1"), {"s": s}).first()
+                                if rec and rec[0]:
+                                    row['name'] = rec[0]
+                                    row['display_name'] = f"{rec[0]} ({s})"
+                                else:
+                                    row['display_name'] = row.get('display_name') or s
+                            except Exception:
+                                row['display_name'] = row.get('display_name') or s
+                except Exception:
+                    for row in out:
+                        row['display_name'] = row.get('display_name') or row.get('symbol')
+        except Exception:
+            pass
         return {"date": latest_date.isoformat(), "rows": out}
 
 # --- Watchlist Snapshot & Analysis ---
@@ -2108,6 +2796,7 @@ def latest_fundflow(limit: int = 50):
 def watchlist_snapshot(
     limit: int = Query(0, description="limit rows; 0 for all"),
     fundflow_prefer: str = Query("auto", description="Preferred fundflow source: auto|db|ak_today|eastmoney"),
+    pinned_only: bool = Query(False, description="仅返回已置顶股票"),
     _force_recompute: bool = False,
 ):
     """自选股快照（组合实时/历史/资金流向）。
@@ -2121,9 +2810,10 @@ def watchlist_snapshot(
     - limit: 返回前 n 条（0 表示全部）
     - fundflow_prefer: 资金流来源偏好 auto|db|ak_today|eastmoney
       auto：优先 DB（EOD），不足则回退到当日排行或东方财富
+    - pinned_only: 仅返回已置顶(首页看板)的股票
     """
     # Simple fresh-cache fast path: try to return cached fresh snapshot
-    cache_key = f"watchlist_snapshot:{limit}:{fundflow_prefer}:v1"
+    cache_key = f"watchlist_snapshot:{limit}:{fundflow_prefer}:pinned={pinned_only}:v1"
     stale_key = cache_key + ":stale"
     try:
         cached = _redis_get(cache_key)
@@ -2146,7 +2836,7 @@ def watchlist_snapshot(
                     async def _async_bg():
                         try:
                             # run the synchronous recompute in a thread to avoid blocking event loop
-                            await asyncio.to_thread(watchlist_snapshot, limit, fundflow_prefer, True)
+                            await asyncio.to_thread(watchlist_snapshot, limit, fundflow_prefer, pinned_only, True)
                         except Exception:
                             logger.exception("background watchlist refresh failed")
                         finally:
@@ -2159,7 +2849,7 @@ def watchlist_snapshot(
                         # no running event loop (e.g., started outside async context) -> fallback to thread
                         def _bg():
                             try:
-                                watchlist_snapshot(limit=limit, fundflow_prefer=fundflow_prefer, _force_recompute=True)
+                                watchlist_snapshot(limit=limit, fundflow_prefer=fundflow_prefer, pinned_only=pinned_only, _force_recompute=True)
                             except Exception:
                                 logger.exception("background watchlist refresh failed")
                             finally:
@@ -2201,8 +2891,25 @@ def watchlist_snapshot(
         # best-effort; continue to compute if lock system fails
         lock_acquired = False
     with SessionLocal() as session:
-        # Get enabled watchlist
-        watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+        # Read from stock_pool_members (unified pool) + watchlist for pin state
+        if pinned_only:
+            watches = session.execute(text("""
+                SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name, COALESCE(sp.industry, w.sector) AS sector,
+                       COALESCE(w.pinned, false) AS pinned
+                FROM stock_pool_members spm
+                LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                INNER JOIN watchlist w ON spm.symbol = w.symbol AND w.pinned = true
+                WHERE spm.exit_date IS NULL
+            """)).fetchall()
+        else:
+            watches = session.execute(text("""
+                SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name, COALESCE(sp.industry, w.sector) AS sector,
+                       COALESCE(w.pinned, false) AS pinned
+                FROM stock_pool_members spm
+                LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                LEFT JOIN watchlist w ON spm.symbol = w.symbol
+                WHERE spm.exit_date IS NULL
+            """)).fetchall()
         if limit and limit>0:
             watches = watches[:limit]
         symbols = [w.symbol for w in watches]
@@ -2451,6 +3158,7 @@ def watchlist_snapshot_stream(
     limit: int = Query(0, description="limit rows; 0 for all"),
     fundflow_prefer: str = Query("auto"),
     batch_size: int = Query(20, ge=5, le=50),
+    pinned_only: bool = Query(False, description="仅返回已置顶股票"),
 ):
     """分批流式返回自选股快照，NDJSON 格式。
 
@@ -2458,7 +3166,7 @@ def watchlist_snapshot_stream(
     前端可边接收边渲染，加速首屏展示。
     """
     # Fast path: if fresh cache exists, return as single chunk
-    cache_key = f"watchlist_snapshot:{limit}:{fundflow_prefer}:v1"
+    cache_key = f"watchlist_snapshot:{limit}:{fundflow_prefer}:pinned={pinned_only}:v1"
     try:
         cached = _redis_get(cache_key)
         if cached:
@@ -2476,7 +3184,25 @@ def watchlist_snapshot_stream(
         all_rows = []
         try:
             with SessionLocal() as session:
-                watches_all = session.execute(select(Watchlist).where(Watchlist.enabled == True)).scalars().all()
+                if pinned_only:
+                    watches_all = session.execute(text("""
+                        SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name,
+                               COALESCE(sp.industry, w.sector) AS sector, true AS pinned
+                        FROM stock_pool_members spm
+                        LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                        INNER JOIN watchlist w ON spm.symbol = w.symbol AND w.pinned = true
+                        WHERE spm.exit_date IS NULL
+                    """)).fetchall()
+                else:
+                    watches_all = session.execute(text("""
+                        SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name,
+                               COALESCE(sp.industry, w.sector) AS sector,
+                               COALESCE(w.pinned, false) AS pinned
+                        FROM stock_pool_members spm
+                        LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                        LEFT JOIN watchlist w ON spm.symbol = w.symbol
+                        WHERE spm.exit_date IS NULL
+                    """)).fetchall()
                 if limit and limit > 0:
                     watches_all = watches_all[:limit]
                 total = len(watches_all)
@@ -2484,73 +3210,63 @@ def watchlist_snapshot_stream(
                     yield json.dumps({"rows": [], "progress": 0, "total": 0, "done": True}, ensure_ascii=False) + "\n"
                     return
 
-                symbols = [w.symbol for w in watches_all]
-                # Batch fetch spot data for ALL symbols at once
-                spot = get_spot_snapshot(symbols)
+                # ★ Immediately yield meta chunk so frontend shows progress bar
+                yield json.dumps({"rows": [], "progress": 0, "total": total, "done": False}, ensure_ascii=False) + "\n"
 
-                # Lazy fund flow rank map (computed once)
+                # ★ Lazy fund flow rank: load once on first access (not blocking initial yield)
+                _rank_loaded = [False]
                 _rm: dict = {}
                 _rd: Optional[str] = None
-                _rm_loaded = False
 
                 def _get_rank():
-                    nonlocal _rm, _rd, _rm_loaded
-                    if _rm_loaded:
-                        return _rm, _rd
-                    _rm_loaded = True
-                    try:
-                        rdf = _ds_load_rank_today()
-                        if rdf is None or rdf.empty:
-                            return _rm, _rd
-                        cc = "代码" if "代码" in rdf.columns else ("symbol" if "symbol" in rdf.columns else None)
-                        if not cc:
-                            return _rm, _rd
-                        nc = ["今日主力净流入-净额", "主力净流入-净额", "main_net"]
-                        for _, rr in rdf.iterrows():
-                            b = str(rr[cc])
-                            val, matched_n = None, None
-                            for n in nc:
-                                if n in rdf.columns:
-                                    try:
-                                        val = rr.get(n)
-                                    except Exception:
-                                        val = None
-                                    if val is not None:
-                                        matched_n = n
-                                        break
-                            try:
-                                v = float(val) * 1e4 if (val is not None and matched_n != "main_net") else (float(val) if val is not None else None)
-                            except Exception:
-                                v = None
-                            _rm[b] = v
-                        _rd = datetime.now().date().isoformat()
-                    except Exception:
-                        pass
+                    nonlocal _rm, _rd
+                    if not _rank_loaded[0]:
+                        _rank_loaded[0] = True
+                        try:
+                            rdf = _ds_load_rank_today()
+                            if rdf is not None and not rdf.empty:
+                                cc = "代码" if "代码" in rdf.columns else ("symbol" if "symbol" in rdf.columns else None)
+                                if cc:
+                                    nc = ["今日主力净流入-净额", "主力净流入-净额", "main_net"]
+                                    for _, rr in rdf.iterrows():
+                                        b = str(rr[cc])
+                                        val, matched_n = None, None
+                                        for n in nc:
+                                            if n in rdf.columns:
+                                                try:
+                                                    val = rr.get(n)
+                                                except Exception:
+                                                    val = None
+                                                if val is not None:
+                                                    matched_n = n
+                                                    break
+                                        try:
+                                            v = float(val) * 1e4 if (val is not None and matched_n != "main_net") else (float(val) if val is not None else None)
+                                        except Exception:
+                                            v = None
+                                        _rm[b] = v
+                                    _rd = datetime.now().date().isoformat()
+                        except Exception:
+                            pass
                     return _rm, _rd
 
-                def _radar(symbol):
-                    try:
-                        qdf = pd.read_sql_query(
-                            "SELECT trade_date, close FROM prices_daily WHERE symbol = %s ORDER BY trade_date DESC LIMIT 40",
-                            con=engine, params=(symbol,))
-                        if qdf is None or qdf.empty:
-                            return {"momentum": 0.0, "trend": 0.0, "volatility": 0.0, "recent_return": 0.0}, 0.0
-                        qdf = qdf.iloc[::-1].reset_index(drop=True)
-                        closes = qdf["close"].astype(float)
-                        delta = closes.diff()
-                        avg_gain = delta.clip(lower=0).rolling(14, min_periods=14).mean()
-                        avg_loss = (-delta.clip(upper=0)).rolling(14, min_periods=14).mean()
-                        rsi = 100 - 100 / (1 + (avg_gain / (avg_loss.replace(0, pd.NA))))
-                        rsi_val = float(rsi.iloc[-1]) if pd.notna(rsi.iloc[-1]) else 0.0
-                        ma5 = closes.rolling(5, min_periods=5).mean()
-                        ma20 = closes.rolling(20, min_periods=20).mean()
-                        trend_val = float((ma5.iloc[-1] - ma20.iloc[-1]) / ma20.iloc[-1] * 100.0) if (pd.notna(ma20.iloc[-1]) and ma20.iloc[-1] != 0) else 0.0
-                        rets = closes.pct_change()
-                        vol_val = float(rets.tail(10).std() * 100.0) if len(rets) >= 2 else 0.0
-                        recent_ret = float((closes.iloc[-1] / closes.iloc[-10] - 1.0) * 100.0) if (len(closes) >= 10 and closes.iloc[-10] not in (None, 0)) else 0.0
-                        return {"momentum": rsi_val, "trend": trend_val, "volatility": vol_val, "recent_return": recent_ret}, trend_val
-                    except Exception:
+                def _compute_radar_from_closes(closes_list):
+                    """Compute radar dict from a list of close prices (oldest-first, up to 40)."""
+                    if not closes_list or len(closes_list) < 2:
                         return {"momentum": 0.0, "trend": 0.0, "volatility": 0.0, "recent_return": 0.0}, 0.0
+                    closes = pd.Series([float(c) for c in closes_list])
+                    delta = closes.diff()
+                    avg_gain = delta.clip(lower=0).rolling(14, min_periods=14).mean()
+                    avg_loss = (-delta.clip(upper=0)).rolling(14, min_periods=14).mean()
+                    rsi = 100 - 100 / (1 + (avg_gain / (avg_loss.replace(0, pd.NA))))
+                    rsi_val = float(rsi.iloc[-1]) if pd.notna(rsi.iloc[-1]) else 0.0
+                    ma5 = closes.rolling(5, min_periods=5).mean()
+                    ma20 = closes.rolling(20, min_periods=20).mean()
+                    trend_val = float((ma5.iloc[-1] - ma20.iloc[-1]) / ma20.iloc[-1] * 100.0) if (pd.notna(ma20.iloc[-1]) and ma20.iloc[-1] != 0) else 0.0
+                    rets = closes.pct_change()
+                    vol_val = float(rets.tail(10).std() * 100.0) if len(rets) >= 2 else 0.0
+                    recent_ret = float((closes.iloc[-1] / closes.iloc[-10] - 1.0) * 100.0) if (len(closes) >= 10 and closes.iloc[-10] not in (None, 0)) else 0.0
+                    return {"momentum": rsi_val, "trend": trend_val, "volatility": vol_val, "recent_return": recent_ret}, trend_val
 
                 _nz = lambda v: v if v is not None else 0
 
@@ -2562,35 +3278,114 @@ def watchlist_snapshot_stream(
                     except Exception:
                         return None
 
-                # Process in batches and yield each batch as NDJSON line
+                # Process in batches with BULK SQL queries per batch
                 for bi in range(0, total, batch_size):
                     batch = watches_all[bi:bi + batch_size]
+                    batch_syms = [w.symbol for w in batch]
                     rows = []
+
+                    # ★ Per-batch spot snapshot (each batch ~20 symbols, single HTTP call)
+                    try:
+                        batch_spot = get_spot_snapshot(batch_syms)
+                    except Exception as se:
+                        logger.warning("stream: get_spot_snapshot batch failed: %s", se)
+                        batch_spot = {}
+
+                    try:
+                        # --- BATCH QUERY 1: last 40 prices per symbol (for radar + d3/d20/last_row) ---
+                        prices_q = session.execute(text("""
+                            SELECT symbol, trade_date, close FROM (
+                              SELECT symbol, trade_date, close,
+                                     ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY trade_date DESC) as rn
+                              FROM prices_daily WHERE symbol = ANY(:syms)
+                            ) sub WHERE rn <= 40
+                            ORDER BY symbol, trade_date ASC
+                        """), {"syms": batch_syms}).fetchall()
+                        # Build per-symbol price history: {sym: [(trade_date, close), ...]}  oldest-first
+                        sym_prices: dict = {}
+                        for pr in prices_q:
+                            sym_prices.setdefault(pr.symbol, []).append((pr.trade_date, float(pr.close)))
+
+                        # --- BATCH QUERY 2: first row per symbol (earliest price) ---
+                        first_q = session.execute(text("""
+                            SELECT DISTINCT ON (symbol) symbol, trade_date, close
+                            FROM prices_daily WHERE symbol = ANY(:syms)
+                            ORDER BY symbol, trade_date ASC
+                        """), {"syms": batch_syms}).fetchall()
+                        first_map = {r.symbol: r for r in first_q}
+
+                        # --- BATCH QUERY 3: YTD first close per symbol ---
+                        ytd_q = session.execute(text("""
+                            SELECT DISTINCT ON (symbol) symbol, close
+                            FROM prices_daily
+                            WHERE symbol = ANY(:syms) AND EXTRACT(YEAR FROM trade_date)=EXTRACT(YEAR FROM CURRENT_DATE)
+                            ORDER BY symbol, trade_date ASC
+                        """), {"syms": batch_syms}).fetchall()
+                        ytd_map = {r.symbol: float(r.close) for r in ytd_q}
+
+                        # --- BATCH QUERY 4: latest fundflow per symbol ---
+                        ff_q = session.execute(text("""
+                            SELECT DISTINCT ON (symbol) symbol, trade_date, main_net
+                            FROM fundflow_daily WHERE symbol = ANY(:syms)
+                            ORDER BY symbol, trade_date DESC
+                        """), {"syms": batch_syms}).fetchall()
+                        ff_map = {r.symbol: r for r in ff_q}
+
+                        # --- BATCH QUERY 5: first price after added_at (per-symbol fallback) ---
+                        added_at_syms = [(w.symbol, w.added_at.date()) for w in batch if getattr(w, 'added_at', None)]
+                        first_after_map: dict = {}
+                        for s, d in added_at_syms:
+                            try:
+                                r = session.execute(text(
+                                    "SELECT close FROM prices_daily WHERE symbol=:s AND trade_date >= :d ORDER BY trade_date ASC LIMIT 1"
+                                ), {"s": s, "d": d}).scalar()
+                                if r is not None:
+                                    first_after_map[s] = float(r)
+                            except Exception:
+                                pass
+
+                    except Exception as eq:
+                        logger.warning("stream batch SQL failed: %s", eq)
+                        try:
+                            session.rollback()
+                        except Exception:
+                            pass
+                        sym_prices, first_map, ytd_map, ff_map, first_after_map = {}, {}, {}, {}, {}
+
                     for w in batch:
                         try:
                             sym = w.symbol
                             base = sym.replace('.SH', '').replace('.SZ', '')
-                            sp = spot.get(sym, {})
-                            # Historical metrics
-                            if getattr(w, 'added_at', None):
-                                first_row = session.execute(
-                                    text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s AND trade_date >= :d ORDER BY trade_date ASC LIMIT 1"),
-                                    {"s": sym, "d": w.added_at.date()}).first()
-                                if not first_row:
-                                    first_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).first()
-                            else:
-                                first_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).first()
-                            last_row = session.execute(text("SELECT close, trade_date FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
-                            d3 = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC OFFSET 2 LIMIT 1"), {"s": sym}).scalar()
-                            d20 = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s ORDER BY trade_date DESC OFFSET 19 LIMIT 1"), {"s": sym}).scalar()
-                            ytd = session.execute(text("SELECT close FROM prices_daily WHERE symbol=:s AND EXTRACT(YEAR FROM trade_date)=EXTRACT(YEAR FROM CURRENT_DATE) ORDER BY trade_date ASC LIMIT 1"), {"s": sym}).scalar()
-                            latest_ff = session.execute(text("SELECT trade_date, main_net FROM fundflow_daily WHERE symbol=:s ORDER BY trade_date DESC LIMIT 1"), {"s": sym}).first()
+                            sp = batch_spot.get(sym, {})
 
+                            # --- Extract per-stock data from batch results ---
+                            price_hist = sym_prices.get(sym, [])  # oldest-first: [(date, close), ...]
+                            closes_list = [c for _, c in price_hist]
+
+                            # last_row (most recent price)
+                            last_close = closes_list[-1] if closes_list else None
+                            # d3 (3rd from latest = index -3)
+                            d3 = closes_list[-3] if len(closes_list) >= 3 else None
+                            # d20 (20th from latest = index -20)
+                            d20 = closes_list[-20] if len(closes_list) >= 20 else None
+
+                            # first_row: prefer after added_at, fallback to earliest
+                            if sym in first_after_map:
+                                first_close = first_after_map[sym]
+                            elif sym in first_map:
+                                first_close = float(first_map[sym].close) if first_map[sym].close is not None else None
+                            else:
+                                first_close = None
+
+                            ytd_close = ytd_map.get(sym)
+
+                            # Fund flow
                             ff_val, ff_date, ff_source = None, None, None
-                            if fundflow_prefer in ("auto", "db") and latest_ff and latest_ff.main_net is not None:
+                            ff_row = ff_map.get(sym)
+                            if fundflow_prefer in ("auto", "db") and ff_row and ff_row.main_net is not None:
                                 try:
-                                    ff_val = float(latest_ff.main_net)
-                                    ff_date = latest_ff.trade_date.isoformat() if latest_ff.trade_date else None
+                                    ff_val = float(ff_row.main_net)
+                                    ff_date = ff_row.trade_date.isoformat() if ff_row.trade_date else None
                                     ff_source = "db_latest"
                                 except Exception:
                                     pass
@@ -2599,24 +3394,14 @@ def watchlist_snapshot_stream(
                                 v = rm.get(base)
                                 if v is not None:
                                     ff_val, ff_date, ff_source = float(v), rd or datetime.now().date().isoformat(), "ak_today"
-                            if ff_val is None and fundflow_prefer in ("auto", "eastmoney"):
-                                try:
-                                    mk = "1" if sym.endswith(".SH") else "0"
-                                    with httpx.Client(timeout=4.0) as hc:
-                                        resp = hc.get("https://push2.eastmoney.com/api/qt/stock/get", params={"secid": f"{mk}.{base}", "fields": "f62"})
-                                        if resp.status_code == 200:
-                                            jd = resp.json().get("data") if isinstance(resp.json(), dict) else None
-                                            if jd and jd.get("f62") is not None:
-                                                ff_val, ff_date, ff_source = float(jd["f62"]), datetime.now().date().isoformat(), "eastmoney"
-                                except Exception:
-                                    pass
+                            # NOTE: Skip eastmoney HTTP fallback in streaming mode (too slow per-stock)
 
-                            price = sp.get('price') if sp else (float(last_row.close) if last_row and last_row.close is not None else None)
-                            radar, trend_val = _radar(sym)
+                            price = sp.get('price') if sp else (last_close if last_close is not None else None)
+                            radar, trend_val = _compute_radar_from_closes(closes_list)
                             rows.append({
                                 "name": sp.get('name') or w.name, "symbol": sym, "price": price,
                                 "change": _nz(sp.get('change')), "pct_change": _nz(sp.get('pct_change')),
-                                "since_watch_pct": _pct(price, float(first_row.close) if first_row and first_row.close is not None else None),
+                                "since_watch_pct": _pct(price, first_close),
                                 "radar": radar, "trend": trend_val,
                                 "speed": _nz(sp.get('speed')), "volume": _nz(sp.get('volume')), "amount": _nz(sp.get('amount')),
                                 "spot_source": sp.get('spot_source'), "amount_unit": "yuan",
@@ -2629,13 +3414,13 @@ def watchlist_snapshot_stream(
                                 "order_ratio": _nz(sp.get('order_ratio')),
                                 "pe_ttm": _nz(sp.get('pe_ttm')), "pb": _nz(sp.get('pb')),
                                 "total_market_cap": _nz(sp.get('total_market_cap')),
-                                "chg_3d_pct": _pct(price, float(d3) if d3 is not None else None),
-                                "chg_20d_pct": _pct(price, float(d20) if d20 is not None else None),
-                                "chg_ytd_pct": _pct(price, float(ytd) if ytd is not None else None),
+                                "chg_3d_pct": _pct(price, d3),
+                                "chg_20d_pct": _pct(price, d20),
+                                "chg_ytd_pct": _pct(price, ytd_close),
                             })
                         except Exception as e:
                             logger.warning("stream row %s failed: %s", w.symbol, e)
-                            sp = spot.get(w.symbol, {})
+                            sp = batch_spot.get(w.symbol, {})
                             rows.append({"name": sp.get('name') or getattr(w, 'name', w.symbol), "symbol": w.symbol,
                                          "price": sp.get('price'), "change": 0, "pct_change": 0})
 
@@ -2917,13 +3702,38 @@ def fundflow_diagnostics(
 
 class AnalysisRequest(BaseModel):
     days: int = Field(default=10, ge=5, le=30)
+    pinned_only: bool = Field(default=False, description="仅分析置顶股票")
+    symbols: list[str] = Field(default=[], description="指定分析的股票列表，为空则按 pinned_only 过滤")
 
 @app.post("/api/watchlist/analysis")
 def watchlist_analysis(req: AnalysisRequest):
     """Compute 1-2 week analysis per symbol: basic momentum, volatility, RSI and simple heuristic advice."""
     from .analysis.signals import compute_signals
     with SessionLocal() as session:
-        watches = session.execute(select(Watchlist).where(Watchlist.enabled==True)).scalars().all()
+        if req.symbols:
+            watches = session.execute(text("""
+                SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name
+                FROM stock_pool_members spm
+                LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                LEFT JOIN watchlist w ON spm.symbol = w.symbol
+                WHERE spm.exit_date IS NULL AND spm.symbol = ANY(:syms)
+            """), {"syms": [s.upper() for s in req.symbols]}).fetchall()
+        elif req.pinned_only:
+            watches = session.execute(text("""
+                SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name
+                FROM stock_pool_members spm
+                LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                INNER JOIN watchlist w ON spm.symbol = w.symbol AND w.pinned = true
+                WHERE spm.exit_date IS NULL
+            """)).fetchall()
+        else:
+            watches = session.execute(text("""
+                SELECT spm.symbol, COALESCE(sp.company_name, w.name) AS name
+                FROM stock_pool_members spm
+                LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                LEFT JOIN watchlist w ON spm.symbol = w.symbol
+                WHERE spm.exit_date IS NULL
+            """)).fetchall()
         out = []
         for w in watches:
             qdf = pd.read_sql_query(
@@ -2936,25 +3746,52 @@ def watchlist_analysis(req: AnalysisRequest):
                 continue
             sig = compute_signals(qdf)
             tail = sig.tail(req.days)
+            last_row = sig.iloc[-1] if len(sig) else None
             # simple radar-like scores
             momentum = float(tail['rsi'].mean()) if 'rsi' in tail else None
             trend = float((tail['ma_s'] - tail['ma_l']).mean()) if 'ma_s' in tail and 'ma_l' in tail else None
             volatility = float(tail['close'].pct_change().std()*100.0)
-            macd = float(tail['macd'].mean()) if 'macd' in tail else None
+            macd_val = float(tail['macd'].mean()) if 'macd' in tail else None
             recent_return = float((tail['close'].iloc[-1] / tail['close'].iloc[0] - 1.0) * 100.0)
-            # heuristic advice
+            # --- richer heuristic advice ---
             advice = []
             risk = []
+            # RSI based
             if momentum is not None:
-                if momentum > 60: advice.append("动量偏强，关注突破机会")
-                elif momentum < 40: advice.append("动量偏弱，谨慎追高")
+                if momentum > 70: advice.append("RSI超买(>{:.0f})，短线注意回调".format(momentum))
+                elif momentum > 60: advice.append("动量偏强，关注突破机会")
+                elif momentum > 40: advice.append("动量中性，可观望")
+                else: advice.append("动量偏弱(RSI {:.0f})，谨慎追高".format(momentum))
+            # Trend based
             if trend is not None:
                 if trend > 0: advice.append("短期均线高于长期，趋势偏多")
                 else: advice.append("短期弱于长期，等待企稳")
+            # MACD based
+            if last_row is not None:
+                if 'macd_hist' in last_row.index:
+                    hist_val = float(last_row['macd_hist']) if pd.notna(last_row['macd_hist']) else None
+                    if hist_val is not None:
+                        if hist_val > 0:
+                            advice.append("MACD柱状线为正，多头动能延续")
+                        else:
+                            advice.append("MACD柱状线为负，空头动能占优")
+                # signal_score / action from compute_signals
+                if 'action' in last_row.index:
+                    act = last_row['action']
+                    if act == 'BUY': advice.append("信号打分: 买入信号")
+                    elif act == 'TRIM': advice.append("信号打分: 减仓信号")
+                    else: advice.append("信号打分: 持有观望")
+            # Risk
             if volatility is not None and volatility > 3:
-                risk.append("波动率较高，控制仓位")
+                risk.append("波动率较高({:.1f}%)，控制仓位".format(volatility))
             if recent_return > 5:
-                risk.append("短期涨幅较大，警惕回撤")
+                risk.append("短期涨幅较大({:.1f}%)，警惕回撤".format(recent_return))
+            elif recent_return < -5:
+                risk.append("短期跌幅较大({:.1f}%)，注意止损".format(recent_return))
+            if momentum is not None and momentum > 70:
+                risk.append("RSI进入超买区间，回调风险增大")
+            elif momentum is not None and momentum < 30:
+                risk.append("RSI进入超卖区间，可能存在反弹机会")
             out.append({
                 "symbol": w.symbol,
                 "name": w.name,
@@ -2963,7 +3800,7 @@ def watchlist_analysis(req: AnalysisRequest):
                     "momentum": momentum,
                     "trend": trend,
                     "volatility": volatility,
-                    "macd": macd,
+                    "macd": macd_val,
                     "recent_return": recent_return,
                 },
                 "advice": advice,
@@ -3062,6 +3899,538 @@ def signals_today():
             )
         ).mappings().all()
         return [dict(r) for r in rows]
+
+@app.get("/api/signals/generate")
+def api_generate_signals(
+    top_n: int = Query(10, ge=1, le=50),
+    buy_threshold: float = Query(0.65, ge=0.5, le=0.95),
+    sell_threshold: float = Query(0.65, ge=0.5, le=0.95),
+    min_holding_days: int = Query(3, ge=0, le=30),
+):
+    """手动触发交易信号生成（也可通过定时任务每日自动执行）"""
+    try:
+        from .prediction.services.signal_engine import generate_daily_signals
+        report = generate_daily_signals(
+            top_n=top_n,
+            buy_threshold=buy_threshold,
+            sell_threshold=sell_threshold,
+            min_holding_days=min_holding_days,
+        )
+        return {
+            "report_date": report.report_date.isoformat(),
+            "total_scored": report.total_stocks_scored,
+            "total_filtered": report.total_filtered,
+            "buy": [
+                {
+                    "symbol": s.symbol, "name": s.name, "sector": s.sector,
+                    "action": s.action, "composite_score": s.composite_score,
+                    "predicted_return_5d": round(s.predicted_return_5d, 6),
+                    "up_probability": round(s.up_probability, 4),
+                    "confidence": round(s.model_confidence, 3),
+                    "signal_strength": s.signal_strength,
+                    "current_price": s.current_price,
+                    "target_price": s.target_price,
+                    "stop_loss_price": s.stop_loss_price,
+                }
+                for s in report.buy_signals
+            ],
+            "sell": [
+                {
+                    "symbol": s.symbol, "name": s.name,
+                    "action": s.action, "composite_score": s.composite_score,
+                    "predicted_return_5d": round(s.predicted_return_5d, 6),
+                    "holding_days": s.holding_days,
+                    "current_price": s.current_price,
+                }
+                for s in report.sell_signals
+            ],
+            "hold_count": len(report.hold_signals),
+            "filters_applied": report.filters_applied,
+        }
+    except Exception as e:
+        logger.error("Signal generation API error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/signals/latest")
+def api_latest_signals(
+    signal_type: Optional[str] = Query(None, description="buy/sell/hold"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """查询最近的交易信号"""
+    with SessionLocal() as session:
+        q = session.query(TradingSignal).filter(
+            TradingSignal.source == "signal_engine"
+        ).order_by(TradingSignal.signal_date.desc(), TradingSignal.signal_strength.desc())
+
+        if signal_type:
+            q = q.filter(TradingSignal.signal_type == signal_type.lower())
+
+        rows = q.limit(limit).all()
+        return [
+            {
+                "symbol": r.symbol,
+                "signal_date": r.signal_date.isoformat() if r.signal_date else None,
+                "signal_type": r.signal_type,
+                "signal_strength": float(r.signal_strength) if r.signal_strength else 0,
+                "confidence": float(r.confidence) if r.confidence else 0,
+                "trigger_price": float(r.trigger_price) if r.trigger_price else None,
+                "target_price": float(r.target_price) if r.target_price else None,
+                "stop_loss_price": float(r.stop_loss_price) if r.stop_loss_price else None,
+                "strategy": r.strategy,
+                "factors": json.loads(r.factors) if r.factors else None,
+            }
+            for r in rows
+        ]
+
+
+@app.get("/api/signals/positions")
+def api_signal_positions():
+    """查看信号引擎管理的持仓"""
+    with SessionLocal() as session:
+        rows = session.query(PositionManagement).filter(
+            PositionManagement.portfolio_id == "signal_engine_default",
+            PositionManagement.quantity > 0,
+        ).all()
+        return [
+            {
+                "symbol": r.symbol,
+                "quantity": r.quantity,
+                "avg_cost": float(r.avg_cost) if r.avg_cost else None,
+                "current_price": float(r.current_price) if r.current_price else None,
+                "market_value": float(r.market_value) if r.market_value else None,
+                "unrealized_pnl": float(r.unrealized_pnl) if r.unrealized_pnl else None,
+                "unrealized_pnl_pct": round(float(r.unrealized_pnl_pct), 2) if r.unrealized_pnl_pct else None,
+                "holding_days": r.holding_days,
+                "entry_date": r.entry_date.isoformat() if r.entry_date else None,
+                "stop_loss_price": float(r.stop_loss_price) if r.stop_loss_price else None,
+                "take_profit_price": float(r.take_profit_price) if r.take_profit_price else None,
+                "weight": float(r.weight) if r.weight else None,
+            }
+            for r in rows
+        ]
+
+
+@app.get("/api/portfolio/optimize")
+def api_optimize_portfolio(
+    method: str = Query("risk_parity", description="equal_weight / risk_parity / return_weighted"),
+    total_capital: float = Query(100000, ge=10000),
+    max_single_weight: float = Query(0.20, ge=0.05, le=0.50),
+    max_sector_weight: float = Query(0.40, ge=0.10, le=1.0),
+):
+    """手动触发投资组合优化"""
+    try:
+        from .prediction.services.portfolio_optimizer import PortfolioOptimizer, PORTFOLIO_ID
+        with SessionLocal() as session:
+            from .core.models import TradingSignal as TS
+            today = date.today()
+            lookback = today - timedelta(days=3)
+
+            buy_rows = session.query(TS.symbol, TS.signal_strength, TS.factors).filter(
+                TS.source == "signal_engine", TS.signal_type == "buy",
+                TS.signal_date >= lookback,
+            ).order_by(TS.signal_strength.desc()).limit(20).all()
+
+            sell_rows = session.query(TS.symbol).filter(
+                TS.source == "signal_engine", TS.signal_type == "sell",
+                TS.signal_date >= lookback,
+            ).all()
+
+            buy_syms = [r.symbol for r in buy_rows]
+            sell_syms = [r.symbol for r in sell_rows]
+            pred_rets = {}
+            sig_str = {}
+            for r in buy_rows:
+                if r.factors:
+                    try:
+                        f = json.loads(r.factors)
+                        pred_rets[r.symbol] = f.get("predicted_return_5d", 0)
+                    except Exception:
+                        pass
+                sig_str[r.symbol] = float(r.signal_strength or 0)
+
+            optimizer = PortfolioOptimizer(
+                session=session, total_capital=total_capital,
+                method=method, max_single_weight=max_single_weight,
+                max_sector_weight=max_sector_weight,
+            )
+            result = optimizer.optimize(buy_syms, sell_syms,
+                                        predicted_returns=pred_rets, signal_strengths=sig_str)
+
+        return {
+            "method": result.method,
+            "total_capital": result.total_capital,
+            "cash": round(result.cash_amount, 2),
+            "cash_weight": round(result.cash_weight, 4),
+            "positions": [
+                {
+                    "symbol": a.symbol, "name": a.name, "sector": a.sector,
+                    "weight": round(a.target_weight, 4),
+                    "quantity": a.quantity, "price": a.current_price,
+                    "market_value": round(a.market_value, 2),
+                    "predicted_return": round(a.predicted_return, 6),
+                    "volatility": round(a.annual_volatility, 4),
+                }
+                for a in result.assets if a.quantity > 0
+            ],
+            "risk": {
+                "annual_volatility": round(result.risk.portfolio_annual_vol, 4),
+                "max_drawdown": round(result.risk.max_drawdown, 4),
+                "sharpe_ratio": result.risk.sharpe_ratio,
+                "diversification_ratio": result.risk.diversification_ratio,
+                "max_single_weight": round(result.risk.max_single_weight, 4),
+                "max_sector_weight": round(result.risk.max_sector_weight, 4),
+                "hhi": result.risk.hhi,
+            },
+            "rebalance_needed": result.needs_rebalance,
+            "rebalance_actions": [
+                {
+                    "symbol": ra.symbol, "action": ra.action,
+                    "current_weight": ra.current_weight,
+                    "target_weight": ra.target_weight,
+                    "quantity_delta": ra.quantity_delta,
+                    "trade_value": ra.trade_value,
+                }
+                for ra in result.rebalance_actions if ra.action != "hold"
+            ],
+        }
+    except Exception as e:
+        logger.error("Portfolio optimization API error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/portfolio/summary")
+def api_portfolio_summary():
+    """查看当前投资组合概况"""
+    with SessionLocal() as session:
+        portfolio = session.query(Portfolio).filter(
+            Portfolio.portfolio_id == "signal_engine_default"
+        ).first()
+        if not portfolio:
+            return {"error": "No portfolio found. Run optimization first."}
+
+        positions = session.query(PositionManagement).filter(
+            PositionManagement.portfolio_id == "signal_engine_default",
+            PositionManagement.quantity > 0,
+        ).all()
+
+        return {
+            "portfolio_id": portfolio.portfolio_id,
+            "name": portfolio.name,
+            "initial_capital": float(portfolio.initial_capital) if portfolio.initial_capital else None,
+            "cash": float(portfolio.cash) if portfolio.cash else None,
+            "total_value": float(portfolio.total_value) if portfolio.total_value else None,
+            "total_return": float(portfolio.total_return) if portfolio.total_return else None,
+            "max_drawdown": float(portfolio.max_drawdown) if portfolio.max_drawdown else None,
+            "sharpe_ratio": float(portfolio.sharpe_ratio) if portfolio.sharpe_ratio else None,
+            "position_count": portfolio.position_count,
+            "cash_ratio": float(portfolio.cash_ratio) if portfolio.cash_ratio else None,
+            "strategy": portfolio.strategy,
+            "risk_limits": {
+                "max_single_position": float(portfolio.max_single_position) if portfolio.max_single_position else None,
+                "max_sector_position": float(portfolio.max_sector_position) if portfolio.max_sector_position else None,
+                "max_total_position": float(portfolio.max_total_position) if portfolio.max_total_position else None,
+            },
+            "positions": [
+                {
+                    "symbol": p.symbol,
+                    "quantity": p.quantity,
+                    "avg_cost": float(p.avg_cost) if p.avg_cost else None,
+                    "current_price": float(p.current_price) if p.current_price else None,
+                    "market_value": float(p.market_value) if p.market_value else None,
+                    "weight": float(p.weight) if p.weight else None,
+                    "target_weight": float(p.target_weight) if p.target_weight else None,
+                    "unrealized_pnl_pct": round(float(p.unrealized_pnl_pct), 2) if p.unrealized_pnl_pct else None,
+                    "holding_days": p.holding_days,
+                }
+                for p in positions
+            ],
+            "updated_at": portfolio.updated_at.isoformat() if portfolio.updated_at else None,
+        }
+
+
+@app.get("/api/events/detect")
+def api_detect_events(
+    symbol: str = Query(..., description="股票代码"),
+    days: int = Query(7, ge=1, le=90, description="回溯天数"),
+):
+    """检测指定股票的事件驱动因子"""
+    try:
+        from .prediction.framework.event_alpha import extract_events_from_db
+        today = date.today()
+        start = today - timedelta(days=days)
+        with SessionLocal() as session:
+            events, event_df = extract_events_from_db(
+                session, [symbol.upper()], start, today,
+            )
+            return {
+                "symbol": symbol.upper(),
+                "period": f"{start} → {today}",
+                "events_detected": len(events),
+                "events": [
+                    {
+                        "date": e.event_date.isoformat(),
+                        "category": e.category,
+                        "sentiment": e.sentiment,
+                        "sentiment_score": e.sentiment_score,
+                        "impact_score": e.impact_score,
+                        "confidence": e.confidence,
+                        "keywords": e.keywords_matched,
+                        "source": e.source_title[:80] if e.source_title else "",
+                    }
+                    for e in events[:50]
+                ],
+                "features": event_df.to_dict(orient="records") if not event_df.empty else [],
+            }
+    except Exception as e:
+        logger.error("Event detect API error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/events/validate")
+def api_validate_events(
+    symbols: str = Query("", description="逗号分隔的股票代码，留空=全部活跃股"),
+    days: int = Query(30, ge=7, le=365, description="验证期间天数"),
+):
+    """验证事件对股价的实际影响"""
+    try:
+        from .prediction.framework.event_validator import validate_events_from_db
+        today = date.today()
+        start = today - timedelta(days=days)
+        with SessionLocal() as session:
+            if symbols:
+                sym_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+            else:
+                from .core.models import Watchlist as WL
+                sym_list = [r.symbol for r in session.query(WL.symbol).filter(WL.status == "active").limit(50).all()]
+
+            report = validate_events_from_db(session, sym_list, start, today)
+
+            return {
+                "period": f"{start} → {today}",
+                "total_events": report.total_events,
+                "total_symbols": report.total_symbols,
+                "overall_direction_accuracy": round(report.overall_direction_accuracy, 4),
+                "avg_post_5d_return": round(report.avg_post_5d_return, 6),
+                "positive_events_correct_pct": round(report.positive_events_correct_pct, 4),
+                "negative_events_correct_pct": round(report.negative_events_correct_pct, 4),
+                "category_stats": {
+                    cat: {
+                        "count": s.count,
+                        "direction_accuracy": round(s.direction_accuracy, 4),
+                        "avg_ret_day0": round(s.avg_ret_day0, 6),
+                        "avg_ret_post_5d": round(s.avg_ret_post_5d, 6),
+                        "positive_avg_ret_5d": round(s.positive_avg_ret_5d, 6),
+                        "negative_avg_ret_5d": round(s.negative_avg_ret_5d, 6),
+                        "significant_positive": s.significant_positive,
+                        "significant_negative": s.significant_negative,
+                    }
+                    for cat, s in report.category_stats.items()
+                },
+            }
+    except Exception as e:
+        logger.error("Event validate API error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/paper-trading/run")
+def api_run_paper_trading():
+    """手动触发模拟实盘交易"""
+    try:
+        from .prediction.services.paper_trading import run_daily_paper_trading
+        report = run_daily_paper_trading()
+        result = {
+            "date": report.run_date.isoformat(),
+            "success": report.success,
+            "buy_count": report.buy_count,
+            "sell_count": report.sell_count,
+            "total_commission": round(report.total_commission, 2),
+            "orders": [
+                {
+                    "symbol": o.symbol, "action": o.action,
+                    "quantity": o.quantity, "price": o.price,
+                    "amount": round(o.amount, 2),
+                    "commission": round(o.commission, 2),
+                    "reason": o.reason,
+                }
+                for o in report.orders_executed
+            ],
+        }
+        if report.snapshot:
+            s = report.snapshot
+            result["snapshot"] = {
+                "total_value": round(s.total_value, 2),
+                "cash": round(s.cash, 2),
+                "market_value": round(s.market_value, 2),
+                "nav": s.nav,
+                "daily_return": round(s.daily_return, 6),
+                "total_return": round(s.total_return, 6),
+                "drawdown": round(s.drawdown, 6),
+                "max_drawdown": round(s.max_drawdown, 6),
+                "benchmark_return": round(s.benchmark_return, 6),
+                "excess_return": round(s.excess_return, 6),
+                "position_count": s.position_count,
+            }
+        if report.error_message:
+            result["error"] = report.error_message
+        return result
+    except Exception as e:
+        logger.error("Paper trading API error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/paper-trading/nav")
+def api_paper_trading_nav(days: int = Query(365, ge=1, le=3650)):
+    """获取模拟盘净值曲线（含基准对比）"""
+    with SessionLocal() as session:
+        cutoff = date.today() - timedelta(days=days)
+        rows = (
+            session.query(PaperTradingSnapshot)
+            .filter(
+                PaperTradingSnapshot.portfolio_id == "paper_trading_main",
+                PaperTradingSnapshot.snapshot_date >= cutoff,
+            )
+            .order_by(PaperTradingSnapshot.snapshot_date)
+            .all()
+        )
+        if not rows:
+            return {"data": [], "stats": {}}
+
+        data = []
+        for r in rows:
+            data.append({
+                "date": r.snapshot_date.isoformat(),
+                "nav": float(r.nav),
+                "total_return": float(r.total_return or 0),
+                "daily_return": float(r.daily_return or 0),
+                "drawdown": float(r.drawdown or 0),
+                "max_drawdown": float(r.max_drawdown or 0),
+                "benchmark_return": float(r.benchmark_return or 0),
+                "excess_return": float(r.excess_return or 0),
+                "position_count": r.position_count,
+                "total_value": float(r.total_value),
+            })
+
+        # 统计
+        daily_rets = [float(r.daily_return or 0) for r in rows]
+        total_ret = float(rows[-1].total_return or 0) if rows else 0
+        max_dd = min(float(r.max_drawdown or 0) for r in rows) if rows else 0
+        avg_ret = float(np.mean(daily_rets)) * 252 if daily_rets else 0
+        std_ret = float(np.std(daily_rets)) * np.sqrt(252) if daily_rets else 0
+        sharpe = (avg_ret - 0.02) / std_ret if std_ret > 0 else 0
+
+        stats = {
+            "total_return": round(total_ret, 6),
+            "annualized_return": round(avg_ret, 6),
+            "annualized_volatility": round(std_ret, 6),
+            "sharpe_ratio": round(sharpe, 3),
+            "max_drawdown": round(max_dd, 6),
+            "benchmark_return": round(float(rows[-1].benchmark_return or 0), 6) if rows else 0,
+            "excess_return": round(float(rows[-1].excess_return or 0), 6) if rows else 0,
+            "trading_days": len(rows),
+        }
+
+        return {"data": data, "stats": stats}
+
+
+@app.get("/api/paper-trading/positions")
+def api_paper_trading_positions():
+    """获取当前模拟盘持仓"""
+    with SessionLocal() as session:
+        positions = (
+            session.query(PositionManagement)
+            .filter(
+                PositionManagement.portfolio_id == "paper_trading_main",
+                PositionManagement.quantity > 0,
+            )
+            .all()
+        )
+
+        portfolio = session.query(Portfolio).filter(
+            Portfolio.portfolio_id == "paper_trading_main"
+        ).first()
+
+        total_value = float(portfolio.total_value) if portfolio and portfolio.total_value else 0
+
+        return {
+            "portfolio": {
+                "total_value": total_value,
+                "cash": float(portfolio.cash) if portfolio and portfolio.cash else 0,
+                "total_return": float(portfolio.total_return) if portfolio and portfolio.total_return else 0,
+                "max_drawdown": float(portfolio.max_drawdown) if portfolio and portfolio.max_drawdown else 0,
+                "sharpe_ratio": float(portfolio.sharpe_ratio) if portfolio and portfolio.sharpe_ratio else 0,
+            } if portfolio else {},
+            "positions": [
+                {
+                    "symbol": p.symbol,
+                    "quantity": p.quantity,
+                    "avg_cost": round(float(p.avg_cost), 2) if p.avg_cost else None,
+                    "current_price": round(float(p.current_price), 2) if p.current_price else None,
+                    "market_value": round(float(p.market_value), 2) if p.market_value else None,
+                    "weight": round(float(p.market_value) / total_value * 100, 1) if p.market_value and total_value > 0 else 0,
+                    "unrealized_pnl": round(float(p.unrealized_pnl), 2) if p.unrealized_pnl else None,
+                    "unrealized_pnl_pct": round(float(p.unrealized_pnl_pct), 2) if p.unrealized_pnl_pct else None,
+                    "holding_days": p.holding_days,
+                    "entry_date": p.entry_date.isoformat() if p.entry_date else None,
+                }
+                for p in positions
+            ],
+        }
+
+
+@app.get("/api/paper-trading/trades")
+def api_paper_trading_trades(
+    days: int = Query(90, ge=1, le=365),
+    symbol: str = Query("", description="按股票过滤"),
+):
+    """获取模拟盘交易记录"""
+    with SessionLocal() as session:
+        cutoff = date.today() - timedelta(days=days)
+        q = (
+            session.query(PaperTradeLog)
+            .filter(
+                PaperTradeLog.portfolio_id == "paper_trading_main",
+                PaperTradeLog.trade_date >= cutoff,
+            )
+        )
+        if symbol:
+            q = q.filter(PaperTradeLog.symbol == symbol.upper())
+
+        rows = q.order_by(PaperTradeLog.trade_date.desc()).limit(500).all()
+
+        # 统计
+        total_trades = len(rows)
+        wins = sum(1 for r in rows if r.realized_pnl and r.realized_pnl > 0)
+        losses = sum(1 for r in rows if r.realized_pnl and r.realized_pnl < 0)
+        total_pnl = sum(float(r.realized_pnl) for r in rows if r.realized_pnl)
+        total_commission = sum(float(r.commission or 0) for r in rows)
+
+        return {
+            "stats": {
+                "total_trades": total_trades,
+                "wins": wins,
+                "losses": losses,
+                "win_rate": round(wins / (wins + losses), 4) if (wins + losses) > 0 else 0,
+                "total_pnl": round(total_pnl, 2),
+                "total_commission": round(total_commission, 2),
+            },
+            "trades": [
+                {
+                    "date": r.trade_date.isoformat(),
+                    "symbol": r.symbol,
+                    "action": r.action,
+                    "quantity": r.quantity,
+                    "price": round(float(r.price), 2),
+                    "amount": round(float(r.amount), 2),
+                    "commission": round(float(r.commission), 2) if r.commission else 0,
+                    "realized_pnl": round(float(r.realized_pnl), 2) if r.realized_pnl else None,
+                    "realized_pnl_pct": round(float(r.realized_pnl_pct), 2) if r.realized_pnl_pct else None,
+                    "reason": r.reason,
+                }
+                for r in rows
+            ],
+        }
+
 
 @app.get("/prices/{symbol}")
 def get_prices(symbol: str, limit: int = Query(180, ge=1, le=1000)):
@@ -3196,6 +4565,975 @@ async def get_articles_by_host(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"host refs inspection failed: {e}")
 
+# ───────── 预测复盘 API ─────────
+
+_PREDICTION_EVAL_REFRESH_CACHE: dict[str, float] = {}
+_PREDICTION_EVAL_REFRESH_LOCK = _threading.Lock()
+
+
+def _maybe_refresh_prediction_evaluations(
+    session: Session,
+    symbol: str | None = None,
+    lookback_days: int = 14,
+    ttl_seconds: int = 60,
+) -> dict:
+    """短 TTL 同步 forecasts → prediction_evaluations 并回填 actuals。
+
+    /api/report/{symbol}/full 和 /api/predictions/history 都会触发这个轻量刷新，
+    这样用户打开图表时能看到刚生成的预测在历史复盘层里逐步沉淀。
+    """
+    key = (symbol or "*").upper()
+    now = time.monotonic()
+    with _PREDICTION_EVAL_REFRESH_LOCK:
+        last = _PREDICTION_EVAL_REFRESH_CACHE.get(key)
+        if last is not None and now - last < ttl_seconds:
+            return {"skipped": True, "reason": "ttl"}
+        _PREDICTION_EVAL_REFRESH_CACHE[key] = now
+
+    try:
+        from .prediction.services.prediction_service import PredictionService
+
+        svc = PredictionService(session)
+        synced = svc.sync_forecasts(lookback_days=max(lookback_days, 7), symbol=symbol)
+        backfilled = svc.backfill_actuals(symbol=symbol)
+        return {"skipped": False, "forecasts_synced": synced, "actuals_backfilled": backfilled}
+    except Exception as exc:  # noqa: BLE001
+        session.rollback()
+        logger.debug("prediction evaluation refresh skipped for %s: %s", key, exc)
+        return {"skipped": True, "reason": "error", "error": str(exc)[:200]}
+
+
+def _prediction_direction_color_value(value: Optional[bool]) -> Optional[bool]:
+    return value if value is not None else None
+
+
+def _persist_iteration_bundle_safe(
+    session: Session,
+    *,
+    symbol: str,
+    lookback_days: int,
+    feature_snapshot: Optional[dict],
+    failure_analysis: Optional[dict],
+    agent_review: Optional[dict],
+) -> dict:
+    try:
+        from .prediction.services.agent_iteration_persistence_service import persist_agent_iteration_bundle
+
+        return persist_agent_iteration_bundle(
+            session,
+            symbol=symbol,
+            lookback_days=lookback_days,
+            feature_snapshot=feature_snapshot,
+            failure_analysis=failure_analysis,
+            agent_review=agent_review,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("agent iteration persistence unavailable for %s: %s", symbol, exc)
+        return {"status": "failed", "reason": str(exc)[:200]}
+
+
+@app.get("/api/predictions/history")
+def prediction_history(
+    symbol: str = Query(..., description="股票代码，如 300750.SZ"),
+    lookback_days: int = Query(60, ge=5, le=365, description="回看自然日窗口"),
+    refresh: bool = Query(True, description="是否先同步 forecasts 并回填 actuals"),
+):
+    """返回历史预测 vs 实际收盘的图表契约。
+
+    rows 按 target_date 聚合，优先输出 D-1 / D-5（按交易日间隔计算）的历史预测，
+    stats 用于前端展示 30 日 MAPE、方向准确率和区间命中率。
+    """
+    sym = symbol.upper()
+    cutoff = date.today() - timedelta(days=lookback_days)
+
+    with SessionLocal() as session:
+        from .prediction.services.prediction_service import (
+            aggregate_stock_evaluation_summary,
+            build_deviation_cases,
+            build_evaluation_availability,
+            build_prediction_quality,
+            classify_deviation_level,
+        )
+        from .prediction.services.failure_analysis_service import build_failure_analysis
+        from .prediction.services.agent_review_service import build_agent_review
+        from .prediction.services.agent_verification_service import build_agent_verification
+        from .prediction.services.feature_snapshot_service import load_stock_feature_snapshot
+
+        refresh_meta = None
+        if refresh:
+            refresh_meta = _maybe_refresh_prediction_evaluations(
+                session,
+                symbol=sym,
+                lookback_days=lookback_days + 10,
+            )
+
+        recent_forecasts = list(session.execute(
+            select(Forecast)
+            .where(
+                Forecast.symbol == sym,
+                Forecast.run_at >= datetime.combine(cutoff - timedelta(days=10), datetime.min.time()),
+            )
+            .order_by(Forecast.run_at.desc())
+            .limit(300)
+        ).scalars().all())
+
+        latest_pipeline_run = session.execute(
+            select(PipelineRun)
+            .where(
+                PipelineRun.symbol == sym,
+                PipelineRun.run_type.in_(["fetch_daily", "predict", "daily_pipeline", "full_report"]),
+            )
+            .order_by(PipelineRun.run_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+
+        evals = list(session.execute(
+            select(PredictionEvaluation)
+            .where(
+                PredictionEvaluation.symbol == sym,
+                PredictionEvaluation.target_date >= cutoff,
+            )
+            .order_by(PredictionEvaluation.target_date.asc(), PredictionEvaluation.prediction_date.desc())
+        ).scalars().all())
+
+        if not evals:
+            price_rows_empty = list(session.execute(
+                select(PriceDaily)
+                .where(
+                    PriceDaily.symbol == sym,
+                    PriceDaily.trade_date >= cutoff - timedelta(days=10),
+                    PriceDaily.trade_date <= date.today(),
+                )
+                .order_by(PriceDaily.trade_date.asc())
+            ).scalars().all())
+            summary = aggregate_stock_evaluation_summary([], {})
+            availability = build_evaluation_availability(
+                sym,
+                [],
+                recent_forecasts,
+                price_rows_empty,
+                latest_pipeline_run=latest_pipeline_run,
+                supported_record_count=0,
+            )
+            quality = build_prediction_quality(sym, summary, availability, [])
+            failure_analysis = build_failure_analysis(sym, [])
+            try:
+                feature_snapshot = load_stock_feature_snapshot(session, sym)
+            except Exception:
+                feature_snapshot = None
+            agent_review = build_agent_review(sym, failure_analysis=failure_analysis, feature_snapshot=feature_snapshot)
+            verification = build_agent_verification(agent_review, failure_analysis=failure_analysis, feature_snapshot=feature_snapshot)
+            agent_review["verification_status"] = verification["verification_status"]
+            agent_review["verification_checks"] = verification["checks"]
+            agent_review["gate_result"] = verification["gate_result"]
+            persistence = _persist_iteration_bundle_safe(
+                session,
+                symbol=sym,
+                lookback_days=lookback_days,
+                feature_snapshot=feature_snapshot,
+                failure_analysis=failure_analysis,
+                agent_review=agent_review,
+            )
+            return {
+                "symbol": sym,
+                "lookback_days": lookback_days,
+                "rows": [],
+                "stats": {
+                    "total_records": 0,
+                    "evaluated_records": 0,
+                    "mape": None,
+                    "direction_accuracy": None,
+                    "interval_hit_rate": None,
+                    "d1_mape": None,
+                    "d5_mape": None,
+                    "d1_count": 0,
+                    "d5_count": 0,
+                },
+                "summary": summary,
+                "availability": availability,
+                "quality": quality,
+                "deviation_cases": [],
+                "failure_analysis": failure_analysis,
+                "agent_review": agent_review,
+                "persistence": persistence,
+                "diagnostics": {
+                    "forecast_records": len(recent_forecasts),
+                    "evaluation_records": 0,
+                    "price_records": len(price_rows_empty),
+                },
+                "refresh": refresh_meta,
+            }
+
+        target_dates = {e.target_date for e in evals}
+        min_date = min(min(e.prediction_date, e.target_date) for e in evals) - timedelta(days=10)
+        max_date = max(e.target_date for e in evals)
+
+        price_rows = list(session.execute(
+            select(PriceDaily)
+            .where(
+                PriceDaily.symbol == sym,
+                PriceDaily.trade_date >= min_date,
+                PriceDaily.trade_date <= max_date,
+            )
+            .order_by(PriceDaily.trade_date.asc())
+        ).scalars().all())
+        trading_dates = [p.trade_date for p in price_rows]
+        price_map = {p.trade_date: float(p.close) for p in price_rows if p.close is not None}
+
+        forecast_rows = list(session.execute(
+            select(Forecast)
+            .where(
+                Forecast.symbol == sym,
+                Forecast.target_date.in_(target_dates),
+                Forecast.run_at >= datetime.combine(min_date, datetime.min.time()),
+            )
+            .order_by(Forecast.run_at.desc())
+        ).scalars().all())
+        forecast_by_key: dict[tuple, Forecast] = {}
+        forecast_by_date_target: dict[tuple, Forecast] = {}
+        for fc in forecast_rows:
+            pred_date = fc.run_at.date() if isinstance(fc.run_at, datetime) else fc.run_at
+            key = (pred_date, fc.target_date, fc.model)
+            forecast_by_key.setdefault(key, fc)
+            forecast_by_date_target.setdefault((pred_date, fc.target_date), fc)
+        for fc in recent_forecasts:
+            pred_date = fc.run_at.date() if isinstance(fc.run_at, datetime) else fc.run_at
+            forecast_by_key.setdefault((pred_date, fc.target_date, fc.model), fc)
+            forecast_by_date_target.setdefault((pred_date, fc.target_date), fc)
+
+        def trading_gap(prediction_date: date, target_date: date) -> int:
+            dates = [d for d in trading_dates if prediction_date < d <= target_date]
+            if dates:
+                return len(dates)
+            return max((target_date - prediction_date).days, 0)
+
+        def attach_prefix(row: dict, prefix: str, pe: PredictionEvaluation, fc: Forecast | None) -> None:
+            predicted = float(pe.predicted_price) if pe.predicted_price is not None else None
+            actual = row.get("actual")
+            lower = float(fc.yhat_lower) if fc is not None and fc.yhat_lower is not None else None
+            upper = float(fc.yhat_upper) if fc is not None and fc.yhat_upper is not None else None
+            error_pct = float(pe.error_pct) if pe.error_pct is not None else None
+            signed_error_pct = None
+            if predicted is not None and actual is not None and float(actual) > 0:
+                signed_error_pct = (predicted - float(actual)) / float(actual) * 100.0
+                if error_pct is None:
+                    error_pct = abs(signed_error_pct)
+            if predicted is None:
+                status = "invalid_prediction_data"
+            elif actual is None and pe.target_date > date.today():
+                status = "pending_target_date"
+            elif actual is None:
+                status = "missing_actual_price"
+            else:
+                status = "evaluated"
+            row[f"{prefix}_prediction_date"] = pe.prediction_date.isoformat()
+            row[f"{prefix}_model"] = pe.model_name
+            row[f"{prefix}_predicted"] = round(predicted, 2) if predicted is not None else None
+            row[f"{prefix}_lower"] = round(lower, 2) if lower is not None else None
+            row[f"{prefix}_upper"] = round(upper, 2) if upper is not None else None
+            row[f"{prefix}_error_pct"] = round(error_pct, 2) if error_pct is not None else None
+            row[f"{prefix}_signed_error_pct"] = round(signed_error_pct, 2) if signed_error_pct is not None else None
+            row[f"{prefix}_direction_ok"] = _prediction_direction_color_value(pe.direction_correct)
+            if actual is not None and lower is not None and upper is not None:
+                row[f"{prefix}_interval_hit"] = lower <= float(actual) <= upper
+            else:
+                row[f"{prefix}_interval_hit"] = None
+            row[f"{prefix}_status"] = status
+            row[f"{prefix}_deviation_level"] = classify_deviation_level(
+                error_pct,
+                pe.direction_correct,
+                row.get(f"{prefix}_interval_hit"),
+            )
+
+        rows_by_date: dict[date, dict] = {}
+        stat_errors: list[float] = []
+        stat_dir: list[bool] = []
+        stat_interval: list[bool] = []
+        d1_errors: list[float] = []
+        d5_errors: list[float] = []
+
+        for pe in evals:
+            target_d = pe.target_date
+            actual = pe.actual_price if pe.actual_price is not None else price_map.get(target_d)
+            row = rows_by_date.setdefault(target_d, {
+                "date": target_d.isoformat(),
+                "actual": round(float(actual), 2) if actual is not None else None,
+            })
+            if row.get("actual") is None and actual is not None:
+                row["actual"] = round(float(actual), 2)
+
+            fc = forecast_by_key.get((pe.prediction_date, pe.target_date, pe.model_name)) \
+                or forecast_by_date_target.get((pe.prediction_date, pe.target_date))
+            gap = trading_gap(pe.prediction_date, pe.target_date)
+            prefix = "d1" if gap == 1 else "d5" if gap == 5 else None
+            if prefix is None:
+                continue
+            if row.get(f"{prefix}_predicted") is not None:
+                continue
+            attach_prefix(row, prefix, pe, fc)
+
+            if pe.actual_price is not None and pe.error_pct is not None:
+                stat_errors.append(float(pe.error_pct))
+                if prefix == "d1":
+                    d1_errors.append(float(pe.error_pct))
+                elif prefix == "d5":
+                    d5_errors.append(float(pe.error_pct))
+            if pe.direction_correct is not None:
+                stat_dir.append(bool(pe.direction_correct))
+            hit_value = row.get(f"{prefix}_interval_hit")
+            if hit_value is not None:
+                stat_interval.append(bool(hit_value))
+
+        chart_rows = [r for _, r in sorted(rows_by_date.items()) if r.get("d1_predicted") is not None or r.get("d5_predicted") is not None]
+        evaluated_records = sum(1 for e in evals if e.actual_price is not None)
+        stats = {
+            "total_records": len(evals),
+            "evaluated_records": evaluated_records,
+            "mape": round(sum(stat_errors) / len(stat_errors), 2) if stat_errors else None,
+            "direction_accuracy": round(sum(1 for ok in stat_dir if ok) / len(stat_dir) * 100, 1) if stat_dir else None,
+            "interval_hit_rate": round(sum(1 for ok in stat_interval if ok) / len(stat_interval) * 100, 1) if stat_interval else None,
+            "d1_mape": round(sum(d1_errors) / len(d1_errors), 2) if d1_errors else None,
+            "d5_mape": round(sum(d5_errors) / len(d5_errors), 2) if d5_errors else None,
+            "d1_count": sum(1 for r in chart_rows if r.get("d1_predicted") is not None),
+            "d5_count": sum(1 for r in chart_rows if r.get("d5_predicted") is not None),
+        }
+        forecast_lookup = {**forecast_by_date_target, **forecast_by_key}
+        summary = aggregate_stock_evaluation_summary(evals, forecast_lookup)
+        availability = build_evaluation_availability(
+            sym,
+            evals,
+            recent_forecasts,
+            price_rows,
+            latest_pipeline_run=latest_pipeline_run,
+            supported_record_count=stats["d1_count"] + stats["d5_count"],
+        )
+        deviation_cases = build_deviation_cases(
+            evals,
+            forecast_lookup,
+            limit=8,
+            horizon_resolver=trading_gap,
+        )
+        quality = build_prediction_quality(sym, summary, availability, deviation_cases)
+        failure_analysis = build_failure_analysis(sym, deviation_cases, quality=quality)
+        try:
+            feature_snapshot = load_stock_feature_snapshot(session, sym)
+        except Exception:
+            feature_snapshot = None
+        agent_review = build_agent_review(sym, failure_analysis=failure_analysis, feature_snapshot=feature_snapshot)
+        verification = build_agent_verification(agent_review, failure_analysis=failure_analysis, feature_snapshot=feature_snapshot)
+        agent_review["verification_status"] = verification["verification_status"]
+        agent_review["verification_checks"] = verification["checks"]
+        agent_review["gate_result"] = verification["gate_result"]
+        persistence = _persist_iteration_bundle_safe(
+            session,
+            symbol=sym,
+            lookback_days=lookback_days,
+            feature_snapshot=feature_snapshot,
+            failure_analysis=failure_analysis,
+            agent_review=agent_review,
+        )
+        return {
+            "symbol": sym,
+            "lookback_days": lookback_days,
+            "rows": chart_rows,
+            "stats": stats,
+            "summary": summary,
+            "availability": availability,
+            "quality": quality,
+            "deviation_cases": deviation_cases,
+            "failure_analysis": failure_analysis,
+            "agent_review": agent_review,
+            "persistence": persistence,
+            "diagnostics": {
+                "forecast_records": len(recent_forecasts),
+                "evaluation_records": len(evals),
+                "chart_records": len(chart_rows),
+                "price_records": len(price_rows),
+                "supported_records": stats["d1_count"] + stats["d5_count"],
+            },
+            "refresh": refresh_meta,
+        }
+
+
+@app.get("/api/stocks/{symbol}/prediction-quality")
+def stock_prediction_quality(
+    symbol: str,
+    lookback_days: int = Query(60, ge=5, le=365, description="回看自然日窗口"),
+    refresh: bool = Query(True, description="是否先同步 forecasts 并回填 actuals"),
+):
+    """返回单只股票预测质量摘要，供交易辅助和模型复盘使用。"""
+    history = prediction_history(symbol=symbol, lookback_days=lookback_days, refresh=refresh)
+    quality = history.get("quality") or {}
+    quality["lookback_days"] = lookback_days
+    quality["availability"] = history.get("availability")
+    quality["summary"] = history.get("summary")
+    quality["diagnostics"] = history.get("diagnostics")
+    return quality
+
+
+@app.get("/api/stocks/{symbol}/failure-analysis")
+def stock_failure_analysis(
+    symbol: str,
+    lookback_days: int = Query(60, ge=5, le=365, description="回看自然日窗口"),
+    refresh: bool = Query(True, description="是否先同步 forecasts 并回填 actuals"),
+):
+    """返回单只股票预测失败归因；只生成复盘建议，不自动修改模型。"""
+    history = prediction_history(symbol=symbol, lookback_days=lookback_days, refresh=refresh)
+    analysis = history.get("failure_analysis") or {}
+    try:
+        from .prediction.services.failure_analysis_service import build_failure_analysis
+        from .prediction.services.feature_snapshot_service import load_stock_feature_snapshot
+
+        with SessionLocal() as session:
+            feature_snapshot = load_stock_feature_snapshot(session, symbol.upper())
+        analysis = build_failure_analysis(
+            symbol.upper(),
+            history.get("deviation_cases") or [],
+            quality=history.get("quality") or {},
+            feature_snapshot=feature_snapshot,
+        )
+        analysis["feature_snapshot"] = feature_snapshot
+    except Exception as exc:
+        logger.debug("failure analysis feature snapshot unavailable for %s: %s", symbol, exc)
+    analysis["lookback_days"] = lookback_days
+    analysis["availability"] = history.get("availability")
+    return analysis
+
+
+@app.get("/api/stocks/{symbol}/agent-review")
+def stock_agent_review(
+    symbol: str,
+    lookback_days: int = Query(60, ge=5, le=365, description="回看自然日窗口"),
+    refresh: bool = Query(True, description="是否先同步 forecasts 并回填 actuals"),
+):
+    """返回 Agent 复盘受控迭代建议；不会自动修改模型、阈值或交易动作。"""
+    history = prediction_history(symbol=symbol, lookback_days=lookback_days, refresh=refresh)
+    failure_analysis = history.get("failure_analysis") or {}
+    feature_snapshot = None
+    try:
+        from .prediction.services.feature_snapshot_service import load_stock_feature_snapshot
+
+        with SessionLocal() as session:
+            feature_snapshot = load_stock_feature_snapshot(session, symbol.upper())
+    except Exception as exc:
+        logger.debug("agent review feature snapshot unavailable for %s: %s", symbol, exc)
+    from .prediction.services.agent_review_service import build_agent_review
+    from .prediction.services.agent_verification_service import build_agent_verification
+
+    review = build_agent_review(symbol.upper(), failure_analysis=failure_analysis, feature_snapshot=feature_snapshot)
+    verification = build_agent_verification(review, failure_analysis=failure_analysis, feature_snapshot=feature_snapshot)
+    review["verification_status"] = verification["verification_status"]
+    review["verification_checks"] = verification["checks"]
+    review["gate_result"] = verification["gate_result"]
+    review["lookback_days"] = lookback_days
+    review["availability"] = history.get("availability")
+    try:
+        with SessionLocal() as session:
+            review["persistence"] = _persist_iteration_bundle_safe(
+                session,
+                symbol=symbol.upper(),
+                lookback_days=lookback_days,
+                feature_snapshot=feature_snapshot,
+                failure_analysis=failure_analysis,
+                agent_review=review,
+            )
+    except Exception as exc:
+        logger.debug("agent review persistence unavailable for %s: %s", symbol, exc)
+        review["persistence"] = {"status": "failed", "reason": str(exc)[:200]}
+    return review
+
+
+@app.get("/api/forecast/review")
+def forecast_review(
+    symbol: str = Query(None, description="股票代码，为空则返回所有置顶股票"),
+    limit: int = Query(30, ge=1, le=200, description="每只股票最多返回条数"),
+):
+    """
+    将已过期的预测记录与实际收盘价比对，计算 MAPE 等误差指标。
+    """
+    from datetime import date as _date
+    today = _date.today()
+    with SessionLocal() as session:
+        # 确定要查询的 symbol 列表
+        if symbol:
+            syms = [symbol.upper()]
+        else:
+            # 置顶股票（从统一股票池 + watchlist pin 状态）
+            rows = session.execute(text("""
+                SELECT spm.symbol FROM stock_pool_members spm
+                INNER JOIN watchlist w ON spm.symbol = w.symbol AND w.pinned = true
+                WHERE spm.exit_date IS NULL
+            """)).fetchall()
+            syms = [r.symbol for r in rows] if rows else []
+        if not syms:
+            return {"items": [], "summary": None}
+
+        items_out = []
+        for sym in syms:
+            sql = text("""
+                SELECT f.target_date, f.model, f.run_at,
+                       f.yhat, f.yhat_lower, f.yhat_upper,
+                       p.close AS actual_close
+                FROM forecasts f
+                LEFT JOIN prices_daily p ON f.symbol = p.symbol AND f.target_date = p.trade_date
+                WHERE f.symbol = :sym AND f.target_date <= :today
+                ORDER BY f.target_date DESC, f.run_at DESC
+                LIMIT :lim
+            """)
+            rows = session.execute(sql, {"sym": sym, "today": today, "lim": limit}).mappings().all()
+            if not rows:
+                continue
+
+            # 按 target_date 去重（取最新 run_at 的那条）
+            seen_dates: dict = {}
+            for r in rows:
+                td = str(r["target_date"])
+                if td not in seen_dates:
+                    seen_dates[td] = r
+
+            records = []
+            total_err = 0.0
+            matched = 0
+            direction_hit = 0
+            direction_total = 0
+            prev_actual = None
+
+            # 按日期升序处理
+            for td in sorted(seen_dates.keys()):
+                r = seen_dates[td]
+                yhat = float(r["yhat"]) if r["yhat"] is not None else None
+                actual = float(r["actual_close"]) if r["actual_close"] is not None else None
+                err_pct = None
+                direction_ok = None
+
+                if yhat is not None and actual is not None and actual > 0:
+                    err_pct = round(abs(yhat - actual) / actual * 100, 2)
+                    total_err += err_pct
+                    matched += 1
+
+                    # 方向准确性：预测涨跌方向是否与实际一致
+                    if prev_actual is not None:
+                        pred_dir = 1 if yhat >= prev_actual else -1
+                        actual_dir = 1 if actual >= prev_actual else -1
+                        direction_ok = pred_dir == actual_dir
+                        direction_total += 1
+                        if direction_ok:
+                            direction_hit += 1
+
+                if actual is not None:
+                    prev_actual = actual
+
+                records.append({
+                    "date": str(r["target_date"]),
+                    "model": r["model"],
+                    "predicted": round(yhat, 2) if yhat is not None else None,
+                    "lower": round(float(r["yhat_lower"]), 2) if r["yhat_lower"] is not None else None,
+                    "upper": round(float(r["yhat_upper"]), 2) if r["yhat_upper"] is not None else None,
+                    "actual": round(actual, 2) if actual is not None else None,
+                    "error_pct": err_pct,
+                    "direction_ok": direction_ok,
+                })
+
+            # 获取股票名称
+            w = session.execute(
+                select(Watchlist.name).where(Watchlist.symbol == sym)
+            ).scalar_one_or_none()
+
+            avg_mape = round(total_err / matched, 2) if matched > 0 else None
+            dir_accuracy = round(direction_hit / direction_total * 100, 1) if direction_total > 0 else None
+
+            items_out.append({
+                "symbol": sym,
+                "name": w or sym,
+                "records": records,
+                "stats": {
+                    "total_forecasts": len(records),
+                    "matched": matched,
+                    "unmatched": len(records) - matched,
+                    "avg_mape": avg_mape,
+                    "direction_accuracy": dir_accuracy,
+                    "direction_total": direction_total,
+                },
+            })
+
+        return {"items": items_out}
+
+
+@app.get("/api/models/lifecycle")
+def model_lifecycle(
+    symbol: str | None = Query(None, description="股票代码；不传则返回全局最近事件"),
+    limit: int = Query(20, ge=1, le=100, description="最多返回事件数"),
+):
+    """返回模型生命周期事件，用于解释重训触发、模型切换和停滞。"""
+    import json as _json
+
+    sym = symbol.upper() if symbol else None
+    with SessionLocal() as session:
+        query = select(ModelLifecycleEvent).order_by(ModelLifecycleEvent.created_at.desc()).limit(limit)
+        if sym:
+            query = query.where(ModelLifecycleEvent.symbol == sym)
+        rows = session.execute(
+            query
+        ).scalars().all()
+
+        items = []
+        latest_by_type = {}
+        for event in rows:
+            details = None
+            if event.details_json:
+                try:
+                    details = _json.loads(event.details_json)
+                except Exception:
+                    details = {"raw": event.details_json}
+            item = {
+                "id": event.id,
+                "symbol": event.symbol,
+                "event_type": event.event_type,
+                "trigger_reason": event.trigger_reason,
+                "model_name": event.model_name,
+                "score_before": event.score_before,
+                "score_after": event.score_after,
+                "created_at": event.created_at.isoformat() if event.created_at else None,
+                "details": details,
+            }
+            items.append(item)
+            latest_by_type.setdefault(event.event_type, item)
+
+        last_event = items[0] if items else None
+        last_completed = latest_by_type.get("retrain_completed")
+        last_triggered = latest_by_type.get("retrain_triggered") or latest_by_type.get("failure_detected")
+        last_stagnated = latest_by_type.get("retrain_stagnated")
+
+        active_status = "unknown"
+        active_reason = "暂无生命周期记录"
+        if last_stagnated and (not last_completed or last_stagnated["created_at"] >= last_completed["created_at"]):
+            active_status = "stagnated"
+            active_reason = "连续再训练未达到切换阈值"
+        elif last_completed:
+            details = last_completed.get("details") or {}
+            improved = details.get("improved")
+            activated = details.get("activated")
+            active_status = "optimized" if activated or improved else "retained"
+            active_reason = "新模型已激活" if active_status == "optimized" else "新模型未达阈值，保留旧模型"
+        elif last_triggered:
+            active_status = "needs_retrain"
+            active_reason = last_triggered.get("trigger_reason") or "监控触发再训练"
+
+        return {
+            "symbol": sym,
+            "count": len(items),
+            "summary": {
+                "latest_event_type": last_event.get("event_type") if last_event else None,
+                "latest_event_at": last_event.get("created_at") if last_event else None,
+                "latest_retrain_at": last_completed.get("created_at") if last_completed else None,
+                "latest_trigger_at": last_triggered.get("created_at") if last_triggered else None,
+                "latest_stagnation_at": last_stagnated.get("created_at") if last_stagnated else None,
+                "active_status": active_status,
+                "active_reason": active_reason,
+            },
+            "items": items,
+        }
+
+
+@app.get("/api/stocks/{symbol}/iteration-records")
+def stock_iteration_records(
+    symbol: str,
+    limit: int = Query(10, ge=1, le=50, description="每类记录最多返回条数"),
+):
+    """返回已持久化的特征快照、失败归因和 Agent 复盘记录，用于回放查询。"""
+    from sqlalchemy import inspect as _inspect
+    from .core.models import AgentReviewRun, AgentVerificationCheck, FailureAnalysisRecord, FeatureSnapshot
+    from .prediction.services.agent_iteration_persistence_service import (
+        serialize_agent_review,
+        serialize_failure_analysis,
+        serialize_feature_snapshot,
+    )
+
+    sym = symbol.upper()
+    with SessionLocal() as session:
+        inspector = _inspect(session.get_bind())
+        missing = [
+            table for table in ["feature_snapshots", "failure_analyses", "agent_review_runs", "agent_verification_checks"]
+            if not inspector.has_table(table)
+        ]
+        if missing:
+            return {
+                "symbol": sym,
+                "persistence_status": "migration_not_applied",
+                "missing_tables": missing,
+                "feature_snapshots": [],
+                "failure_analyses": [],
+                "agent_reviews": [],
+            }
+
+        snapshots = list(session.execute(
+            select(FeatureSnapshot)
+            .where(FeatureSnapshot.symbol == sym)
+            .order_by(FeatureSnapshot.created_at.desc())
+            .limit(limit)
+        ).scalars().all())
+        failures = list(session.execute(
+            select(FailureAnalysisRecord)
+            .where(FailureAnalysisRecord.symbol == sym)
+            .order_by(FailureAnalysisRecord.created_at.desc())
+            .limit(limit)
+        ).scalars().all())
+        reviews = list(session.execute(
+            select(AgentReviewRun)
+            .where(AgentReviewRun.symbol == sym)
+            .order_by(AgentReviewRun.created_at.desc())
+            .limit(limit)
+        ).scalars().all())
+        review_ids = [item.review_id for item in reviews]
+        checks_by_review: dict[str, list] = {review_id: [] for review_id in review_ids}
+        if review_ids:
+            checks = list(session.execute(
+                select(AgentVerificationCheck)
+                .where(AgentVerificationCheck.review_id.in_(review_ids))
+                .order_by(AgentVerificationCheck.created_at.asc())
+            ).scalars().all())
+            for check in checks:
+                checks_by_review.setdefault(check.review_id, []).append(check)
+
+        return {
+            "symbol": sym,
+            "persistence_status": "ready",
+            "feature_snapshots": [serialize_feature_snapshot(item) for item in snapshots],
+            "failure_analyses": [serialize_failure_analysis(item) for item in failures],
+            "agent_reviews": [serialize_agent_review(item, checks_by_review.get(item.review_id, [])) for item in reviews],
+        }
+
+
+@app.get("/api/feature-snapshots/{snapshot_id}")
+def feature_snapshot_replay(snapshot_id: str):
+    """按 snapshot_id 回放单个特征快照。"""
+    from sqlalchemy import inspect as _inspect
+    from .core.models import FeatureSnapshot
+    from .prediction.services.agent_iteration_persistence_service import serialize_feature_snapshot
+
+    with SessionLocal() as session:
+        if not _inspect(session.get_bind()).has_table("feature_snapshots"):
+            raise HTTPException(status_code=404, detail="feature_snapshots migration not applied")
+        record = session.execute(
+            select(FeatureSnapshot).where(FeatureSnapshot.snapshot_id == snapshot_id)
+        ).scalar_one_or_none()
+        if record is None:
+            raise HTTPException(status_code=404, detail="feature snapshot not found")
+        return serialize_feature_snapshot(record)
+
+
+@app.get("/api/agent/reviews/{review_id}")
+def agent_review_replay(review_id: str):
+    """按 review_id 回放单个 Agent 复盘与自动核实记录。"""
+    from sqlalchemy import inspect as _inspect
+    from .core.models import AgentReviewRun, AgentVerificationCheck
+    from .prediction.services.agent_iteration_persistence_service import serialize_agent_review
+
+    with SessionLocal() as session:
+        inspector = _inspect(session.get_bind())
+        if not inspector.has_table("agent_review_runs"):
+            raise HTTPException(status_code=404, detail="agent_review_runs migration not applied")
+        record = session.execute(
+            select(AgentReviewRun).where(AgentReviewRun.review_id == review_id)
+        ).scalar_one_or_none()
+        if record is None:
+            raise HTTPException(status_code=404, detail="agent review not found")
+        checks = []
+        if inspector.has_table("agent_verification_checks"):
+            checks = list(session.execute(
+                select(AgentVerificationCheck)
+                .where(AgentVerificationCheck.review_id == review_id)
+                .order_by(AgentVerificationCheck.created_at.asc())
+            ).scalars().all())
+        return serialize_agent_review(record, checks)
+
+
+@app.get("/api/models/{symbol}/strategy-backtest")
+def model_strategy_backtest(
+    symbol: str,
+    lookback_days: int = Query(120, ge=20, le=365, description="回放窗口"),
+    buy_threshold_pct: float = Query(0.3, ge=-5, le=10, description="预测收益触发买入阈值"),
+    position_pct: float = Query(0.2, ge=0.01, le=1.0, description="单次虚拟仓位比例"),
+):
+    """运行预测信号的保守多头回放，并输出 promotion gate。"""
+    from .prediction.services.promotion_gate_service import build_prediction_replay_backtest
+
+    with SessionLocal() as session:
+        return build_prediction_replay_backtest(
+            session,
+            symbol.upper(),
+            lookback_days=lookback_days,
+            buy_threshold_pct=buy_threshold_pct,
+            position_pct=position_pct,
+        )
+
+
+@app.get("/api/models/{symbol}/promotion-gate")
+def model_promotion_gate(
+    symbol: str,
+    lookback_days: int = Query(120, ge=20, le=365, description="回放窗口"),
+):
+    """返回模型候选晋级门禁，不会自动上线模型。"""
+    with SessionLocal() as session:
+        from .prediction.services.promotion_gate_service import build_prediction_replay_backtest
+
+        replay = build_prediction_replay_backtest(session, symbol.upper(), lookback_days=lookback_days)
+        return {
+            "symbol": symbol.upper(),
+            "lookback_days": lookback_days,
+            "metrics": replay.get("metrics"),
+            "gate_result": replay.get("gate_result"),
+            "latest_agent_gate": replay.get("latest_agent_gate"),
+            "disclaimer": replay.get("disclaimer"),
+        }
+
+
+@app.get("/api/models/center")
+def model_center(
+    symbol: str | None = Query(None, description="可选股票代码"),
+    limit: int = Query(20, ge=1, le=100, description="最近记录数量"),
+):
+    """模型中心聚合视图：模型、生命周期、复盘记录、门禁和迁移状态。"""
+    from sqlalchemy import inspect as _inspect
+    from .core.models import AgentReviewRun, FailureAnalysisRecord, FeatureSnapshot, ModelRegistry
+
+    sym = symbol.upper() if symbol else None
+    with SessionLocal() as session:
+        inspector = _inspect(session.get_bind())
+        tables = set(inspector.get_table_names())
+        migration_rows = []
+        if "schema_migrations" in tables:
+            migration_rows = [row[0] for row in session.execute(text("SELECT version FROM schema_migrations ORDER BY version ASC")).fetchall()]
+
+        lifecycle_query = select(ModelLifecycleEvent).order_by(ModelLifecycleEvent.created_at.desc()).limit(limit)
+        if sym:
+            lifecycle_query = lifecycle_query.where(ModelLifecycleEvent.symbol == sym)
+        lifecycle_events = list(session.execute(lifecycle_query).scalars().all())
+
+        registry_items = []
+        if "model_registry" in tables:
+            registry_query = select(ModelRegistry).order_by(ModelRegistry.created_at.desc()).limit(limit)
+            if sym:
+                registry_query = registry_query.where(ModelRegistry.model_name.ilike(f"%{sym}%"))
+            registry_items = list(session.execute(registry_query).scalars().all())
+
+        qe_models = []
+        if "qe_stock_models" in tables:
+            try:
+                from .quant_engine.models import QEStockModel
+
+                qe_query = select(QEStockModel).order_by(QEStockModel.updated_at.desc().nullslast(), QEStockModel.created_at.desc()).limit(limit)
+                if sym:
+                    qe_query = qe_query.where(QEStockModel.symbol == sym)
+                qe_models = list(session.execute(qe_query).scalars().all())
+            except Exception as exc:
+                logger.debug("qe model center aggregation skipped: %s", exc)
+
+        recent_reviews = []
+        if "agent_review_runs" in tables:
+            review_query = select(AgentReviewRun).order_by(AgentReviewRun.created_at.desc()).limit(limit)
+            if sym:
+                review_query = review_query.where(AgentReviewRun.symbol == sym)
+            recent_reviews = list(session.execute(review_query).scalars().all())
+
+        recent_failures = []
+        if "failure_analyses" in tables:
+            failure_query = select(FailureAnalysisRecord).order_by(FailureAnalysisRecord.created_at.desc()).limit(limit)
+            if sym:
+                failure_query = failure_query.where(FailureAnalysisRecord.symbol == sym)
+            recent_failures = list(session.execute(failure_query).scalars().all())
+
+        snapshot_count = 0
+        if "feature_snapshots" in tables:
+            count_query = select(func.count()).select_from(FeatureSnapshot)
+            if sym:
+                count_query = count_query.where(FeatureSnapshot.symbol == sym)
+            snapshot_count = int(session.execute(count_query).scalar() or 0)
+
+        symbols = OrderedDict()
+        for item in qe_models:
+            symbols.setdefault(item.symbol, {"symbol": item.symbol})
+        for item in recent_reviews:
+            symbols.setdefault(item.symbol, {"symbol": item.symbol})
+        for item in recent_failures:
+            symbols.setdefault(item.symbol, {"symbol": item.symbol})
+        if sym:
+            symbols.setdefault(sym, {"symbol": sym})
+
+        latest_review_by_symbol = {}
+        for review in recent_reviews:
+            latest_review_by_symbol.setdefault(review.symbol, review)
+        latest_failure_by_symbol = {}
+        for failure in recent_failures:
+            latest_failure_by_symbol.setdefault(failure.symbol, failure)
+        model_by_symbol = {}
+        for model in qe_models:
+            model_by_symbol.setdefault(model.symbol, model)
+
+        items = []
+        for item_symbol in list(symbols.keys())[:limit]:
+            review = latest_review_by_symbol.get(item_symbol)
+            failure = latest_failure_by_symbol.get(item_symbol)
+            model = model_by_symbol.get(item_symbol)
+            gate = review.gate_result if review else None
+            items.append({
+                "symbol": item_symbol,
+                "model_status": model.status if model else "unknown",
+                "task": model.task if model else None,
+                "algo": model.algo if model else None,
+                "active_version": model.active_version if model else None,
+                "review_status": review.status if review else None,
+                "verification_status": review.verification_status if review else None,
+                "gate_status": (gate or {}).get("status") if gate else None,
+                "failure_severity": failure.severity if failure else None,
+                "high_deviation_count": failure.high_deviation_count if failure else 0,
+                "updated_at": review.created_at.isoformat() if review and review.created_at else None,
+            })
+
+        return {
+            "symbol": sym,
+            "migration_status": {
+                "schema_table": "schema_migrations" in tables,
+                "applied_versions": migration_rows,
+                "agent_iteration_ready": all(table in tables for table in ["feature_snapshots", "failure_analyses", "agent_review_runs", "agent_verification_checks"]),
+            },
+            "summary": {
+                "qe_model_count": len(qe_models),
+                "registry_model_count": len(registry_items),
+                "recent_lifecycle_count": len(lifecycle_events),
+                "recent_review_count": len(recent_reviews),
+                "recent_failure_count": len(recent_failures),
+                "feature_snapshot_count": snapshot_count,
+            },
+            "items": items,
+            "recent_lifecycle_events": [
+                {
+                    "id": event.id,
+                    "symbol": event.symbol,
+                    "event_type": event.event_type,
+                    "trigger_reason": event.trigger_reason,
+                    "model_name": event.model_name,
+                    "score_before": event.score_before,
+                    "score_after": event.score_after,
+                    "created_at": event.created_at.isoformat() if event.created_at else None,
+                }
+                for event in lifecycle_events
+            ],
+            "recent_agent_reviews": [
+                {
+                    "review_id": review.review_id,
+                    "symbol": review.symbol,
+                    "status": review.status,
+                    "priority": review.priority,
+                    "verification_status": review.verification_status,
+                    "gate_status": (review.gate_result or {}).get("status") if review.gate_result else None,
+                    "created_at": review.created_at.isoformat() if review.created_at else None,
+                }
+                for review in recent_reviews
+            ],
+            "disclaimer": "模型中心仅用于模型复盘、自动核实和门禁观察，不构成投资建议，也不会自动上线模型或执行交易。",
+        }
+
 @app.get("/api/report/{symbol}/full")
 async def get_full_report(
     symbol: str,
@@ -3207,6 +5545,14 @@ async def get_full_report(
     获取完整的股票报告，包含历史价格走势和预测数据
     支持不同时间区间：5d, 1m, 3m, 6m, 1y, all
     """
+    import time as _time_mod
+    from .tasks.pipeline_recorder import persist_pipeline_run as _persist_pipeline_run
+
+    _full_started = _time_mod.monotonic()
+    _full_status = "success"
+    _full_message: str | None = None
+    _full_error: str | None = None
+
     with SessionLocal() as session:
         sym = symbol.upper()
         
@@ -3253,16 +5599,149 @@ async def get_full_report(
                 ).mappings().all()
             
             diagnostics: dict | None = {"time_range": timeRange} if showDiagnostics else None
-            # On-demand fetch if empty
-            if not historical_prices:
-                if diagnostics is not None:
-                    diagnostics.update({"pre_fetch_rows": 0})
-                try:
-                    from .data.data_source import fetch_daily as _fetch_daily
-                    import pandas as _pd
-                    df = _fetch_daily(sym)
+            # On-demand fetch if empty OR stale (latest price older than the last
+            # trading day on or before today — uses unified trading calendar so it
+            # correctly handles weekends and registered holidays).
+            need_fetch = not historical_prices
+            if historical_prices and not need_fetch:
+                from datetime import date as _date_cls
+                _latest_date = historical_prices[0]["trade_date"]  # DESC order, first = newest
+                _today = _date_cls.today()
+                _last_trading = _calendar_last_trading_day_on_or_before(_today)
+                if _latest_date < _last_trading:
+                    need_fetch = True
                     if diagnostics is not None:
-                        diagnostics["external_fetch_rows"] = int(len(df)) if df is not None else 0
+                        diagnostics["stale_gap_days"] = (_today - _latest_date).days
+                        diagnostics["last_trading_day"] = _last_trading.isoformat()
+                        diagnostics["latest_in_db"] = _latest_date.isoformat()
+            if need_fetch:
+                if diagnostics is not None:
+                    diagnostics.update({"pre_fetch_rows": len(historical_prices) if historical_prices else 0})
+                try:
+                    import pandas as _pd
+                    from datetime import date as _date_cls2, timedelta as _td
+                    import asyncio as _aio
+                    # 计算 start_date：若 DB 有数据则从最新日期往前推7天开始；否则取最近180天
+                    if historical_prices:
+                        _sd = historical_prices[0]["trade_date"] - _td(days=7)
+                    else:
+                        _sd = _date_cls2.today() - _td(days=180)
+                    _start_str = _sd.strftime("%Y%m%d")
+                    _base_sym = sym.replace(".SH", "").replace(".SZ", "")
+                    # 优先走 data/data_source.fetch_daily（统一入口，遵守 DATA_SOURCE 开关），
+                    # 失败或空结果时回退到腾讯源子进程（proxy/eastmoney 不可达时的最后一根稻草）。
+                    df = _pd.DataFrame()
+                    try:
+                        df_direct = await _aio.to_thread(fetch_daily, sym, _start_str)
+                        if df_direct is not None and not df_direct.empty:
+                            df_direct = df_direct.copy()
+                            if "trade_date" in df_direct.columns:
+                                df_direct["trade_date"] = _pd.to_datetime(df_direct["trade_date"], errors="coerce").dt.date
+                            if "symbol" not in df_direct.columns:
+                                df_direct["symbol"] = sym
+                            _keep = ["symbol","trade_date","open","high","low","close","pct_chg","vol","amount"]
+                            for _c in _keep:
+                                if _c not in df_direct.columns:
+                                    df_direct[_c] = None
+                            df = df_direct[_keep].dropna(subset=["close"])
+                            if diagnostics is not None:
+                                diagnostics["external_fetch_rows_primary"] = int(len(df))
+                                diagnostics["external_fetch_source"] = "data_source.fetch_daily"
+                    except Exception as _e_primary:
+                        if diagnostics is not None:
+                            diagnostics["primary_fetch_error"] = str(_e_primary)[:200]
+                        logger.warning("primary fetch_daily failed for %s: %s", sym, _e_primary)
+
+                    # 腾讯源子进程仅作为主通道失败时的回退
+                    # 使用 stock_zh_a_hist_tx（腾讯数据源）替代 stock_zh_a_hist（eastmoney），
+                    # 因 push2his.eastmoney.com 在部分网络环境下不可达
+                    _tx_prefix = "sh" if sym.endswith(".SH") else "sz"
+                    _tx_symbol = f"{_tx_prefix}{_base_sym}"
+                    _fetch_script = (
+                        "import os\n"
+                        "for k in ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']:\n"
+                        "    os.environ.pop(k,None)\n"
+                        "import requests\n"
+                        "_orig_get=requests.get\n"
+                        "def _noproxy_get(*a,**kw):\n"
+                        "    kw['proxies']={'http':None,'https':None}\n"
+                        "    s=requests.Session()\n"
+                        "    s.trust_env=False\n"
+                        "    return s.get(*a,**kw)\n"
+                        "requests.get=_noproxy_get\n"
+                        f"import akshare,json,sys\n"
+                        f"df=akshare.stock_zh_a_hist_tx(symbol='{_tx_symbol}',start_date='{_start_str}')\n"
+                        f"if df is not None and not df.empty:\n"
+                        f"    df.columns=[str(c).strip() for c in df.columns]\n"
+                        f"    if 'date' in df.columns:\n"
+                        f"        df['date']=df['date'].astype(str)\n"
+                        f"    print(df.to_json(orient='records',force_ascii=False))\n"
+                        f"else:\n"
+                        f"    print('[]')\n"
+                    )
+                    _primary_ok = df is not None and not df.empty
+                    _proc_rc: int | None = None
+                    _stdout = b""
+                    _stderr = b""
+                    if not _primary_ok:
+                        # 改用阻塞式 subprocess.run 放到线程池执行。
+                        # 原因：Windows 下 uvicorn 默认 SelectorEventLoop 不支持
+                        # asyncio.create_subprocess_exec，会抛 NotImplementedError；
+                        # 使用 subprocess.run + asyncio.to_thread 兼容所有平台。
+                        import subprocess as _sp
+                        def _run_fallback() -> tuple[int, bytes, bytes]:
+                            try:
+                                cp = _sp.run(
+                                    [sys.executable, "-c", _fetch_script],
+                                    capture_output=True,
+                                    timeout=45,
+                                    check=False,
+                                )
+                                return cp.returncode, cp.stdout or b"", cp.stderr or b""
+                            except _sp.TimeoutExpired:
+                                return -1, b"", b"fallback subprocess timed out"
+                            except Exception as _e_sub:  # noqa: BLE001
+                                return -2, b"", f"fallback launch error: {_e_sub}".encode("utf-8", "replace")
+                        _proc_rc, _stdout, _stderr = await _aio.to_thread(_run_fallback)
+                        df = _pd.DataFrame()
+                    if not _primary_ok and _proc_rc == 0 and _stdout:
+                        _out_str = _stdout.decode("utf-8", errors="replace").strip()
+                        try:
+                            _rows_raw = json.loads(_out_str)
+                            if _rows_raw:
+                                df = _pd.DataFrame(_rows_raw)
+                                # 腾讯源列名: date, open, close, high, low, amount（无 vol、无 pct_chg）
+                                # eastmoney 列名(中文): 日期, 开盘, 收盘, 最高, 最低, 成交量, 成交额, 涨跌幅
+                                _rn = {"日期":"trade_date","开盘":"open","收盘":"close","最高":"high","最低":"low","成交量":"vol","成交额":"amount","涨跌幅":"pct_chg",
+                                       "date":"trade_date"}
+                                df = df.rename(columns=_rn)
+                                if "trade_date" in df.columns:
+                                    df["trade_date"] = _pd.to_datetime(df["trade_date"], errors="coerce").dt.date
+                                if "vol" in df.columns:
+                                    df["vol"] = _pd.to_numeric(df["vol"], errors="coerce").astype("Int64")
+                                else:
+                                    df["vol"] = None
+                                for _c in ["open","high","low","close","amount"]:
+                                    if _c in df.columns:
+                                        df[_c] = _pd.to_numeric(df[_c], errors="coerce")
+                                    else:
+                                        df[_c] = None
+                                # 推算 pct_chg（若源数据不含）
+                                if "pct_chg" not in df.columns or df["pct_chg"].isna().all():
+                                    df = df.sort_values("trade_date").reset_index(drop=True)
+                                    df["pct_chg"] = df["close"].pct_change() * 100.0
+                                else:
+                                    df["pct_chg"] = _pd.to_numeric(df["pct_chg"], errors="coerce")
+                                df["symbol"] = sym
+                                df = df[["symbol","trade_date","open","high","low","close","pct_chg","vol","amount"]].dropna(subset=["close"])
+                        except Exception as _je:
+                            logger.warning("on-demand fetch JSON parse error for %s: %s", sym, _je)
+                    elif not _primary_ok and _proc_rc is not None:
+                        _stderr_msg = (_stderr.decode("utf-8", errors="replace") if _stderr else "")[:200]
+                        logger.warning("on-demand fetch subprocess failed for %s (rc=%s): %s", sym, _proc_rc, _stderr_msg)
+                    if diagnostics is not None:
+                        diagnostics["external_fetch_rows"] = int(len(df)) if df is not None and not df.empty else 0
+                        diagnostics["fetch_start_date"] = _start_str
                     if df is not None and not df.empty:
                         df = df.sort_values('trade_date').tail(180)
                         existing_dates = set(r[0] for r in session.execute(
@@ -3288,8 +5767,16 @@ async def get_full_report(
                                 "INSERT INTO prices_daily (symbol, trade_date, open, high, low, close, pct_chg, vol, amount) VALUES (:symbol, :trade_date, :open, :high, :low, :close, :pct_chg, :vol, :amount)"
                             ), to_insert)
                             session.commit()
+                            logger.info("on-demand fetch: inserted %d new price rows for %s", len(to_insert), sym)
                         if diagnostics is not None:
                             diagnostics["inserted_rows"] = len(to_insert)
+                        _persist_pipeline_run(
+                            symbol=sym,
+                            run_type="fetch_daily",
+                            status="success",
+                            trigger="on_demand_full",
+                            message=f"inserted_rows={len(to_insert)} fetched_rows={len(df)}",
+                        )
                         # re-query
                         if timeRange == 'all':
                             historical_prices = session.execute(text(
@@ -3300,9 +5787,20 @@ async def get_full_report(
                                 "SELECT trade_date, open, high, low, close, vol, pct_chg FROM prices_daily WHERE symbol=:sym AND trade_date >= CURRENT_DATE - INTERVAL '{} days' ORDER BY trade_date DESC".format(days_back)
                             ), {"sym": sym}).mappings().all()
                 except Exception as _e_fd:
+                    session.rollback()  # 防止 InFailedSqlTransaction 级联
                     if diagnostics is not None:
                         diagnostics["fetch_error"] = str(_e_fd)
-                    logger.warning("on-demand price fetch fallback failed for %s: %s", sym, _e_fd, exc_info=True)
+                    # 回退抓取异常一律降噪：不打印 traceback，避免噪声淹没真实 500。
+                    # 该分支本身已被 try/except 吞掉，不影响 /full 正常返回。
+                    logger.warning("on-demand price fetch fallback skipped for %s: %s", sym, _e_fd)
+                    _persist_pipeline_run(
+                        symbol=sym,
+                        run_type="fetch_daily",
+                        status="failed",
+                        trigger="on_demand_full",
+                        error_message=str(_e_fd),
+                        message="on-demand fetch failed",
+                    )
             # Stale fallback: if still empty but allowStale, try latest older rows
             stale_used = False
             if not historical_prices and allowStale:
@@ -3358,60 +5856,83 @@ async def get_full_report(
             
             # 兼容旧数据库：有些旧的 reports 行可能尚未添加 forecast_data 等列，使用 getattr 安全访问
             forecast_data_loaded = False
+            from datetime import datetime, timedelta, date as _today_date_type
+            _today_for_pred = _today_date_type.today()
+
+            def _status_for(target_d, today_d, last_hist_d):
+                """依据预测日与今日 / 最后历史日的关系返回 future | today | today_evaluated | expired。
+
+                - target <= last_hist  -> today_evaluated（已有真实收盘可对比）
+                - target == today      -> today（今日开盘后但尚无收盘）
+                - target >  today      -> future
+                - last_hist < target < today -> expired（保留并前端淡色标示）
+
+                'today_evaluated' 用来避免和 historical 收盘行在同一 X 轴位置叠加，
+                同时方便后续 prediction_evaluations 自动落库（Phase 2）。
+                """
+                if last_hist_d is not None and target_d <= last_hist_d:
+                    return "today_evaluated"
+                if target_d == today_d:
+                    return "today"
+                if target_d > today_d:
+                    return "future"
+                return "expired"
+
             if report and getattr(report, "forecast_data", None) and historical_prices:
                 try:
                     forecast_data = json.loads(report.forecast_data)
                     # forecast_data 是一个列表，直接处理
                     if isinstance(forecast_data, list) and len(forecast_data) > 0:
-                        from datetime import datetime, timedelta
                         # 使用最新的历史价格日期作为基准（historical_prices是按日期降序排列的）
                         last_date = historical_prices[0]["trade_date"]
-                        
-                        # 取前10个预测点，重新计算日期
-                        for i, pred in enumerate(forecast_data[:10]):
-                            # 重新计算预测日期：从最新历史日期的下一个交易日开始
-                            target_date = last_date + timedelta(days=i+1)
-                            while target_date.weekday() >= 5:  # 跳过周末
-                                target_date += timedelta(days=1)
-                            
-                            prediction_dates.append(target_date.isoformat())
-                            prediction_mean.append(pred["yhat"])
-                            prediction_upper.append(pred["yhat_upper"])
-                            prediction_lower.append(pred["yhat_lower"])
-                            
+                        _cursor = last_date
+                        for pred in forecast_data[:10]:
+                            _cursor = _calendar_next_trading_day(_cursor)
+                            target_date = _cursor
+                            # 保留目标日 >= 最后历史日 的预测点；早于最后历史日的丢弃
+                            if target_date < last_date:
+                                continue
+                            _st = _status_for(target_date, _today_for_pred, last_date)
+                            # today_evaluated（target == last_hist）只保留在 predictions[]
+                            # 中供前端按需展示历史对比，不进入 future 序列扁平数组。
+                            if _st != "today_evaluated":
+                                prediction_dates.append(target_date.isoformat())
+                                prediction_mean.append(pred["yhat"])
+                                prediction_upper.append(pred["yhat_upper"])
+                                prediction_lower.append(pred["yhat_lower"])
                             predictions.append({
-                                "date": target_date.isoformat(),  # 使用重新计算的日期
+                                "date": target_date.isoformat(),
                                 "predicted_price": pred["yhat"],
                                 "upper_bound": pred["yhat_upper"],
                                 "lower_bound": pred["yhat_lower"],
-                                "type": "prediction"
+                                "type": "prediction",
+                                "status": _st,
                             })
-                        forecast_data_loaded = True
+                        forecast_data_loaded = bool(predictions)
                     # 兼容旧格式（包含 "predictions" 键的格式）
                     elif isinstance(forecast_data, dict) and "predictions" in forecast_data:
-                        from datetime import datetime, timedelta
-                        # 使用最新的历史价格日期作为基准（historical_prices是按日期降序排列的）
                         last_date = historical_prices[0]["trade_date"]
-                        
+                        _cursor2 = last_date
                         for pred in forecast_data["predictions"]:
-                            # 计算预测日期（跳过周末）
-                            target_date = last_date + timedelta(days=pred["day"])
-                            while target_date.weekday() >= 5:  # 跳过周末
-                                target_date += timedelta(days=1)
-                            
-                            prediction_dates.append(target_date.isoformat())
-                            prediction_mean.append(pred["predicted_price"])
-                            prediction_upper.append(pred["upper_bound"])
-                            prediction_lower.append(pred["lower_bound"])
-                            
+                            _cursor2 = _calendar_next_trading_day(_cursor2)
+                            target_date = _cursor2
+                            if target_date < last_date:
+                                continue
+                            _st = _status_for(target_date, _today_for_pred, last_date)
+                            if _st != "today_evaluated":
+                                prediction_dates.append(target_date.isoformat())
+                                prediction_mean.append(pred["predicted_price"])
+                                prediction_upper.append(pred["upper_bound"])
+                                prediction_lower.append(pred["lower_bound"])
                             predictions.append({
                                 "date": target_date.isoformat(),
                                 "predicted_price": pred["predicted_price"],
                                 "upper_bound": pred["upper_bound"],
                                 "lower_bound": pred["lower_bound"],
-                                "type": "prediction"
+                                "type": "prediction",
+                                "status": _st,
                             })
-                        forecast_data_loaded = True
+                        forecast_data_loaded = bool(predictions)
                 except Exception as e:
                     print(f"Error parsing forecast data: {e}")
                     # 即使预测数据解析失败，也要继续返回历史数据
@@ -3419,36 +5940,197 @@ async def get_full_report(
             # 如果 Report 中没有 forecast_data，直接从 Forecast 表查询
             if not forecast_data_loaded:
                 try:
-                    # 获取最新批次的预测数据
+                    # 取最新批次 run_at；保留批次内全部点，不再强制 run_at ≤ 2 天，
+                    # 也不再强制 target_date ≥ today，过期点通过 status=expired 在前端区分。
                     latest_run = session.execute(
                         select(func.max(Forecast.run_at)).where(Forecast.symbol == sym)
                     ).scalar()
-                    
+
                     if latest_run:
+                        _last_hist = historical_prices[0]["trade_date"] if historical_prices else _today_for_pred
+                        _last_close_for_snr = float(historical_prices[0]["close"]) if historical_prices and historical_prices[0]["close"] else None
                         forecasts = session.execute(
                             select(Forecast).where(
                                 and_(
                                     Forecast.symbol == sym,
-                                    Forecast.run_at == latest_run
+                                    Forecast.run_at == latest_run,
+                                    Forecast.target_date >= _last_hist,
                                 )
                             ).order_by(Forecast.target_date)
                         ).scalars().all()
-                        
+
                         for f in forecasts:
+                            _st = _status_for(f.target_date, _today_for_pred, _last_hist)
+                            _yhat_v = float(f.yhat) if f.yhat is not None else None
+                            _lo_v = float(f.yhat_lower) if f.yhat_lower is not None else None
+                            _hi_v = float(f.yhat_upper) if f.yhat_upper is not None else None
+                            # 方向信号强度：SNR = |yhat - prev_close| / half_interval_width
+                            # SNR≥1.0 → strong(69.6%命中), SNR≥0.7 → moderate(62.1%命中), <0.7 → neutral
+                            _dir_snr = None
+                            _dir_grade = "neutral"
+                            if _yhat_v is not None and _lo_v is not None and _hi_v is not None and _last_close_for_snr:
+                                _half_w = (_hi_v - _lo_v) / 2.0
+                                if _half_w > 0:
+                                    _dir_snr = round(abs(_yhat_v - _last_close_for_snr) / _half_w, 3)
+                                    if _dir_snr >= 1.0:
+                                        _dir_grade = "strong"
+                                    elif _dir_snr >= 0.7:
+                                        _dir_grade = "moderate"
+                            
+                            # 五档信号分级：基于方向(涨/跌) + 强度(SNR)
+                            # strong_bullish/weak_bullish/neutral/weak_bearish/strong_bearish
+                            _signal_level = "neutral"
+                            if _yhat_v is not None and _last_close_for_snr and _dir_snr is not None:
+                                if _yhat_v > _last_close_for_snr:
+                                    if _dir_snr >= 1.0:
+                                        _signal_level = "strong_bullish"
+                                    elif _dir_snr >= 0.7:
+                                        _signal_level = "weak_bullish"
+                                elif _yhat_v < _last_close_for_snr:
+                                    if _dir_snr >= 1.0:
+                                        _signal_level = "strong_bearish"
+                                    elif _dir_snr >= 0.7:
+                                        _signal_level = "weak_bearish"
+                            
                             pred_item = {
                                 "date": f.target_date.isoformat(),
-                                "predicted_price": float(f.yhat) if f.yhat is not None else None,
-                                "upper_bound": float(f.yhat_upper) if f.yhat_upper is not None else None,
-                                "lower_bound": float(f.yhat_lower) if f.yhat_lower is not None else None,
-                                "type": "prediction"
+                                "predicted_price": _yhat_v,
+                                "upper_bound": _hi_v,
+                                "lower_bound": _lo_v,
+                                "type": "prediction",
+                                "status": _st,
+                                "direction_snr": _dir_snr,
+                                "direction_grade": _dir_grade,
+                                "signal_level": _signal_level,
                             }
                             predictions.append(pred_item)
-                            prediction_dates.append(f.target_date.isoformat())
-                            prediction_mean.append(float(f.yhat) if f.yhat is not None else None)
-                            prediction_upper.append(float(f.yhat_upper) if f.yhat_upper is not None else None)
-                            prediction_lower.append(float(f.yhat_lower) if f.yhat_lower is not None else None)
+                            if _st != "today_evaluated":
+                                prediction_dates.append(f.target_date.isoformat())
+                                prediction_mean.append(float(f.yhat) if f.yhat is not None else None)
+                                prediction_upper.append(float(f.yhat_upper) if f.yhat_upper is not None else None)
+                                prediction_lower.append(float(f.yhat_lower) if f.yhat_lower is not None else None)
+                        forecast_data_loaded = bool(predictions)
                 except Exception as e:
                     print(f"Error loading forecasts from Forecast table: {e}")
+
+            # ── 实时预测兜底：
+            # 触发条件：缓存预测为空，OR 缓存预测未覆盖到今天 / 未来交易日（即全是 expired 点）。
+            _need_realtime = (not forecast_data_loaded and historical_prices) or (
+                historical_prices
+                and predictions
+                and not any((p.get("status") in {"future", "today"}) for p in predictions)
+            )
+            if _need_realtime:
+                try:
+                    import pandas as _pd
+                    # 若已有 expired 预测，先清空，统一由实时重算覆盖
+                    if predictions and not any(p.get("status") in {"future", "today"} for p in predictions):
+                        predictions = []
+                        prediction_dates = []
+                        prediction_mean = []
+                        prediction_upper = []
+                        prediction_lower = []
+                    # 独立查询 180 天历史数据用于预测（不受前端 timeRange 限制）
+                    _pred_hist_rows = session.execute(text(
+                        "SELECT trade_date, open, high, low, close, vol, pct_chg "
+                        "FROM prices_daily WHERE symbol=:sym "
+                        "AND trade_date >= CURRENT_DATE - INTERVAL '180 days' "
+                        "ORDER BY trade_date ASC"
+                    ), {"sym": sym}).mappings().all()
+                    rows = [
+                        {
+                            "trade_date": p["trade_date"],
+                            "open": float(p["open"]) if p["open"] else None,
+                            "high": float(p["high"]) if p["high"] else None,
+                            "low": float(p["low"]) if p["low"] else None,
+                            "close": float(p["close"]) if p["close"] else None,
+                            "vol": float(p["vol"]) if p["vol"] else 0,
+                            "pct_chg": float(p["pct_chg"]) if p["pct_chg"] else 0,
+                        }
+                        for p in _pred_hist_rows
+                    ]
+                    df_hist = _pd.DataFrame(rows).sort_values("trade_date")
+                    df_hist = df_hist.dropna(subset=["close"])
+
+                    if len(df_hist) >= 30:
+                        result_pred = predict_stock_price(df_hist, sym, ahead_days=5)
+                        pred_list = result_pred.get("predictions", [])
+                        if pred_list:
+                            last_date = df_hist["trade_date"].iloc[-1]
+                            # 用统一交易日历递推，避免节假日/周末错位
+                            _cursor_date = last_date
+                            _now = datetime.utcnow()
+                            _fresh_forecast_rows: list[dict] = []
+                            for pred in pred_list:
+                                _cursor_date = _calendar_next_trading_day(_cursor_date)
+                                target_date = _cursor_date
+                                _st = _status_for(target_date, _today_for_pred, last_date)
+                                date_str = target_date.isoformat() if hasattr(target_date, "isoformat") else str(target_date)
+                                yhat = pred.get("predicted_price", pred.get("yhat"))
+                                upper = pred.get("upper_bound", pred.get("yhat_upper"))
+                                lower = pred.get("lower_bound", pred.get("yhat_lower"))
+
+                                prediction_dates.append(date_str)
+                                prediction_mean.append(yhat)
+                                prediction_upper.append(upper)
+                                prediction_lower.append(lower)
+                                predictions.append({
+                                    "date": date_str,
+                                    "predicted_price": yhat,
+                                    "upper_bound": upper,
+                                    "lower_bound": lower,
+                                    "type": "prediction",
+                                    "status": _st,
+                                })
+                                _fresh_forecast_rows.append({
+                                    "symbol": sym,
+                                    "target_date": target_date,
+                                    "yhat": yhat,
+                                    "yhat_upper": upper,
+                                    "yhat_lower": lower,
+                                    "run_at": _now,
+                                    "model": result_pred.get("method", "realtime"),
+                                })
+                            # 将实时计算结果写回 Forecast（UPSERT by symbol+target_date+run_at），
+                            # 后续请求与调度器都能看到最新批次。
+                            try:
+                                for _row in _fresh_forecast_rows:
+                                    session.execute(text(
+                                        "INSERT INTO forecasts (symbol, target_date, yhat, yhat_upper, yhat_lower, run_at, model) "
+                                        "SELECT :symbol, :target_date, :yhat, :yhat_upper, :yhat_lower, :run_at, :model "
+                                        "WHERE NOT EXISTS (SELECT 1 FROM forecasts WHERE symbol=:symbol AND target_date=:target_date AND run_at=:run_at)"
+                                    ), _row)
+                                session.commit()
+                            except Exception as _e_ins:
+                                session.rollback()
+                                logger.debug("persist realtime forecast failed for %s: %s", sym, _e_ins)
+                            logger.info("Real-time forecast computed for %s (%s, %d pts)",
+                                        sym, result_pred.get("method", "?"), len(pred_list))
+                            _persist_pipeline_run(
+                                symbol=sym,
+                                run_type="predict",
+                                status="success",
+                                trigger="on_demand_full",
+                                message=f"recomputed_points={len(pred_list)} method={result_pred.get('method', 'unknown')}",
+                            )
+                except Exception as e:
+                    logger.warning("Real-time forecast failed for %s: %s", sym, e, exc_info=True)
+                    _persist_pipeline_run(
+                        symbol=sym,
+                        run_type="predict",
+                        status="failed",
+                        trigger="on_demand_full",
+                        error_message=str(e),
+                        message="realtime predict failed",
+                    )
+
+            # Phase 2: 图表打开时顺手同步预测评估层，供 /api/predictions/history
+            # 展示历史预测 vs 实际收盘。短 TTL 避免频繁刷新时重复写库。
+            _prediction_refresh_meta = _maybe_refresh_prediction_evaluations(
+                session,
+                symbol=sym,
+                lookback_days=14,
+            )
             
             # 构建响应
             result = {
@@ -3474,6 +6156,8 @@ async def get_full_report(
                 # 前端兼容字段
                 "latest": price_data[-1] if price_data else None,  # 向后兼容
             }
+            if showDiagnostics:
+                result["prediction_evaluation_refresh"] = _prediction_refresh_meta
             
             # 添加技术指标信号
             signal_loaded = False
@@ -3507,17 +6191,383 @@ async def get_full_report(
                 except Exception as e:
                     print(f"Error loading signal from Signal table: {e}")
             
+            # 尝试附加 AI 量化引擎洞察摘要（轻量，不影响原有逻辑）
+            try:
+                from .quant_engine.models import QESignal as _QES, QEPrediction as _QEP
+                qe_signal = session.execute(
+                    select(_QES).where(_QES.symbol == sym)
+                    .order_by(_QES.signal_date.desc()).limit(1)
+                ).scalar_one_or_none()
+                qe_pred = session.execute(
+                    select(_QEP).where(_QEP.symbol == sym)
+                    .order_by(_QEP.predict_date.desc()).limit(1)
+                ).scalar_one_or_none()
+                if qe_signal or qe_pred:
+                    result["ai_insight"] = {
+                        "action": (qe_signal.action.value if hasattr(qe_signal.action, 'value') else qe_signal.action) if qe_signal else None,
+                        "score": float(qe_signal.score) if qe_signal and qe_signal.score else None,
+                        "risk_score": float(qe_signal.risk_score) if qe_signal and qe_signal.risk_score else None,
+                        "direction_prob_up": float(qe_pred.direction_prob_up) if qe_pred and qe_pred.direction_prob_up else None,
+                        "predicted_return": float(qe_pred.predicted_return) if qe_pred and qe_pred.predicted_return else None,
+                        "confidence": float(qe_pred.confidence) if qe_pred and qe_pred.confidence else None,
+                        "signal_date": qe_signal.signal_date.isoformat() if qe_signal and qe_signal.signal_date else None,
+                    }
+            except Exception as e:
+                logger.debug("AI insight attach skipped for %s: %s", sym, e)
+
             if stale_used:
                 result["stale"] = True
             if diagnostics is not None:
                 result["diagnostics"] = diagnostics
+            _full_message = (
+                f"prices={len(price_data)} predictions={len(predictions)} timeRange={timeRange}"
+            )
+            _persist_pipeline_run(
+                symbol=sym,
+                run_type="full_report",
+                status=_full_status,
+                trigger="on_demand_full",
+                duration_ms=int((_time_mod.monotonic() - _full_started) * 1000),
+                message=_full_message,
+            )
             return result
             
         except HTTPException:
             raise
         except Exception as e:
+            _full_status = "failed"
+            _full_error = str(e)
+            session.rollback()  # 防止 InFailedSqlTransaction 级联到后续请求
             print(f"Error in get_full_report: {e}")
+            _persist_pipeline_run(
+                symbol=sym,
+                run_type="full_report",
+                status=_full_status,
+                trigger="on_demand_full",
+                duration_ms=int((_time_mod.monotonic() - _full_started) * 1000),
+                message=_full_message,
+                error_message=_full_error,
+            )
             raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/api/report/{symbol}/insight")
+async def get_stock_insight(symbol: str):
+    """
+    获取 AI 量化引擎对单只股票的综合洞察：
+    - 方向概率 & 预期收益率
+    - 操作信号 (strong_buy / buy / hold / sell / strong_sell)
+    - 多维因子评分（技术面/资金面/情绪面/宏观）
+    - 特征重要性 Top-N
+    - 模型评估指标（准确率/置信度）
+    """
+    from .quant_engine.models import QESignal, QEPrediction, QEStockModel, QEModelVersion, QEEvaluationMetric
+    from .prediction.services.factor_context_service import load_stock_factor_context
+    from .prediction.services.feature_snapshot_service import build_feature_snapshot
+    from .prediction.services.trade_decision_service import build_trade_decision
+    with SessionLocal() as session:
+        sym = symbol.upper()
+        try:
+            # 1. 最新信号
+            latest_signal = session.execute(
+                select(QESignal).where(QESignal.symbol == sym)
+                .order_by(QESignal.signal_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+
+            # 2. 最新预测
+            latest_pred = session.execute(
+                select(QEPrediction).where(QEPrediction.symbol == sym)
+                .order_by(QEPrediction.predict_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+
+            latest_price = session.execute(
+                select(PriceDaily).where(PriceDaily.symbol == sym)
+                .order_by(PriceDaily.trade_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            current_price = float(latest_price.close) if latest_price and latest_price.close is not None else None
+
+            # 3. 模型信息与评估
+            stock_model = session.execute(
+                select(QEStockModel).where(QEStockModel.symbol == sym)
+                .limit(1)
+            ).scalar_one_or_none()
+
+            model_metrics = {}
+            feature_importance = []
+            if stock_model and stock_model.active_version:
+                active_ver = session.execute(
+                    select(QEModelVersion).where(QEModelVersion.id == stock_model.active_version)
+                ).scalar_one_or_none()
+                if active_ver and active_ver.metrics_json:
+                    model_metrics = active_ver.metrics_json if isinstance(active_ver.metrics_json, dict) else json.loads(active_ver.metrics_json)
+
+            # 特征重要性：优先从最新预测的 explanation_json 获取
+            if latest_pred and latest_pred.explanation_json:
+                exp = latest_pred.explanation_json if isinstance(latest_pred.explanation_json, dict) else json.loads(latest_pred.explanation_json)
+                fi_raw = exp.get("feature_importance", {})
+                if isinstance(fi_raw, dict):
+                    feature_importance = sorted(
+                        [{"feature": k, "importance": float(v)} for k, v in fi_raw.items()],
+                        key=lambda x: x["importance"], reverse=True
+                    )[:15]
+
+            # 4. 预测准确率（最近 30 条已验证的预测）
+            verified = session.execute(
+                select(QEPrediction).where(
+                    and_(QEPrediction.symbol == sym, QEPrediction.actual_direction.isnot(None))
+                ).order_by(QEPrediction.predict_date.desc())
+                .limit(30)
+            ).scalars().all()
+
+            accuracy = None
+            if verified:
+                correct = sum(
+                    1 for p in verified
+                    if (p.direction_prob_up > 0.5) == (p.actual_direction == 1)
+                )
+                accuracy = round(correct / len(verified) * 100, 1)
+
+            # 5. 构建因子分解
+            factors = {}
+            if latest_signal and latest_signal.factors_json:
+                fj = latest_signal.factors_json if isinstance(latest_signal.factors_json, dict) else json.loads(latest_signal.factors_json)
+                factors = fj
+
+            factor_context = None
+            try:
+                factor_context = load_stock_factor_context(session, sym, factors=factors, window_days=7)
+            except Exception as context_exc:
+                logger.debug("factor context unavailable for %s: %s", sym, context_exc)
+
+            feature_snapshot = None
+            try:
+                feature_snapshot = build_feature_snapshot(
+                    sym,
+                    prediction=latest_pred,
+                    signal=latest_signal,
+                    latest_price=latest_price,
+                    factor_context=factor_context,
+                    factors=factors,
+                    model_metrics=model_metrics,
+                )
+            except Exception as snapshot_exc:
+                logger.debug("feature snapshot unavailable for %s: %s", sym, snapshot_exc)
+
+            trade_decision = None
+            if latest_signal or latest_pred:
+                trade_decision = build_trade_decision(
+                    symbol=sym,
+                    signal=latest_signal,
+                    prediction=latest_pred,
+                    current_price=current_price,
+                    factors=factors,
+                    model_accuracy=accuracy,
+                )
+
+            # 6. 生成解释文本
+            explanations = []
+            if latest_signal:
+                score = float(latest_signal.score) if latest_signal.score else 0
+                prob = float(latest_signal.direction_prob_up) if latest_signal.direction_prob_up else 0
+                risk = float(latest_signal.risk_score) if latest_signal.risk_score else 0
+
+                if prob > 0.6:
+                    explanations.append(f"AI模型预测上涨概率 {prob*100:.1f}%，看多信号较强")
+                elif prob < 0.4:
+                    explanations.append(f"AI模型预测上涨概率仅 {prob*100:.1f}%，看空信号较强")
+                else:
+                    explanations.append(f"AI模型预测上涨概率 {prob*100:.1f}%，方向不明确")
+
+                # 从因子中提取关键信息
+                tech_score = factors.get("momentum_score") or factors.get("technical_score")
+                fund_score = factors.get("fund_flow_score")
+                sentiment_score = factors.get("sentiment_score")
+
+                if tech_score is not None:
+                    ts = float(tech_score)
+                    if ts > 0.6:
+                        explanations.append("技术面：动量指标偏多，趋势向上")
+                    elif ts < 0.4:
+                        explanations.append("技术面：动量指标偏空，趋势向下")
+                if fund_score is not None:
+                    fs = float(fund_score)
+                    if fs > 0.6:
+                        explanations.append("资金面：主力资金净流入，买盘活跃")
+                    elif fs < 0.4:
+                        explanations.append("资金面：主力资金净流出，卖压明显")
+                if sentiment_score is not None:
+                    ss = float(sentiment_score)
+                    if ss > 0.6:
+                        explanations.append("情绪面：市场情绪偏乐观")
+                    elif ss < 0.4:
+                        explanations.append("情绪面：市场情绪偏悲观")
+
+                if risk > 70:
+                    explanations.append(f"⚠️ 风险评分较高({risk:.0f})，建议控制仓位")
+
+            # 7. 构建响应
+            result = {
+                "symbol": sym,
+                "has_data": latest_signal is not None or latest_pred is not None,
+                "prediction": {
+                    "direction_prob_up": float(latest_pred.direction_prob_up) if latest_pred and latest_pred.direction_prob_up else None,
+                    "direction_prob_down": float(latest_pred.direction_prob_down) if latest_pred and latest_pred.direction_prob_down else None,
+                    "predicted_return": float(latest_pred.predicted_return) if latest_pred and latest_pred.predicted_return else None,
+                    "confidence": float(latest_pred.confidence) if latest_pred and latest_pred.confidence else None,
+                    "predict_date": latest_pred.predict_date.isoformat() if latest_pred and latest_pred.predict_date else None,
+                    "target_date": latest_pred.target_date.isoformat() if latest_pred and latest_pred.target_date else None,
+                    "horizon": latest_pred.horizon if latest_pred else None,
+                } if latest_pred else None,
+                "signal": {
+                    "action": latest_signal.action.value if latest_signal and hasattr(latest_signal.action, 'value') else (latest_signal.action if latest_signal else None),
+                    "score": float(latest_signal.score) if latest_signal and latest_signal.score else None,
+                    "risk_score": float(latest_signal.risk_score) if latest_signal and latest_signal.risk_score else None,
+                    "signal_date": latest_signal.signal_date.isoformat() if latest_signal and latest_signal.signal_date else None,
+                } if latest_signal else None,
+                "factors": factors,
+                "feature_importance": feature_importance,
+                "model_accuracy": accuracy,
+                "model_metrics": model_metrics,
+                "explanations": explanations,
+                "factor_context": factor_context,
+                "feature_snapshot": feature_snapshot,
+                "trade_decision": trade_decision,
+            }
+            return result
+
+        except Exception as e:
+            logger.warning("Error in get_stock_insight for %s: %s", sym, e, exc_info=True)
+            return {
+                "symbol": sym,
+                "has_data": False,
+                "prediction": None,
+                "signal": None,
+                "factors": {},
+                "feature_importance": [],
+                "model_accuracy": None,
+                "model_metrics": {},
+                "explanations": [],
+                "factor_context": None,
+                "feature_snapshot": None,
+                "trade_decision": None,
+            }
+
+
+@app.get("/api/stocks/{symbol}/feature-snapshot")
+async def get_stock_feature_snapshot(symbol: str, window_days: int = Query(7, ge=1, le=30)):
+    """返回最新预测/信号可见的特征快照；用于复盘，不构成投资建议。"""
+    from .prediction.services.feature_snapshot_service import load_stock_feature_snapshot
+
+    sym = symbol.upper()
+    with SessionLocal() as session:
+        return load_stock_feature_snapshot(session, sym, window_days=window_days)
+
+
+@app.get("/api/stocks/{symbol}/factor-context")
+async def get_stock_factor_context(symbol: str, window_days: int = Query(7, ge=1, le=30)):
+    """返回新闻、宏观和量化因子的解释上下文。"""
+    from .quant_engine.models import QESignal
+    from .prediction.services.factor_context_service import load_stock_factor_context
+
+    sym = symbol.upper()
+    with SessionLocal() as session:
+        factors = {}
+        try:
+            latest_signal = session.execute(
+                select(QESignal).where(QESignal.symbol == sym)
+                .order_by(QESignal.signal_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            if latest_signal and latest_signal.factors_json:
+                factors = latest_signal.factors_json if isinstance(latest_signal.factors_json, dict) else json.loads(latest_signal.factors_json)
+        except Exception:
+            factors = {}
+        return load_stock_factor_context(session, sym, factors=factors, window_days=window_days)
+
+
+@app.get("/api/stocks/{symbol}/trade-decision")
+async def get_stock_trade_decision(symbol: str):
+    """返回统一交易辅助建议；仅用于辅助分析，不构成投资建议。"""
+    from .quant_engine.models import QESignal, QEPrediction
+    from .prediction.services.trade_decision_service import build_trade_decision
+
+    sym = symbol.upper()
+    with SessionLocal() as session:
+        try:
+            latest_signal = session.execute(
+                select(QESignal).where(QESignal.symbol == sym)
+                .order_by(QESignal.signal_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            latest_pred = session.execute(
+                select(QEPrediction).where(QEPrediction.symbol == sym)
+                .order_by(QEPrediction.predict_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            latest_price = session.execute(
+                select(PriceDaily).where(PriceDaily.symbol == sym)
+                .order_by(PriceDaily.trade_date.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            current_price = float(latest_price.close) if latest_price and latest_price.close is not None else None
+
+            verified = session.execute(
+                select(QEPrediction).where(
+                    and_(QEPrediction.symbol == sym, QEPrediction.actual_direction.isnot(None))
+                ).order_by(QEPrediction.predict_date.desc())
+                .limit(30)
+            ).scalars().all()
+            model_accuracy = None
+            if verified:
+                correct = sum(
+                    1 for p in verified
+                    if p.direction_prob_up is not None and (p.direction_prob_up > 0.5) == (p.actual_direction == 1)
+                )
+                model_accuracy = round(correct / len(verified) * 100, 1)
+
+            factors = {}
+            if latest_signal and latest_signal.factors_json:
+                factors = latest_signal.factors_json if isinstance(latest_signal.factors_json, dict) else json.loads(latest_signal.factors_json)
+
+            return build_trade_decision(
+                symbol=sym,
+                signal=latest_signal,
+                prediction=latest_pred,
+                current_price=current_price,
+                factors=factors,
+                model_accuracy=model_accuracy,
+            )
+        except Exception as e:
+            logger.warning("Error in get_stock_trade_decision for %s: %s", sym, e, exc_info=True)
+            return build_trade_decision(symbol=sym)
+
+
+@app.get("/api/stocks/{stockCode}/retail-decision")
+def get_stock_retail_decision(stockCode: str, db: Session = Depends(get_db)):
+    """返回散户友好的短线买卖辅助卡片；不构成投资建议。"""
+    try:
+        from .services.retail_decision_service import build_stock_retail_decision
+
+        return build_stock_retail_decision(db, stockCode)
+    except Exception as e:
+        logger.warning("retail decision failed for %s: %s", stockCode, e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/stocks/{stockCode}/trade-playbook")
+def get_stock_trade_playbook(stockCode: str, db: Session = Depends(get_db)):
+    """返回个股短线交易剧本；不构成投资建议。"""
+    try:
+        from .services.trade_playbook_service import build_stock_trade_playbook
+
+        return build_stock_trade_playbook(db, stockCode)
+    except Exception as e:
+        logger.warning("trade playbook failed for %s: %s", stockCode, e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 
 @app.post("/reports/{symbol}/regenerate")
 async def regenerate_report(symbol: str):
@@ -3621,9 +6671,9 @@ def get_reports_dashboard(db: Session = Depends(get_db)):
             ORDER BY symbol, task_type, created_at DESC
         )
         SELECT 
-            w.symbol,
-            w.name,
-            w.sector,
+            spm.symbol,
+            COALESCE(sp.company_name, wl.name) AS name,
+            COALESCE(sp.industry, wl.sector) AS sector,
             lr.version as latest_report_version,
             lr.created_at as latest_report_date,
             lr.data_quality_score,
@@ -3635,11 +6685,13 @@ def get_reports_dashboard(db: Session = Depends(get_db)):
             lt.completed_at,
             lt.error_message,
             lt.priority
-        FROM watchlist w
-        LEFT JOIN latest_reports lr ON w.symbol = lr.symbol
-        LEFT JOIN latest_tasks lt ON w.symbol = lt.symbol
-        WHERE w.enabled = true
-        ORDER BY w.symbol
+        FROM stock_pool_members spm
+        LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+        LEFT JOIN watchlist wl ON spm.symbol = wl.symbol
+        LEFT JOIN latest_reports lr ON spm.symbol = lr.symbol
+        LEFT JOIN latest_tasks lt ON spm.symbol = lt.symbol
+        WHERE spm.exit_date IS NULL
+        ORDER BY spm.symbol
         """
         
         result = db.execute(text(query)).fetchall()
@@ -3679,6 +6731,61 @@ def get_reports_dashboard(db: Session = Depends(get_db)):
         }
         
     except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/dashboard/decision-summary")
+def get_decision_summary(
+    symbol: str | None = Query(None, description="可选股票代码；提供后返回该股票为选中项"),
+    limit: int = Query(20, ge=1, le=100, description="最多扫描股票数"),
+    lookback_days: int = Query(60, ge=5, le=365, description="预测质量回看自然日窗口"),
+    pinned_only: bool = Query(True, description="不传 symbol 时是否只扫描首页置顶股票"),
+    refresh: bool = Query(False, description="保留参数：后续用于触发轻量刷新，当前不执行写入刷新"),
+    db: Session = Depends(get_db),
+):
+    """返回首页一屏式买卖辅助决策摘要。"""
+    try:
+        from .services.decision_summary_service import build_decision_summary
+
+        return build_decision_summary(
+            db,
+            symbol=symbol,
+            limit=limit,
+            lookback_days=lookback_days,
+            pinned_only=pinned_only,
+            refresh=refresh,
+        )
+    except Exception as e:
+        logger.warning("decision summary failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/dashboard/tomorrow-retail-actions")
+def get_tomorrow_retail_actions(
+    limit: int = Query(12, ge=1, le=50, description="最多扫描股票数"),
+    db: Session = Depends(get_db),
+):
+    """返回明日小散操作清单，按买入/观察/减仓/规避分组。"""
+    try:
+        from .services.retail_decision_service import build_tomorrow_retail_actions
+
+        return build_tomorrow_retail_actions(db, limit=limit)
+    except Exception as e:
+        logger.warning("tomorrow retail actions failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/dashboard/tomorrow-playbook")
+def get_tomorrow_playbook(
+    limit: int = Query(12, ge=1, le=50, description="最多扫描股票数"),
+    db: Session = Depends(get_db),
+):
+    """返回首页明日交易剧本清单，按可执行/等回调/等突破/持有/减卖/规避分组。"""
+    try:
+        from .services.trade_playbook_service import build_tomorrow_playbook
+
+        return build_tomorrow_playbook(db, limit=limit)
+    except Exception as e:
+        logger.warning("tomorrow playbook failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/dashboard/tasks")
@@ -4156,35 +7263,74 @@ async def get_stocks_update_progress(
     """
     try:
         import json
+        import time as _time
         from sqlalchemy import func, case
+        
+        _t0 = _time.time()
         
         # 定义 Profile 字段
         profile_fields = [
             'industry', 'business_summary', 'core_products', 'competitive_position',
             'competitors', 'strategic_keywords', 'risk_factors', 'history_highlights', 'profile_json'
         ]
-
         total_profile_fields = len(profile_fields)
         
-        # ✨ 优化第一步：直接查询 NewsArticle，提取所有不同的股票符号
-        all_articles = db.query(NewsArticle.related_stocks).filter(
-            NewsArticle.related_stocks.isnot(None)
-        ).all()
+        # ═══════════════════════════════════════════════════
+        # ✨ 优化核心：使用缓存的文章数据索引（300s TTL）
+        # 一次查询构建 all_symbols + symbol_count + symbol_times
+        # ═══════════════════════════════════════════════════
+        global _article_data_cache, _article_data_cache_ts
         
-        all_symbols = set()
-        for row in all_articles:
-            if row[0]:
+        _cache_age = _time.time() - _article_data_cache_ts
+        if _article_data_cache is not None and _cache_age < 300:
+            all_symbols_set = _article_data_cache["all_symbols"]
+            symbol_count_map = _article_data_cache["symbol_count"]
+            symbol_times_map = _article_data_cache["symbol_times"]
+            logger.debug(f"✅ 使用缓存的文章索引（{int(_cache_age)}s 前，{len(all_symbols_set)} symbols）")
+        else:
+            # 一次查询拿到 related_stocks + published_at，单遍历构建三个索引
+            all_articles = db.query(
+                NewsArticle.related_stocks, NewsArticle.published_at
+            ).filter(
+                NewsArticle.related_stocks.isnot(None)
+            ).all()
+            
+            all_symbols_set: set[str] = set()
+            symbol_count_map: dict[str, int] = {}
+            symbol_times_map: dict[str, dict] = {}
+            
+            for row in all_articles:
+                rs, pub_date = row
+                if not rs:
+                    continue
                 try:
-                    if isinstance(row[0], str):
-                        stocks = json.loads(row[0])
-                    else:
-                        stocks = row[0]
-                    if isinstance(stocks, list):
-                        all_symbols.update(stocks)
+                    stocks = json.loads(rs) if isinstance(rs, str) else rs
                 except:
-                    pass
+                    continue
+                if not isinstance(stocks, list):
+                    continue
+                for sym in stocks:
+                    all_symbols_set.add(sym)
+                    symbol_count_map[sym] = symbol_count_map.get(sym, 0) + 1
+                    if pub_date:
+                        if sym not in symbol_times_map:
+                            symbol_times_map[sym] = {"min_date": pub_date, "max_date": pub_date}
+                        else:
+                            t = symbol_times_map[sym]
+                            if t["min_date"] is None or pub_date < t["min_date"]:
+                                t["min_date"] = pub_date
+                            if t["max_date"] is None or pub_date > t["max_date"]:
+                                t["max_date"] = pub_date
+            
+            _article_data_cache = {
+                "all_symbols": all_symbols_set,
+                "symbol_count": symbol_count_map,
+                "symbol_times": symbol_times_map,
+            }
+            _article_data_cache_ts = _time.time()
+            logger.info(f"✅ 文章索引已构建：{len(all_symbols_set)} symbols，{len(all_articles)} articles，耗时 {_time.time()-_t0:.1f}s")
         
-        all_symbols_list = sorted(list(all_symbols))
+        all_symbols_list = sorted(list(all_symbols_set))
         total_stocks = len(all_symbols_list)
         
         if total_stocks == 0:
@@ -4199,17 +7345,16 @@ async def get_stocks_update_progress(
                 "total_pages": 0
             }
         
-        # ✨ 优化第二步：批量查询所有相关的 StockProfile
-        # 而不是逐个查询
+        # ✨ 批量查询所有相关的 StockProfile
         all_profiles = db.query(StockProfile).filter(
             StockProfile.symbol.in_(all_symbols_list)
         ).all()
-        
         profile_map = {p.symbol: p for p in all_profiles}
         
+        # 名称回填由后台线程 _backfill_stock_names_sync() 在启动时执行
+        # API 端点只读取已有的 DB 数据，不做任何重型处理
+        
         # 🔧 过滤：只保留有有效Profile的symbols
-        # 如果show_invalid=False，进一步过滤掉标记为无效的profiles
-        # 🔧 市场过滤：根据符号格式推断市场，使用 infer_market_from_symbol()
         valid_symbols = []
         for symbol in all_symbols_list:
             profile = profile_map.get(symbol)
@@ -4262,15 +7407,11 @@ async def get_stocks_update_progress(
             # 首先按符号过滤
             filtered_symbols = [s for s in all_symbols_list if q_lower in s.lower()]
             
-            # 如果按符号没有找到，查询 Profile 表按公司名过滤
+            # 如果按符号没有找到，使用已有的 profile_map 按公司名过滤（无需再次查 DB）
             if not filtered_symbols:
-                profiles_for_search = db.query(StockProfile).filter(
-                    StockProfile.symbol.in_(all_symbols_list)
-                ).all()
-                profile_name_dict = {p.symbol: p.company_name.lower() if p.company_name else "" for p in profiles_for_search}
                 filtered_symbols = [
                     s for s in all_symbols_list 
-                    if q_lower in profile_name_dict.get(s, "")
+                    if s in profile_map and profile_map[s].company_name and q_lower in profile_map[s].company_name.lower()
                 ]
             
             all_symbols_list = filtered_symbols
@@ -4292,64 +7433,15 @@ async def get_stocks_update_progress(
         ).all()
         watchlist_map = {item[0]: item[1] for item in watchlist_items}
         
-        # 批量计算每个股票的文章数
-        # 方式：对每个相关股票符号，计算包含该符号的文章数
-        article_count_map = {}
-        news_articles = db.query(NewsArticle.related_stocks).filter(
-            NewsArticle.related_stocks.isnot(None)
-        ).all()
-        
-        for symbol in page_symbols:
-            count = 0
-            for row in news_articles:
-                if row[0]:
-                    try:
-                        if isinstance(row[0], str):
-                            stocks = json.loads(row[0])
-                        else:
-                            stocks = row[0]
-                        if isinstance(stocks, list) and symbol in stocks:
-                            count += 1
-                    except:
-                        pass
-            article_count_map[symbol] = count
+        # ✨ 直接使用缓存的文章索引（无需再次查询 NewsArticle）
+        article_count_map = {sym: symbol_count_map.get(sym, 0) for sym in page_symbols}
         
         stocks_detail = []
         # 使用 naive datetime 以避免时区比较问题
         fourteen_days_ago = datetime.now() - timedelta(days=14)
         
-        # 批量查询 NewsArticle 的最早发布时间和最后更新时间
-        # 为每个符号获取其关联新闻的时间范围
-        if page_symbols:
-            news_articles = db.query(NewsArticle.related_stocks, NewsArticle.published_at).filter(
-                NewsArticle.related_stocks.isnot(None)
-            ).all()
-            
-            # 为每个符号计算时间范围
-            symbol_times = {}  # {symbol: {"min_date": ..., "max_date": ...}}
-            for article in news_articles:
-                if article[0]:
-                    try:
-                        if isinstance(article[0], str):
-                            stocks = json.loads(article[0])
-                        else:
-                            stocks = article[0]
-                        
-                        pub_date = article[1]
-                        if isinstance(stocks, list):
-                            for stock_sym in stocks:
-                                if stock_sym in page_symbols:
-                                    if stock_sym not in symbol_times:
-                                        symbol_times[stock_sym] = {"min_date": pub_date, "max_date": pub_date}
-                                    else:
-                                        if pub_date and (symbol_times[stock_sym]["min_date"] is None or pub_date < symbol_times[stock_sym]["min_date"]):
-                                            symbol_times[stock_sym]["min_date"] = pub_date
-                                        if pub_date and (symbol_times[stock_sym]["max_date"] is None or pub_date > symbol_times[stock_sym]["max_date"]):
-                                            symbol_times[stock_sym]["max_date"] = pub_date
-                    except:
-                        pass
-        else:
-            symbol_times = {}
+        # ✨ 直接使用缓存的 symbol_times_map（无需再次查询）
+        symbol_times = symbol_times_map
         
         for symbol in page_symbols:
             profile = profile_map.get(symbol)
@@ -4419,6 +7511,9 @@ async def get_stocks_update_progress(
             "page_size": page_size,
             "total_pages": total_pages
         }
+        
+        _elapsed = _time.time() - _t0
+        logger.info(f"GET /api/news/stocks/progress -> 200 ({_elapsed*1000:.0f} ms, {total_stocks} stocks)")
         
         return JSONResponse(
             result,
@@ -6323,4 +9418,4 @@ async def delete_invalid_profiles(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8081)

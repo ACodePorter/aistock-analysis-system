@@ -9,11 +9,11 @@ Write-Host ""
 Write-Host "✅ Step 1: 检查后端服务..." -ForegroundColor Green
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8080/api/news/stocks/progress" -TimeoutSec 2 -ErrorAction SilentlyContinue
+    $response = Invoke-WebRequest -Uri "http://localhost:8081/api/news/stocks/progress" -TimeoutSec 2 -ErrorAction SilentlyContinue
     Write-Host "   ✅ 后端服务已运行" -ForegroundColor Green
 } catch {
     Write-Host "   ❌ 后端服务未运行，请先启动后端" -ForegroundColor Red
-    Write-Host "   在 backend 目录运行: python -m uvicorn app.main:app --host 0.0.0.0 --port 8080" -ForegroundColor Yellow
+     Write-Host "   在 backend 目录运行: python -m uvicorn app.main:app --host 0.0.0.0 --port 8081" -ForegroundColor Yellow
     exit 1
 }
 
@@ -34,7 +34,7 @@ Write-Host ""
 Write-Host "✅ Step 3: 获取 Profile 进度..." -ForegroundColor Green
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8080/api/news/stocks/progress?page=1&page_size=5" -TimeoutSec 5
+    $response = Invoke-WebRequest -Uri "http://localhost:8081/api/news/stocks/progress?page=1&page_size=5" -TimeoutSec 5
     $data = $response.Content | ConvertFrom-Json
     
     Write-Host ""
@@ -59,7 +59,7 @@ Write-Host "   - 完成度: 0.10%" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "📍 访问地址:" -ForegroundColor Cyan
 Write-Host "   - 前端: http://localhost:3000" -ForegroundColor Cyan
-Write-Host "   - API 进度: http://localhost:8080/api/news/stocks/progress" -ForegroundColor Cyan
+Write-Host "   - API 进度: http://localhost:8081/api/news/stocks/progress" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "🔔 定时任务:" -ForegroundColor Cyan
 Write-Host "   - 每周一 02:00 自动执行" -ForegroundColor White

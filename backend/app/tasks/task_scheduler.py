@@ -131,20 +131,10 @@ class ScheduledTaskManager:
             logger.info("✅ 后台任务调度器已启动")
             self.log_schedule_info()
             
-            # 启动后在后台线程中立即执行一次 Profile 更新
-            # （不使用 APScheduler 的 date trigger，而是用后台任务）
-            import threading
-            def run_initial_update():
-                import time
-                time.sleep(5)  # 等待 5 秒确保系统完全初始化
-                logger.info("🚀 启动后初始 Profile 更新任务...")
-                try:
-                    self.update_all_stock_profiles()
-                except Exception as e:
-                    logger.error(f"❌ 初始 Profile 更新失败: {str(e)}")
-            
-            thread = threading.Thread(target=run_initial_update, daemon=True)
-            thread.start()
+            # 启动时不再自动执行 profile 更新 —— 由 stock_pool_service 的
+            # start_profile_completion_background() 统一管理，避免两个 enrichment
+            # 任务并发竞争网络/LLM 资源导致挂起。
+            logger.info("ℹ️ 启动时 profile 更新已交由 stock_pool_service 统一管理")
     
     def shutdown(self):
         """关闭任务调度器"""
@@ -164,7 +154,7 @@ class ScheduledTaskManager:
         except Exception as e:
             logger.error(f"记录调度信息失败: {e}")
     
-    def update_all_stock_profiles(self, delay_between_stocks: float = 2.0):
+    def update_all_stock_profiles(self, delay_between_stocks: float = 2.0, batch_limit: int = 0):
         """
         更新所有股票的公司画像数据
         
@@ -215,7 +205,7 @@ class ScheduledTaskManager:
             
             try:
                 # 获取所有需要更新的股票
-                stocks_to_update = self._get_stocks_for_update(db_session)
+                stocks_to_update = self._get_stocks_for_update(db_session, batch_limit=batch_limit)
                 self.task_stats['total'] = len(stocks_to_update)
                 self.current_progress['total_stocks'] = len(stocks_to_update)
                 
@@ -293,95 +283,79 @@ class ScheduledTaskManager:
             self.current_progress['is_running'] = False
             self.current_progress['last_update_at'] = datetime.now()
     
-    def _get_stocks_for_update(self, db_session: Session) -> List[tuple]:
+    def _get_stocks_for_update(self, db_session: Session, batch_limit: int = 0) -> List[tuple]:
         """
         获取需要更新的股票列表
         
-        新策略（已更新）：
-        - 从 NewsArticle.related_stocks JSON 字段中提取所有唯一的股票代码
-        - 这包含所有出现在新闻中的股票（~2930 只），而不仅仅是 Watchlist 中的 5 只
-        - 按完成度排序，优先更新完成度最低的股票
+        策略：从 stock_pool_members（统一股票池）读取所有活跃股票，
+        按 Profile 完成度排序，优先更新完成度最低的。
         
         Returns:
             [(symbol, company_name), ...] 列表，按完成度从低到高排序
         """
         try:
-            from ..core.models import NewsArticle
-            
-            logger.info("📰 从 NewsArticle.related_stocks 中提取所有股票...")
-            
-            # Step 1: 从所有新闻文章中提取股票代码
-            all_articles = db_session.query(NewsArticle.related_stocks).filter(
-                NewsArticle.related_stocks.isnot(None)
-            ).all()
-            
-            all_symbols = set()
-            for row in all_articles:
-                if row[0] and isinstance(row[0], list):
-                    all_symbols.update(row[0])
-            
-            all_symbols_list = sorted(list(all_symbols))
-            logger.info(f"✅ 从 {len(all_articles)} 篇新闻中提取 {len(all_symbols_list)} 个不同的股票代码")
-            
-            if len(all_symbols_list) == 0:
-                logger.warning("⚠️  没有从新闻中找到任何股票")
+            from ..core.models import StockPoolMember
+            from sqlalchemy import text
+
+            logger.info("📰 从 stock_pool_members 中获取活跃股票...")
+
+            rows = db_session.execute(text("""
+                SELECT spm.symbol,
+                       COALESCE(sp.company_name, spm.symbol) AS company_name
+                FROM stock_pool_members spm
+                LEFT JOIN stock_profiles sp ON spm.symbol = sp.symbol
+                WHERE spm.exit_date IS NULL
+                ORDER BY spm.symbol
+            """)).fetchall()
+
+            if not rows:
+                logger.warning("⚠️  stock_pool_members 中没有活跃股票")
                 return []
-            
-            # Step 2: 检查这些股票的 Profile 完成度
+
+            logger.info(f"✅ 从股票池中获取 {len(rows)} 只活跃股票")
+
             stocks_with_completion = []
-            
-            for symbol in all_symbols_list:
+            profile_fields = [
+                'industry', 'business_summary', 'core_products',
+                'competitive_position', 'competitors', 'strategic_keywords',
+                'risk_factors', 'history_highlights', 'profile_json'
+            ]
+
+            for r in rows:
+                symbol, company_name = r.symbol, r.company_name
                 profile = db_session.query(StockProfile).filter(
                     StockProfile.symbol == symbol
                 ).first()
-                
+
                 if profile:
-                    # 计算完成度
-                    fields = [
-                        profile.industry,
-                        profile.business_summary,
-                        profile.core_products,
-                        profile.competitive_position,
-                        profile.competitors,
-                        profile.strategic_keywords,
-                        profile.risk_factors,
-                        profile.history_highlights,
-                        profile.profile_json
-                    ]
-                    filled_count = sum(1 for f in fields if f)
-                    completion_percentage = (filled_count / 9) * 100 if fields else 0
-                    
-                    company_name = profile.company_name or symbol
-                    stocks_with_completion.append((symbol, company_name, completion_percentage))
+                    from ..services.stock_pool_service import _is_meaningful_field
+                    filled_count = sum(1 for f in profile_fields if _is_meaningful_field(f, getattr(profile, f, None)))
+                    completion_pct = (filled_count / len(profile_fields)) * 100
+                    name = profile.company_name or company_name
                 else:
-                    # 如果没有 Profile 记录，创建一个
-                    try:
-                        new_profile = StockProfile(
-                            symbol=symbol,
-                            company_name=None  # 稍后会更新
-                        )
-                        db_session.add(new_profile)
-                        db_session.commit()
-                        stocks_with_completion.append((symbol, symbol, 0.0))
-                    except Exception as e:
-                        logger.warning(f"⚠️  为 {symbol} 创建 Profile 记录失败: {e}")
-                        stocks_with_completion.append((symbol, symbol, 0.0))
-            
-            # Step 3: 按完成度排序（优先更新完成度最低的）
+                    completion_pct = 0.0
+                    name = company_name
+                stocks_with_completion.append((symbol, name, completion_pct))
+
             stocks_with_completion.sort(key=lambda x: x[2])
-            
+
+            completed_count = sum(1 for _, _, c in stocks_with_completion if c >= 50)
+            total = len(stocks_with_completion)
+            avg = sum(c for _, _, c in stocks_with_completion) / total if total else 0
+
             logger.info(f"📊 股票完成度统计:")
-            completed_count = sum(1 for _, _, completion in stocks_with_completion if completion >= 50)
             logger.info(f"   - 已完成 (≥50%): {completed_count} 只")
-            logger.info(f"   - 待完成 (<50%): {len(stocks_with_completion) - completed_count} 只")
-            logger.info(f"   - 平均完成度: {(sum(c for _, _, c in stocks_with_completion) / len(stocks_with_completion)):.1f}%")
-            
-            # 返回前 N 个不完整的股票
-            incomplete_stocks = [(symbol, name) for symbol, name, completion in stocks_with_completion if completion < 50]
-            logger.info(f"📋 本次将更新 {len(incomplete_stocks[:100])} 个不完整股票（总数 {len(incomplete_stocks)}）")
-            
-            return incomplete_stocks
-        
+            logger.info(f"   - 待完成 (<50%): {total - completed_count} 只")
+            logger.info(f"   - 平均完成度: {avg:.1f}%")
+
+            incomplete = [(sym, name) for sym, name, c in stocks_with_completion if c < 50]
+
+            if batch_limit > 0:
+                incomplete = incomplete[:batch_limit]
+
+            logger.info(f"📋 本次将更新 {len(incomplete)} 个不完整股票")
+            return incomplete
+
         except Exception as e:
             logger.error(f"❌ 获取股票列表失败: {e}", exc_info=True)
             return []
@@ -437,7 +411,7 @@ class ScheduledTaskManager:
                 db_session.commit()
                 logger.debug(f"✏️  已更新 {symbol} 的 last_updated_at 时间戳")
             else:
-                logger.warning(f"⚠️  未找到 Watchlist 中的 {symbol} 记录")
+                logger.debug(f"ℹ️  {symbol} 不在 Watchlist 中，跳过时间戳更新")
         except Exception as e:
             logger.error(f"❌ 更新 Watchlist 时间戳失败 ({symbol}): {str(e)}")
             # 不抛出异常，以免中断主流程

@@ -52,8 +52,8 @@ docker compose up -d --build
 访问：
 
 - 前端：[http://localhost:3000](http://localhost:3000)（或 [http://localhost:8081](http://localhost:8081)）
-- 后端API：[http://localhost:8080](http://localhost:8080)
-- API文档：[http://localhost:8080/docs](http://localhost:8080/docs)
+- 后端API：[http://localhost:8081](http://localhost:8081)
+- API文档：[http://localhost:8081/docs](http://localhost:8081/docs)
 - SearXNG（新闻搜索）：[http://localhost:10000](http://localhost:10000)（如已启用）
 
 ### 本地开发（可选）
@@ -65,7 +65,7 @@ cd backend
 python -m venv venv
 venv\Scripts\activate  # Windows PowerShell
 pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 ```
 
 前端：
@@ -102,9 +102,28 @@ npm run preview
 
 ```html
 <script>
-  window.API_BASE = 'http://localhost:8080';
+  window.API_BASE = 'http://localhost:8081';
 </script>
 ```
+
+---
+
+## 文档归档入口
+
+- 历史阶段性总结与报告已归档到 `docs/archive/2025-Q4/`。
+- 当前归档包含：
+  - `API_OPTIMIZATION_SUMMARY.md`
+  - `PROJECT_RESTRUCTURE_SUMMARY.md`
+  - `QWEN3_INTEGRATION_SUMMARY.md`
+  - `SYMBOL_IMPLEMENTATION_REPORT.md`
+  - `SYMBOL_UPDATE_SUMMARY.md`
+  - `SCRIPT_FIXES.md`
+  - `QUICK_START_FIXED.md`
+  - `UI_OPTIMIZATION_UPDATE.md`
+  - `README_FRONTEND_OPTIMIZATION.md`
+  - `STOCKS_PAGE_ON_DEMAND_LOADING.md`
+  - `STOCK_UPDATE_DELIVERY.md`
+- 后续新增阶段性总结文档，建议按季度归档到 `docs/archive/YYYY-QX/`。
 
 ---
 
@@ -125,8 +144,10 @@ aistock-analysis-system/
 │   └── scripts/
 ├── frontend/
 │   └── src/ui/                    # App.tsx、Dashboard.tsx、News组件等
-├── searxng/                        # SearXNG配置（可选）
-├── initdb/                         # PostgreSQL初始化脚本
+├── infra/                          # 基础设施配置
+│   ├── initdb/                     # PostgreSQL初始化脚本
+│   ├── mongodb/                    # MongoDB初始化脚本
+│   └── searxng/                    # SearXNG配置
 ├── docker-compose.yml              # 一键编排
 └── README.md
 ```
@@ -247,7 +268,7 @@ aistock-analysis-system/
   - `GET /api/tasks/status`、`GET /api/dashboard/reports`、`GET /api/dashboard/tasks`
 - 新闻：见“新闻管理中心（前端）→ API映射”
 
-完整接口请参见后端 [http://localhost:8080/docs](http://localhost:8080/docs)。
+完整接口请参见后端 [http://localhost:8081/docs](http://localhost:8081/docs)。
 
 ### 🆕 每日分析（Daily Analysis Page）
 
@@ -565,12 +586,12 @@ Made for A股研究与学习 ✨
     ```
   - SQL 文件方式（PostgreSQL）：
     ```bash
-    psql $DATABASE_URL -f initdb/migrations/2025_10_08_stock_pool.sql
+    psql $DATABASE_URL -f infra/initdb/migrations/2025_10_08_stock_pool.sql
     ```
 2. 重启后端服务（确保新表可用）。
 3. 触发一次 Agent 运行：
   ```bash
-  curl -X POST http://localhost:8080/api/agent/run
+  curl -X POST http://localhost:8081/api/agent/run
   ```
 4. 待运行完成后验证：
   - `GET /api/stock-pool`

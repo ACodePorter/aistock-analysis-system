@@ -1,133 +1,182 @@
 #!/usr/bin/env python3
+"""Versioned SQL migration runner.
+
+Usage:
+    cd backend
+    python migrations/migrate.py status
+    python migrations/migrate.py upgrade
+    python migrations/migrate.py downgrade --steps 1
+    python migrations/migrate.py downgrade --target 0001_add_last_updated_at_to_watchlist
+
+Migration files follow this naming convention:
+    <version>.up.sql
+    <version>.down.sql
 """
-数据库迁移脚本 - 添加 last_updated_at 字段到 watchlist 表
 
-使用方法：
-    python migrations/migrate.py
+from __future__ import annotations
 
-功能：
-    - 自动检查数据库并添加缺失的字段
-    - 支持 PostgreSQL 和 SQLite
-    - 安全的 IF NOT EXISTS 检查
-"""
-
+import argparse
+import logging
 import os
 import sys
-import logging
-from datetime import datetime
+from dataclasses import dataclass
+from pathlib import Path
 
-# 添加 backend 目录到路径
-backend_dir = os.path.join(os.path.dirname(__file__), '..')
-sys.path.insert(0, backend_dir)
+from sqlalchemy import create_engine, text
 
-from sqlalchemy import create_engine, text, inspect
-sys.path.insert(0, os.path.join(backend_dir, 'app'))
 
-# 直接从环境变量读取数据库 URL 或使用默认值
-import os
-DATABASE_URL = os.getenv(
-    'DATABASE_URL',
-    'postgresql://aistock:aistock@localhost:5432/aistock'
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+MIGRATIONS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BACKEND_DIR))
+
+try:
+    from app.core.db import get_db_url
+except Exception:  # pragma: no cover - fallback for standalone envs
+    get_db_url = None
+
+DATABASE_URL = os.getenv("DATABASE_URL") or (
+    get_db_url() if get_db_url else "postgresql://aistock:aistock@localhost:5432/aistock"
 )
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def migrate():
-    """执行数据库迁移"""
-    try:
-        logger.info("🔄 开始数据库迁移...")
-        logger.info(f"数据库 URL: {DATABASE_URL}")
-        
-        # 创建数据库引擎
-        engine = create_engine(DATABASE_URL)
-        
-        # 检查连接
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
-            logger.info("✅ 数据库连接成功")
-        
-        # 获取表信息
-        inspector = inspect(engine)
-        
-        # 检查 watchlist 表是否存在
-        if 'watchlist' not in inspector.get_table_names():
-            logger.error("❌ watchlist 表不存在，请先创建表")
-            return False
-        
-        # 获取 watchlist 表的列信息
-        watchlist_columns = [col['name'] for col in inspector.get_columns('watchlist')]
-        logger.info(f"📋 watchlist 表现有列: {watchlist_columns}")
-        
-        # 检查是否需要添加 last_updated_at 列
-        if 'last_updated_at' not in watchlist_columns:
-            logger.info("➕ 需要添加 last_updated_at 列...")
-            
-            with engine.connect() as conn:
-                # 确定数据库类型
-                db_dialect = engine.dialect.name
-                logger.info(f"📊 数据库类型: {db_dialect}")
-                
-                # PostgreSQL
-                if db_dialect == 'postgresql':
-                    sql = """
-                    ALTER TABLE watchlist
-                    ADD COLUMN last_updated_at TIMESTAMP NULL;
-                    """
-                # SQLite
-                elif db_dialect == 'sqlite':
-                    sql = """
-                    ALTER TABLE watchlist
-                    ADD COLUMN last_updated_at TIMESTAMP NULL;
-                    """
-                # MySQL
-                elif db_dialect == 'mysql':
-                    sql = """
-                    ALTER TABLE watchlist
-                    ADD COLUMN last_updated_at TIMESTAMP NULL COMMENT '最后一次资讯更新完成时间';
-                    """
-                else:
-                    logger.error(f"❌ 不支持的数据库类型: {db_dialect}")
-                    return False
-                
-                conn.execute(text(sql))
-                conn.commit()
-                logger.info("✅ 成功添加 last_updated_at 列")
-        else:
-            logger.info("✓ last_updated_at 列已存在，跳过添加")
-        
-        # 创建索引
-        try:
-            with engine.connect() as conn:
-                # 检查索引是否存在
-                existing_indexes = [idx['name'] for idx in inspector.get_indexes('watchlist')]
-                
-                if 'idx_watchlist_last_updated_at' not in existing_indexes:
-                    logger.info("➕ 创建索引: idx_watchlist_last_updated_at")
-                    sql = """
-                    CREATE INDEX idx_watchlist_last_updated_at ON watchlist(last_updated_at);
-                    """
-                    conn.execute(text(sql))
-                    conn.commit()
-                    logger.info("✅ 索引创建成功")
-                else:
-                    logger.info("✓ 索引已存在，跳过创建")
-        except Exception as e:
-            logger.warning(f"⚠️  索引创建失败（可能已存在）: {e}")
-        
-        logger.info("🎉 数据库迁移完成！")
+@dataclass(frozen=True)
+class Migration:
+    version: str
+    up_path: Path
+    down_path: Path | None
+
+
+def _masked_url(url: str) -> str:
+    if "@" not in url:
+        return url
+    prefix, suffix = url.rsplit("@", 1)
+    scheme = prefix.split("://", 1)[0] if "://" in prefix else "postgresql"
+    return f"{scheme}://***:***@{suffix}"
+
+
+def _load_migrations() -> list[Migration]:
+    migrations: list[Migration] = []
+    for up_path in sorted(MIGRATIONS_DIR.glob("*.up.sql")):
+        version = up_path.name[: -len(".up.sql")]
+        down_path = MIGRATIONS_DIR / f"{version}.down.sql"
+        migrations.append(Migration(version=version, up_path=up_path, down_path=down_path if down_path.exists() else None))
+    return migrations
+
+
+def _ensure_schema_table(conn) -> None:
+    conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version VARCHAR(160) PRIMARY KEY,
+            applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """))
+
+
+def _applied_versions(conn) -> list[str]:
+    rows = conn.execute(text("SELECT version FROM schema_migrations ORDER BY version ASC")).fetchall()
+    return [row[0] for row in rows]
+
+
+def _execute_sql_file(conn, path: Path) -> None:
+    sql = path.read_text(encoding="utf-8").strip()
+    if sql:
+        conn.execute(text(sql))
+
+
+def status(database_url: str = DATABASE_URL) -> bool:
+    engine = create_engine(database_url, future=True)
+    migrations = _load_migrations()
+    with engine.begin() as conn:
+        _ensure_schema_table(conn)
+        applied = set(_applied_versions(conn))
+    logger.info("数据库: %s", _masked_url(database_url))
+    if not migrations:
+        logger.info("未发现 *.up.sql 迁移文件")
         return True
-        
-    except Exception as e:
-        logger.error(f"❌ 迁移失败: {str(e)}", exc_info=True)
+    for migration in migrations:
+        mark = "applied" if migration.version in applied else "pending"
+        logger.info("%-48s %s", migration.version, mark)
+    return True
+
+
+def upgrade(database_url: str = DATABASE_URL, target: str | None = None) -> bool:
+    engine = create_engine(database_url, future=True)
+    migrations = _load_migrations()
+    if target:
+        migrations = [migration for migration in migrations if migration.version <= target]
+    try:
+        with engine.begin() as conn:
+            _ensure_schema_table(conn)
+            applied = set(_applied_versions(conn))
+            pending = [migration for migration in migrations if migration.version not in applied]
+            if not pending:
+                logger.info("没有待执行迁移")
+                return True
+            for migration in pending:
+                logger.info("执行升级迁移: %s", migration.version)
+                _execute_sql_file(conn, migration.up_path)
+                conn.execute(
+                    text("INSERT INTO schema_migrations(version) VALUES (:version) ON CONFLICT (version) DO NOTHING"),
+                    {"version": migration.version},
+                )
+        logger.info("升级完成，共执行 %d 个迁移", len(pending))
+        return True
+    except Exception as exc:
+        logger.error("升级失败: %s", exc, exc_info=True)
         return False
 
 
+def downgrade(database_url: str = DATABASE_URL, target: str | None = None, steps: int = 1) -> bool:
+    engine = create_engine(database_url, future=True)
+    migrations_by_version = {migration.version: migration for migration in _load_migrations()}
+    try:
+        with engine.begin() as conn:
+            _ensure_schema_table(conn)
+            applied = _applied_versions(conn)
+            if target:
+                rollback_versions = [version for version in reversed(applied) if version > target]
+            else:
+                rollback_versions = list(reversed(applied))[: max(steps, 1)]
+            if not rollback_versions:
+                logger.info("没有待回滚迁移")
+                return True
+            for version in rollback_versions:
+                migration = migrations_by_version.get(version)
+                if migration is None or migration.down_path is None:
+                    raise RuntimeError(f"缺少回滚脚本: {version}.down.sql")
+                logger.info("执行回滚迁移: %s", version)
+                _execute_sql_file(conn, migration.down_path)
+                conn.execute(text("DELETE FROM schema_migrations WHERE version = :version"), {"version": version})
+        logger.info("回滚完成，共执行 %d 个迁移", len(rollback_versions))
+        return True
+    except Exception as exc:
+        logger.error("回滚失败: %s", exc, exc_info=True)
+        return False
+
+
+def migrate(database_url: str = DATABASE_URL) -> bool:
+    return upgrade(database_url)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AIStock versioned SQL migration runner")
+    parser.add_argument("command", nargs="?", choices=["status", "upgrade", "downgrade"], default="upgrade")
+    parser.add_argument("--target", help="目标迁移版本；upgrade 执行到该版本，downgrade 回滚到该版本")
+    parser.add_argument("--steps", type=int, default=1, help="downgrade 未指定 target 时回滚步数")
+    args = parser.parse_args()
+
+    logger.info("数据库: %s", _masked_url(DATABASE_URL))
+    if args.command == "status":
+        ok = status(DATABASE_URL)
+    elif args.command == "downgrade":
+        ok = downgrade(DATABASE_URL, target=args.target, steps=args.steps)
+    else:
+        ok = upgrade(DATABASE_URL, target=args.target)
+    return 0 if ok else 1
+
+
 if __name__ == "__main__":
-    success = migrate()
-    sys.exit(0 if success else 1)
+    raise SystemExit(main())

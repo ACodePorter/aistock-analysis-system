@@ -290,6 +290,24 @@ TOP20_POOL_RULES = {
 
 
 # =========================
+# 预测模型再训练触发规则
+# =========================
+
+RETRAIN_TRIGGER_RULES = {
+    "consecutive_failures": 3,
+    "direction_accuracy_threshold": 0.45,
+    "mape_threshold_pct": 8.0,
+    "interval_hit_rate_threshold": 0.50,
+    "cooldown_hours": 24,
+    "min_evaluations": 5,
+    "min_interval_evaluations": 3,
+    "auto_retrain_enabled": True,
+    "min_score_improvement_ratio": 1.02,
+    "retrain_lock_ttl_seconds": 7200,
+}
+
+
+# =========================
 # 默认参数
 # =========================
 

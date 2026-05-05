@@ -17,6 +17,26 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# 全局并发限制 —— 本地 Qwen 模型处理能力有限，需要控制同时发送的请求数量
+# 通过 LOCAL_QWEN_MAX_CONCURRENCY 环境变量配置，默认 2
+# ---------------------------------------------------------------------------
+_qwen_semaphore: Optional[asyncio.Semaphore] = None
+
+
+def get_qwen_semaphore() -> asyncio.Semaphore:
+    """获取全局 Qwen 并发信号量（惰性初始化）"""
+    global _qwen_semaphore
+    if _qwen_semaphore is None:
+        try:
+            max_conc = int(os.getenv("LOCAL_QWEN_MAX_CONCURRENCY", "2"))
+        except ValueError:
+            max_conc = 2
+        max_conc = max(1, max_conc)
+        _qwen_semaphore = asyncio.Semaphore(max_conc)
+        logger.info(f"🔒 Qwen 全局并发信号量已创建，最大并发数: {max_conc}")
+    return _qwen_semaphore
+
 
 class Qwen3LocalLLMClient:
     """
@@ -180,27 +200,28 @@ class Qwen3LocalLLMClient:
         logger.debug(f"📝 调用 Qwen3 生成文本")
         logger.debug(f"   URL: {url}")
         logger.debug(f"   Prompt 长度: {len(prompt)} 字符")
-        
+
+        sem = get_qwen_semaphore()
 
         # 重试机制
         last_error = None
         for attempt in range(1, self.retry_times + 1):
             try:
                 logger.debug(f"   尝试 {attempt}/{self.retry_times}...")
-                
-                logger.info(f"Start URL: {url}, Attempt: {attempt}")
 
-                # 执行 POST 请求
-                resp = await self.http_client.post(
-                    url,
-                    json=payload,
-                    headers={
-                        "Content-Type": "application/json",
-                    }
-                )
+                async with sem:
+                    logger.info(f"Start URL: {url}, Attempt: {attempt}")
 
+                    # 执行 POST 请求
+                    resp = await self.http_client.post(
+                        url,
+                        json=payload,
+                        headers={
+                            "Content-Type": "application/json",
+                        }
+                    )
 
-                logger.info(f"End URL: {url}, Attempt: {attempt}")
+                    logger.info(f"End URL: {url}, Attempt: {attempt}")
                 
                 # 检查状态码
                 if resp.status_code != 200:

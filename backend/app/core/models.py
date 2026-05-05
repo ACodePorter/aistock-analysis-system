@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Optional
 
 from sqlalchemy import (
-    String, Integer, Boolean, Date, BigInteger, Numeric, TIMESTAMP, Text, Index, Float, ForeignKey, JSON, func
+    String, Integer, Boolean, Date, BigInteger, Numeric, TIMESTAMP, Text, Index, Float, ForeignKey, JSON, func, UniqueConstraint
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -171,12 +171,14 @@ class Watchlist(Base):
     remove_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="建议移除原因")
     last_analysis_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True, comment="最后分析时间")
     clean_rule_tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="清洗策略标签")
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", comment="是否在首页看板展示")
 
     __table_args__ = (
         Index("idx_watchlist_status", "status"),
         Index("idx_watchlist_source", "source"),
         Index("idx_watchlist_score", "score"),
         Index("idx_watchlist_remove_suggested", "remove_suggested"),
+        Index("idx_watchlist_pinned", "pinned"),
     )
 
 
@@ -312,6 +314,7 @@ class FundFlowDaily(Base):
 
     __table_args__ = (
         Index("idx_fundflow_symbol_date", "symbol", "trade_date"),
+        UniqueConstraint('symbol', 'trade_date', name='uq_fundflow_symbol_date'),
     )
 
 
@@ -890,15 +893,103 @@ class ModelRegistry(Base):
         Index("idx_model_task_active", "task", "is_active"),
     )
 
+
+class FeatureSnapshot(Base):
+    """预测时点特征快照：保存模型当时可见的信息，避免复盘使用未来数据。"""
+    __tablename__ = "feature_snapshots"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    snapshot_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    as_of_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True, index=True)
+    prediction_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    target_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True, index=True)
+    source: Mapped[str] = mapped_column(String(64), default="latest_prediction_signal_context")
+    schema_version: Mapped[int] = mapped_column(Integer, default=1)
+    completeness_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    verification_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
+    gate_result: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    payload_json: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+
+    __table_args__ = (
+        Index("idx_feature_snapshots_symbol_asof", "symbol", "as_of_date"),
+    )
+
+
+class FailureAnalysisRecord(Base):
+    """预测失败归因记录：持久化可回放的复盘结论和证据引用。"""
+    __tablename__ = "failure_analyses"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    analysis_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    lookback_days: Mapped[int] = mapped_column(Integer, default=60)
+    severity: Mapped[str] = mapped_column(String(20), default="unknown", index=True)
+    sample_count: Mapped[int] = mapped_column(Integer, default=0)
+    high_deviation_count: Mapped[int] = mapped_column(Integer, default=0)
+    evidence_snapshot_ids: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    root_causes_json: Mapped[list] = mapped_column(JSONB, default=list)
+    payload_json: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+
+    __table_args__ = (
+        Index("idx_failure_analyses_symbol_created", "symbol", "created_at"),
+    )
+
+
+class AgentReviewRun(Base):
+    """Agent 迭代建议运行记录：只记录受控建议和门禁状态，不代表已上线。"""
+    __tablename__ = "agent_review_runs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    review_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="waiting_for_samples", index=True)
+    priority: Mapped[str] = mapped_column(String(20), default="none")
+    source: Mapped[str] = mapped_column(String(64), default="failure_analysis_rule_agent")
+    proposed_actions_json: Mapped[list] = mapped_column(JSONB, default=list)
+    blocked_actions_json: Mapped[list] = mapped_column(JSONB, default=list)
+    verification_status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    gate_result: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    payload_json: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+
+    __table_args__ = (
+        Index("idx_agent_review_runs_symbol_created", "symbol", "created_at"),
+    )
+
+
+class AgentVerificationCheck(Base):
+    """Agent 输出自动核实检查：记录每个门禁检查的证据和状态。"""
+    __tablename__ = "agent_verification_checks"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    check_id: Mapped[str] = mapped_column(String(96), unique=True, index=True)
+    review_id: Mapped[str] = mapped_column(String(80), ForeignKey("agent_review_runs.review_id", ondelete="CASCADE"), index=True)
+    check_type: Mapped[str] = mapped_column(String(50), index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    evidence_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_agent_verification_type_status", "check_type", "status"),
+    )
+
 # =========================
 # 股票池与公司基础画像
 # =========================
 
 class StockPoolMember(Base):
-    """动态股票池成员表（来源：每日 Top20 聚合）。
+    """动态股票池成员表（来源：每日 Top20 聚合 / 手动添加）。
 
     - 每日更新：若当日进入 Top20 且此前未入池，则插入。
+    - 手动添加：用户从页面搜索并添加。
     - exit_date：可选（规则：若连续 N 日未再出现，可标记退出；当前留空供后续扩展）。
+    - source：添加来源（manual/top_movers/backfill）。
     """
     __tablename__ = "stock_pool_members"
 
@@ -907,6 +998,7 @@ class StockPoolMember(Base):
     first_seen_date: Mapped[datetime.date] = mapped_column(Date, index=True)
     last_seen_date: Mapped[datetime.date] = mapped_column(Date, index=True)
     exit_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="top_movers", nullable=False, server_default="top_movers", comment="manual / top_movers / backfill")
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
@@ -1508,6 +1600,203 @@ class PositionManagement(Base):
     )
 
 
+class UserPortfolio(Base):
+    """用户真实/手动维护投资组合。"""
+    __tablename__ = "user_portfolios"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, comment="组合ID")
+    name: Mapped[str] = mapped_column(String(100), default="我的持仓")
+    base_currency: Mapped[str] = mapped_column(String(10), default="CNY", server_default="CNY")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_user_portfolio_default", "is_default"),
+    )
+
+
+class UserTradeLedger(Base):
+    """用户交易流水，作为真实持仓的事实源。"""
+    __tablename__ = "user_trade_ledger"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), index=True, default="default", server_default="default")
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    side: Mapped[str] = mapped_column(String(10), comment="buy/sell")
+    trade_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    price: Mapped[float] = mapped_column(Float, comment="成交价，元")
+    quantity: Mapped[int] = mapped_column(Integer, comment="成交数量，股")
+    fees: Mapped[float] = mapped_column(Float, default=0.0, server_default="0", comment="手续费，元")
+    tax: Mapped[float] = mapped_column(Float, default=0.0, server_default="0", comment="税费，元")
+    source: Mapped[str] = mapped_column(String(32), default="manual", server_default="manual", comment="manual/broker_import")
+    external_trade_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, comment="外部券商流水ID")
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_user_trade_portfolio_symbol_date", "portfolio_id", "symbol", "trade_date"),
+        Index("idx_user_trade_external", "portfolio_id", "source", "external_trade_id"),
+    )
+
+
+class UserPosition(Base):
+    """由用户交易流水重算得到的当前持仓。"""
+    __tablename__ = "user_positions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), index=True, default="default", server_default="default")
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    quantity: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    avg_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="移动加权平均成本，元")
+    total_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="剩余持仓成本，元")
+    realized_pnl: Mapped[float] = mapped_column(Float, default=0.0, server_default="0", comment="已实现盈亏，元")
+    first_entry_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    last_trade_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    source: Mapped[str] = mapped_column(String(32), default="manual", server_default="manual")
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_user_position_portfolio_symbol", "portfolio_id", "symbol", unique=True),
+        Index("idx_user_position_symbol", "symbol"),
+    )
+
+
+class OpportunityCandidate(Base):
+    """潜力股发现 Agent 输出的候选与审批记录。"""
+    __tablename__ = "opportunity_candidates"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    source: Mapped[str] = mapped_column(String(50), default="opportunity_agent", server_default="opportunity_agent")
+    status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending", comment="pending/approved/rejected/auto_pinned/expired")
+    opportunity_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    risk_level: Mapped[str] = mapped_column(String(20), default="medium", server_default="medium")
+    recommended_action: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    evidence_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    auto_pinned: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    discovered_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    expires_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    reviewed_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("idx_opportunity_status_score", "status", "opportunity_score"),
+        Index("idx_opportunity_symbol_status", "symbol", "status"),
+    )
+
+
+class TradeDecision(Base):
+    """交易决策记录表
+
+    记录由量化信号生成的仓位与风控决策。
+    """
+    __tablename__ = "trade_decisions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    qe_signal_id: Mapped[int] = mapped_column(ForeignKey("qe_signals.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    decision_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+
+    direction: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="long/flat")
+    position_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="建议买入股数")
+    position_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="仓位比例 0-1")
+    approved: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否通过风控")
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="拒绝原因")
+
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_trade_decision_signal", "qe_signal_id"),
+        Index("idx_trade_decision_symbol_date", "symbol", "decision_date"),
+        Index("idx_trade_decision_approved", "approved"),
+    )
+
+
+class ExecutionOrder(Base):
+    """执行订单记录表
+
+    记录交易决策对应的执行结果。
+    """
+    __tablename__ = "execution_orders"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    qe_signal_id: Mapped[int] = mapped_column(ForeignKey("qe_signals.id"), index=True)
+    trade_decision_id: Mapped[int] = mapped_column(ForeignKey("trade_decisions.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    order_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+
+    order_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="market/limit")
+    target_qty: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    executed_qty: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    target_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    executed_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True, comment="pending/filled/failed")
+    failure_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_execution_order_signal", "qe_signal_id"),
+        Index("idx_execution_order_decision", "trade_decision_id"),
+        Index("idx_execution_order_symbol_date", "symbol", "order_date"),
+    )
+
+
+class PredictionEvaluation(Base):
+    """预测评估记录 — 每次预测 vs 实际结果的对比"""
+    __tablename__ = "prediction_evaluations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    prediction_date: Mapped[datetime.date] = mapped_column(Date, comment="预测发出日")
+    target_date: Mapped[datetime.date] = mapped_column(Date, comment="预测目标日")
+    model_name: Mapped[str] = mapped_column(String(64), comment="模型名称")
+
+    predicted_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    actual_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    predicted_direction: Mapped[Optional[str]] = mapped_column(String(8), nullable=True, comment="up/down/flat")
+    actual_direction: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
+    error_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="|预测-实际|/实际 × 100")
+    direction_correct: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="模型置信度")
+
+    evaluated_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_pred_eval_symbol_target", "symbol", "target_date"),
+        UniqueConstraint("symbol", "prediction_date", "target_date", "model_name",
+                         name="uq_pred_eval_key"),
+    )
+
+
+class ModelLifecycleEvent(Base):
+    """模型生命周期事件 — 记录再训练触发/完成/特征检查/A-B 测试等"""
+    __tablename__ = "model_lifecycle_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[Optional[str]] = mapped_column(String(16), nullable=True, index=True, comment="为空则表示全局模型")
+    event_type: Mapped[str] = mapped_column(String(32), index=True,
+                                            comment="retrain_triggered / retrain_completed / feature_check / ab_test / failure_detected")
+    trigger_reason: Mapped[str] = mapped_column(String(64),
+                                                comment="consecutive_failures / scheduled / manual / feature_decay")
+    details_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="事件详情 JSON")
+    model_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    score_before: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    score_after: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_lifecycle_event_type", "event_type", "created_at"),
+    )
+
+
 class Portfolio(Base):
     """投资组合表
     
@@ -1550,4 +1839,287 @@ class Portfolio(Base):
 
     __table_args__ = (
         Index("idx_portfolio_active", "is_active"),
+    )
+
+
+class PaperTradingSnapshot(Base):
+    """模拟实盘每日快照
+
+    记录模拟盘每日收盘后的净值、收益率、回撤、基准对比等。
+    """
+    __tablename__ = "paper_trading_snapshots"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), index=True)
+    snapshot_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+
+    # 资产
+    cash: Mapped[float] = mapped_column(Float, comment="可用现金")
+    market_value: Mapped[float] = mapped_column(Float, comment="持仓市值")
+    total_value: Mapped[float] = mapped_column(Float, comment="总资产（现金+市值）")
+    nav: Mapped[float] = mapped_column(Float, comment="单位净值（总资产/初始资金）")
+
+    # 收益
+    daily_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="当日收益率%")
+    total_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="累计收益率%")
+
+    # 风险
+    drawdown: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="当前回撤%")
+    max_drawdown: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="最大回撤%")
+
+    # 基准
+    benchmark_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="基准指数点位")
+    benchmark_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="基准累计收益%")
+    excess_return: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="超额收益%")
+
+    # 持仓
+    position_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="持仓股票数")
+    positions_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="持仓快照JSON")
+
+    # 交易
+    trades_today: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="当日交易笔数")
+
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_pt_snapshot_portfolio_date", "portfolio_id", "snapshot_date", unique=True),
+        Index("idx_pt_snapshot_date", "snapshot_date"),
+    )
+
+
+class PaperTradeLog(Base):
+    """模拟实盘交易日志
+
+    记录每一笔模拟交易的完整信息。
+    """
+    __tablename__ = "paper_trade_logs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(String(50), index=True)
+    trade_date: Mapped[datetime.date] = mapped_column(Date, index=True)
+    trade_time: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    action: Mapped[str] = mapped_column(String(10), comment="buy/sell")
+    quantity: Mapped[int] = mapped_column(Integer)
+    price: Mapped[float] = mapped_column(Float, comment="成交价")
+    amount: Mapped[float] = mapped_column(Float, comment="成交金额")
+    commission: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=0, comment="手续费")
+
+    # 信号来源
+    signal_source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="signal_engine / portfolio_optimizer / manual")
+    signal_strength: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # 卖出时填写
+    avg_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="平均成本（卖出时）")
+    realized_pnl: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="实现盈亏")
+    realized_pnl_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="实现盈亏%")
+    holding_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # 元数据
+    reason: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, comment="交易原因")
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_pt_log_portfolio_date", "portfolio_id", "trade_date"),
+        Index("idx_pt_log_symbol", "symbol"),
+    )
+
+
+# =========================
+# 数据管道执行追踪（per-symbol 诊断）
+# =========================
+
+class PipelineRun(Base):
+    """单只股票粒度的数据管道执行记录。
+
+    用于回答"某只股票今天的预测 / 行情数据为什么没更新"——调度器 / API 在每一次
+    关键步骤（拉日线、算信号、跑预测、生成完整报告等）后写入一条记录；前端诊断栏
+    与 Drawer 会基于这张表展示状态徽标、错误信息与日志尾部。
+    """
+
+    __tablename__ = "pipeline_runs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    # run_type: fetch_daily / compute_signal / predict / daily_pipeline / full_report / retry 等
+    run_type: Mapped[str] = mapped_column(String(32), index=True)
+    # status: success / failed / skipped / running
+    status: Mapped[str] = mapped_column(String(16), index=True)
+    run_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP, default=datetime.datetime.utcnow, index=True
+    )
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # 最近一次执行的日志尾部，上限由写入侧控制（约 2KB）
+    log_excerpt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # scheduler / manual / on_demand_full / worker
+    trigger: Mapped[str] = mapped_column(String(32), default="scheduler")
+
+    __table_args__ = (
+        Index("idx_pipeline_run_symbol_run_at", "symbol", "run_at"),
+        Index("idx_pipeline_run_run_type_run_at", "run_type", "run_at"),
+    )
+
+
+class AgentRuntimeTask(Base):
+    """统一 Agent Task 记录：保存用户请求、TaskManagerAgent 计划和最终状态。"""
+
+    __tablename__ = "agent_runtime_tasks"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    user_message: Mapped[str] = mapped_column(Text)
+    intent: Mapped[str] = mapped_column(String(64), index=True)
+    risk_level: Mapped[str] = mapped_column(String(20), default="low", index=True)
+    status: Mapped[str] = mapped_column(String(24), default="pending", index=True)
+    requires_confirmation: Mapped[bool] = mapped_column(Boolean, default=False)
+    plan_json: Mapped[dict] = mapped_column(JSONB)
+    final_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    finished_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+
+    __table_args__ = (
+        Index("idx_agent_runtime_task_intent_created", "intent", "created_at"),
+        Index("idx_agent_runtime_task_status_created", "status", "created_at"),
+    )
+
+
+class AgentRuntimeRun(Base):
+    """单个 Agent 的运行记录，用于日志中心回放执行链路。"""
+
+    __tablename__ = "agent_runtime_runs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    task_id: Mapped[str] = mapped_column(String(80), index=True)
+    pipeline_run_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    agent_name: Mapped[str] = mapped_column(String(80), index=True)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    input_summary: Mapped[str] = mapped_column(Text)
+    output_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    finished_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    used_data_sources: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    used_skills: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    output_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    __table_args__ = (
+        Index("idx_agent_runtime_run_agent_started", "agent_name", "started_at"),
+        Index("idx_agent_runtime_run_task", "task_id"),
+    )
+
+
+class AgentRuntimePipelineRun(Base):
+    """多 Agent Pipeline 运行记录；区别于 per-symbol 数据管道 pipeline_runs。"""
+
+    __tablename__ = "agent_runtime_pipeline_runs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    pipeline_run_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    pipeline_type: Mapped[str] = mapped_column(String(40), index=True)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    triggered_by: Mapped[str] = mapped_column(String(24), default="user", index=True)
+    user_request: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    finished_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    final_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    warnings_json: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    payload_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    __table_args__ = (
+        Index("idx_agent_runtime_pipeline_type_started", "pipeline_type", "started_at"),
+    )
+
+
+class AgentRuntimeSkillUsage(Base):
+    """Skill 调用记录。"""
+
+    __tablename__ = "agent_runtime_skill_usages"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    usage_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    skill_key: Mapped[str] = mapped_column(String(100), index=True)
+    skill_name: Mapped[str] = mapped_column(String(160))
+    owner_agent: Mapped[str] = mapped_column(String(80), index=True)
+    task_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    pipeline_run_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    agent_run_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    started_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    finished_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    input_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    output_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    triggered_by: Mapped[str] = mapped_column(String(24), default="user")
+    data_sources_used: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+
+    __table_args__ = (
+        Index("idx_agent_runtime_skill_usage_key_started", "skill_key", "started_at"),
+        Index("idx_agent_runtime_skill_usage_owner_started", "owner_agent", "started_at"),
+    )
+
+
+class AgentRuntimeSkillDefinition(Base):
+    """可覆盖默认 Skill 注册表的持久化定义。"""
+
+    __tablename__ = "agent_runtime_skill_definitions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    skill_key: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    definition_json: Mapped[dict] = mapped_column(JSONB)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    risk_level: Mapped[str] = mapped_column(String(20), default="low", index=True)
+    version: Mapped[str] = mapped_column(String(40), default="1.0.0")
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    updated_by: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+
+
+class AgentRuntimeSkillVersion(Base):
+    """Skill 版本历史。"""
+
+    __tablename__ = "agent_runtime_skill_versions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    version_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    skill_key: Mapped[str] = mapped_column(String(100), index=True)
+    version: Mapped[str] = mapped_column(String(40), index=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="system")
+    change_summary: Mapped[str] = mapped_column(Text)
+    before_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    after_json: Mapped[dict] = mapped_column(JSONB)
+    audit_log_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+
+    __table_args__ = (
+        Index("idx_agent_runtime_skill_version_key_created", "skill_key", "created_at"),
+    )
+
+
+class AgentRuntimeSkillAuditLog(Base):
+    """Skill 管理审计日志。"""
+
+    __tablename__ = "agent_runtime_skill_audit_logs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    audit_log_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    timestamp: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, default=datetime.datetime.utcnow, index=True)
+    actor: Mapped[str] = mapped_column(String(24), default="user")
+    action: Mapped[str] = mapped_column(String(40), index=True)
+    skill_key: Mapped[str] = mapped_column(String(100), index=True)
+    before_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    after_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result: Mapped[str] = mapped_column(String(24), index=True)
+    risk_level: Mapped[str] = mapped_column(String(20), index=True)
+
+    __table_args__ = (
+        Index("idx_agent_runtime_skill_audit_key_time", "skill_key", "timestamp"),
     )

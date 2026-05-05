@@ -343,9 +343,9 @@ async def fetch_with_playwright(url: str) -> str:
 import random
 
 PROXY_POOL = [
-    "http://proxy1.example.com:8080",
-    "http://proxy2.example.com:8080",
-    "http://proxy3.example.com:8080",
+    "http://proxy1.example.com:8081",
+    "http://proxy2.example.com:8081",
+    "http://proxy3.example.com:8081",
 ]
 
 def get_random_proxy():

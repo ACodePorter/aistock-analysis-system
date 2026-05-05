@@ -363,6 +363,14 @@ REDIS_HOST / REDIS_PORT / REDIS_DB / REDIS_PASSWORD（可选）
 ```
 SEARXNG_URL                      # SearXNG服务地址
 SEARXNG_TIMEOUT                  # 请求超时
+WEB_RETRIEVAL_MODE              # legacy | openclaw（Agentic Retrieval）
+WEB_RETRIEVAL_FALLBACK_TO_LEGACY # openclaw失败时是否回退旧模式
+WEB_AGENT_MAX_URLS              # URL选择上限
+WEB_AGENT_SEARCH_TOP_K          # 初始检索候选数
+WEB_AGENT_FETCH_CONCURRENCY     # 并发抓取数
+WEB_AGENT_USE_LLM_SELECTOR      # 是否用LLM筛URL
+WEB_AGENT_USE_LLM_REASONER      # 是否用LLM做阅读推理摘要
+WEB_CACHE_DIR                   # search/pages/articles缓存目录
 NEWS_HTTP_PROXY                  # HTTP代理（可选）
 NEWS_FETCH_RETRIES               # 重试次数
 NEWS_FETCH_BACKOFF               # 重试退避间隔
@@ -778,7 +786,7 @@ pip install -r requirements.txt
 python scripts/manage.py info
 
 # 或直接调用API初始化
-curl http://localhost:8080/admin/db/init
+curl http://localhost:8081/admin/db/init
 ```
 
 ### 启动服务
@@ -786,16 +794,16 @@ curl http://localhost:8080/admin/db/init
 **开发环境**：
 ```bash
 # 启动主API服务器（带热重载）
-python scripts/dev_server.py --mode main --port 8080
+python scripts/dev_server.py --mode main --port 8081
 
 # 或使用项目管理脚本
-python scripts/manage.py server --mode main --port 8080
+python scripts/manage.py server --mode main --port 8081
 ```
 
 **生产环境**：
 ```bash
 # 使用uvicorn启动
-uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 4
+uvicorn app.main:app --host 0.0.0.0 --port 8081 --workers 4
 ```
 
 ---
@@ -885,7 +893,7 @@ python scripts/manage.py test --type integration
 python scripts/manage.py check
 
 # 启动开发服务器
-python scripts/manage.py server --mode main --port 8080
+python scripts/manage.py server --mode main --port 8081
 ```
 
 ### 数据检查脚本

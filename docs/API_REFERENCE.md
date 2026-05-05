@@ -1,7 +1,7 @@
 # API 参考文档 - 公司画像系统
 
 **版本**: 1.0  
-**API 服务器**: `http://localhost:8080`
+**API 服务器**: `http://localhost:8081`
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### 基础信息
 
-- **基础 URL**: `http://localhost:8080`
+- **基础 URL**: `http://localhost:8081`
 - **认证**: 暂无（后续可添加）
 - **速率限制**: 无
 - **响应格式**: JSON
@@ -83,13 +83,13 @@ GET /api/stock-profile/{symbol}
 
 ```bash
 # 使用 curl
-curl http://localhost:8080/api/stock-profile/000001.SZ
+curl http://localhost:8081/api/stock-profile/000001.SZ
 
 # 使用 Python
 import requests
 
 response = requests.get(
-  'http://localhost:8080/api/stock-profile/000001.SZ'
+  'http://localhost:8081/api/stock-profile/000001.SZ'
 )
 profile = response.json()
 print(profile['company_name'])
@@ -174,14 +174,14 @@ GET /api/stock-profile/{symbol}/details
 
 ```bash
 # 使用 curl
-curl http://localhost:8080/api/stock-profile/000001.SZ/details
+curl http://localhost:8081/api/stock-profile/000001.SZ/details
 
 # 使用 Python
 import requests
 import json
 
 response = requests.get(
-  'http://localhost:8080/api/stock-profile/000001.SZ/details'
+  'http://localhost:8081/api/stock-profile/000001.SZ/details'
 )
 data = response.json()
 
@@ -264,13 +264,13 @@ POST /api/stock-profile/{symbol}/refresh
 
 ```bash
 # 使用 curl
-curl -X POST http://localhost:8080/api/stock-profile/000001.SZ/refresh
+curl -X POST http://localhost:8081/api/stock-profile/000001.SZ/refresh
 
 # 使用 Python
 import requests
 
 response = requests.post(
-  'http://localhost:8080/api/stock-profile/000001.SZ/refresh'
+  'http://localhost:8081/api/stock-profile/000001.SZ/refresh'
 )
 updated_profile = response.json()
 print(f"更新时间: {updated_profile['last_refreshed']}")
@@ -483,7 +483,7 @@ from datetime import datetime
 
 def get_profile(symbol: str) -> dict:
     """获取股票 Profile 信息"""
-    url = f"http://localhost:8080/api/stock-profile/{symbol}"
+    url = f"http://localhost:8081/api/stock-profile/{symbol}"
     response = requests.get(url)
     
     if response.status_code == 404:
@@ -505,7 +505,7 @@ if profile:
 ```python
 def analyze_profile(symbol: str) -> dict:
     """获取并分析 Profile"""
-    url = f"http://localhost:8080/api/stock-profile/{symbol}/details"
+    url = f"http://localhost:8081/api/stock-profile/{symbol}/details"
     response = requests.get(url)
     
     if not response.ok:
@@ -539,7 +539,7 @@ def batch_refresh_profiles(symbols: list, interval: float = 1.0):
     results = []
     for symbol in symbols:
         try:
-            url = f"http://localhost:8080/api/stock-profile/{symbol}/refresh"
+            url = f"http://localhost:8081/api/stock-profile/{symbol}/refresh"
             response = requests.post(url)
             response.raise_for_status()
             results.append((symbol, True, response.json()))
@@ -562,30 +562,30 @@ batch_refresh_profiles(symbols, interval=2.0)
 #### 获取基本 Profile
 
 ```bash
-curl -X GET http://localhost:8080/api/stock-profile/000001.SZ
+curl -X GET http://localhost:8081/api/stock-profile/000001.SZ
 ```
 
 #### 获取详细 Profile
 
 ```bash
-curl -X GET http://localhost:8080/api/stock-profile/000001.SZ/details \
+curl -X GET http://localhost:8081/api/stock-profile/000001.SZ/details \
   -H "Content-Type: application/json"
 ```
 
 #### 刷新 Profile
 
 ```bash
-curl -X POST http://localhost:8080/api/stock-profile/000001.SZ/refresh \
+curl -X POST http://localhost:8081/api/stock-profile/000001.SZ/refresh \
   -H "Content-Type: application/json"
 ```
 
 #### 使用 jq 格式化输出
 
 ```bash
-curl -s http://localhost:8080/api/stock-profile/000001.SZ/details | jq '.'
+curl -s http://localhost:8081/api/stock-profile/000001.SZ/details | jq '.'
 
 # 提取特定字段
-curl -s http://localhost:8080/api/stock-profile/000001.SZ/details | \
+curl -s http://localhost:8081/api/stock-profile/000001.SZ/details | \
   jq '.analysis | {completeness: .profile_completeness, quality: .quality_score}'
 ```
 

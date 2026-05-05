@@ -347,7 +347,7 @@ USER_AGENT_POOL = [
 ]
 
 
-# 本地企业信息数据库（SearXNG 不可用时的 fallback）
+# 本地企业信息数据库（OpenClaw 不可用时的 fallback）
 LOCAL_COMPANY_DATABASE = {
     "阿里巴巴": {
         "name": "阿里巴巴集团控股有限公司",
@@ -434,7 +434,7 @@ class CompanyProfileSearchService:
     """
     企业Profile搜索服务
     
-    使用SearXNG聚合搜索引擎，专门搜索企业基本信息而非新闻
+    使用 OpenClaw 风格检索链路，专门搜索企业基本信息而非新闻
     支持从维基百科、百度百科、天眼查等信源提取结构化企业信息
     
     配置管理：所有域名配置（白名单、黑名单、登录检测等）通过配置文件管理
@@ -445,28 +445,22 @@ class CompanyProfileSearchService:
     PREFERRED_SOURCES = []
     BLOCKED_SOURCES = []
     
-    def __init__(self, searxng_url: str = None):
+    def __init__(self, search_url: str = None):
         """
         初始化CompanyProfileSearchService
-        
-        Args:
-            searxng_url: SearXNG服务地址，默认从环境变量SEARXNG_URL读取
         """
-        # 加载配置管理器
         self._config_manager = get_config_manager()
         self._config_manager.print_stats()
-        
-        # 从配置加载域名列表
         self.PREFERRED_SOURCES = self._config_manager.get_preferred_sources()
         self.BLOCKED_SOURCES = self._config_manager.get_blocked_sources()
-        
-        self.searxng_url = (searxng_url or os.getenv("SEARXNG_URL", "http://localhost:10000")).rstrip("/")
-        self.timeout = int(os.getenv("SEARXNG_TIMEOUT", "30"))
-        
+        self.timeout = int(os.getenv("WEB_SEARCH_TIMEOUT", os.getenv("SEARXNG_TIMEOUT", "30")))
+        from ..agent.web_agent import AgenticWebRetriever
+        self._web_retriever = AgenticWebRetriever()
+
         # 重试配置
-        self._retry_attempts = int(os.getenv("COMPANY_PROFILE_FETCH_RETRIES", "3"))
+        self._retry_attempts = int(os.getenv("COMPANY_PROFILE_FETCH_RETRIES", "1"))
         self._retry_backoff = float(os.getenv("COMPANY_PROFILE_FETCH_BACKOFF", "0.6"))
-        self._http_timeout = float(os.getenv("COMPANY_PROFILE_HTTP_TIMEOUT", "30"))
+        self._http_timeout = float(os.getenv("COMPANY_PROFILE_HTTP_TIMEOUT", "15"))
         
         # 代理配置
         self._proxies = os.getenv("NEWS_HTTP_PROXY")
@@ -485,9 +479,9 @@ class CompanyProfileSearchService:
         # 会话级缓存：遇到需要登录的域名，避免在一次运行中重复请求和频繁写配置文件
         self._login_required_cache: set = set()
         
-        # 直接获取策略配置（优先尝试确定性信源，避免SearXNG的不确定性）
+        # 直接获取策略配置（优先尝试确定性信源，避免OpenClaw的不确定性）
         self._enable_direct_fetch = os.getenv("COMPANY_PROFILE_DIRECT_FETCH_ENABLED", "true").lower() in ("1", "true", "yes")
-        self._fallback_to_searxng = os.getenv("COMPANY_PROFILE_FALLBACK_TO_SEARXNG", "true").lower() in ("1", "true", "yes")
+        self._fallback_to_web_search = os.getenv("COMPANY_PROFILE_fallback_to_web_search", "true").lower() in ("1", "true", "yes")
         self._direct_fetch_timeout = float(os.getenv("COMPANY_PROFILE_DIRECT_FETCH_TIMEOUT", "15"))
 
         # Scraper orchestrator（优先用于获取页面）
@@ -794,7 +788,7 @@ class CompanyProfileSearchService:
                 print(f"\n📚 步骤 2: 尝试百科类网站（确定性信源）")
                 encyclopedia_result = await self._try_direct_fetch_encyclopedia(company_name)
                 if encyclopedia_result:
-                    print(f"✅ 百科类网站获取成功！跳过 SearXNG 搜索")
+                    print(f"✅ 百科类网站获取成功！跳过 OpenClaw 搜索")
                     return await self._post_process_profile(company_name, encyclopedia_result)
             
 
@@ -806,29 +800,29 @@ class CompanyProfileSearchService:
                 print(f"\n💰 步骤 3: 尝试财经网站（需要股票代码）")
                 finance_result = await self._try_direct_fetch_finance(company_name, stock_symbol)
                 if finance_result:
-                    print(f"✅ 财经网站获取成功！跳过 SearXNG 搜索")
+                    print(f"✅ 财经网站获取成功！跳过 OpenClaw 搜索")
                     return await self._post_process_profile(company_name, finance_result)
             
             # ============================================================
-            # 步骤 4: SearXNG 搜索（作为兜底方案）
+            # 步骤 4: OpenClaw 搜索（作为兜底方案）
             # ============================================================
-            if not self._fallback_to_searxng:
-                print(f"\n⚠️ SearXNG 兜底已禁用，搜索失败")
+            if not self._fallback_to_web_search:
+                print(f"\n⚠️ OpenClaw 兜底已禁用，搜索失败")
                 return None
             
-            print(f"\n🔎 步骤 4: 使用 SearXNG 搜索（兜底方案）")
+            print(f"\n🔎 步骤 4: 使用 OpenClaw 搜索（兜底方案）")
             
             # 构建搜索查询
             search_queries = self._build_search_queries(company_name, stock_symbol)
             
-            # 从SearXNG聚合搜索
+            # 从OpenClaw聚合搜索
             search_results = []
             for query in search_queries:
-                results = await self._search_searxng(query, limit)
+                results = await self._search_openclaw(query, limit)
                 search_results.extend(results)
             
             if not search_results:
-                print(f"⚠️ SearXNG 未找到任何结果")
+                print(f"⚠️ OpenClaw 未找到任何结果")
                 return None
 
             # 去重搜索结果（多个查询可能返回相同URL）
@@ -839,7 +833,7 @@ class CompanyProfileSearchService:
                     unique_urls[url] = result
             search_results = list(unique_urls.values())
 
-            print(f"🔍 SearXNG 返回 {len(search_results)} 个结果（去重后）")
+            print(f"🔍 OpenClaw 返回 {len(search_results)} 个结果（去重后）")
             
             # 过滤和排序结果（优先选择信源）
             filtered_results = await self._filter_and_rank_results(company_name, search_results)
@@ -855,10 +849,10 @@ class CompanyProfileSearchService:
             )
             
             if profile_data:
-                print(f"\n✅ 搜索完成！来源: SearXNG")
+                print(f"\n✅ 搜索完成！来源: OpenClaw")
                 return await self._post_process_profile(company_name, profile_data)
             else:
-                print(f"\n⚠️ SearXNG 提取数据失败")
+                print(f"\n⚠️ OpenClaw 提取数据失败")
             
             return None
             
@@ -870,7 +864,7 @@ class CompanyProfileSearchService:
     
     def _search_local_database(self, company_name: str) -> Optional[Dict[str, Any]]:
         """
-        在本地数据库中搜索企业信息（SearXNG 不可用时的 fallback）
+        在本地数据库中搜索企业信息（OpenClaw 不可用时的 fallback）
         
         支持完全匹配和模糊匹配
         """
@@ -926,7 +920,7 @@ class CompanyProfileSearchService:
         
         返回按优先级排序的查询列表
         
-        注意：site: 操作符在SearXNG中支持有限，很多搜索引擎不支持或会被过滤
+        注意：site: 操作符在OpenClaw中支持有限，很多搜索引擎不支持或会被过滤
         因此优先使用不带site:的通用查询，然后通过域名过滤结果
         """
 
@@ -961,86 +955,27 @@ class CompanyProfileSearchService:
         
         return valid_queries
     
-    async def _search_searxng(
+    async def _search_openclaw(
         self,
         query: str,
         max_results: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        使用SearXNG执行单个搜索查询
-        
-        优化：改用requests库而非httpx，httpx在某些SearXNG配置下有502问题
-        注意：
-        1. 移除了time_range参数，因为它会导致很多引擎无法返回结果
-        2. 使用更可靠的搜索引擎列表，避免suspended的引擎
-        3. 不限制时间范围可以获得更多历史数据
-        """
+        """使用 OpenClaw 检索链路执行单个查询"""
         try:
-            # 验证查询不为空，防止发送空查询到SearXNG
-            if not query or not query.strip():
+            query = (query or "").strip()
+            if not query:
                 return []
-            
-            query = query.strip()
-            
-            # 限制查询长度（最多200字符）防止超长查询
-            if len(query) > 200:
-                query = query[:200]
-            
-            # 构建搜索参数
-            # 注意：不要指定 engines 参数，某些 SearXNG 配置中会导致 502
-            search_params = {
-                "q": query,
-                "categories": "general",
-                "format": "json"
-            }
-
-            # 为SearXNG搜索构建基本请求头
-            # 注意：不要使用复杂的User-Agent，某些SearXNG配置对此敏感
-            search_headers = {
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-            }
-            
-            # 使用requests库而非httpx（httpx在某些情况下导致502）
-            # 在线程池中运行同步请求以保持异步接口
-            import requests
-            loop = asyncio.get_event_loop()
-            
-            def make_request():
-                search_url = f"{self.searxng_url}/search"
-                response = requests.get(
-                    search_url,
-                    params=search_params,
-                    headers=search_headers,
-                    timeout=self.timeout
-                )
-                response.raise_for_status()
-                return response.json()
-            
-            data = await loop.run_in_executor(None, make_request)
-            
-            results = data.get("results", [])[:max_results]
-
-            print(f'🔍 SearXNG search for "{query}" returned {len(results)} results.')
-            
-            return results
-            
-        except requests.exceptions.HTTPError as e:
-            print(f'HTTP error during SearXNG search for "{query}": {e}')
-            # 502 错误表示 SearXNG 服务有问题
-            if e.response.status_code == 502:
-                print(f"⚠️ SearXNG service unavailable (502): {self.searxng_url}")
-                print(f"   💡 提示：试试重启SearXNG容器或检查配置")
-            else:
-                print(f"⚠️ SearXNG HTTP error {e.response.status_code} for query '{query}'")
-            return []
-        except requests.exceptions.ConnectionError as e:
-            print(f"⚠️ Cannot connect to SearXNG at {self.searxng_url}: {e}")
-            return []
+            return await self._web_retriever.search_only(
+                question=query,
+                top_k=max_results,
+                category="general",
+                time_range="month",
+                language="zh-CN",
+            )
         except Exception as e:
-            print(f"⚠️ SearXNG search failed for query '{query}': {e}")
+            print(f"⚠️ OpenClaw search failed for query '{query}': {e}")
             return []
-    
+
     async def _llm_validate_relevance(
         self,
         company_name: str,
@@ -1205,7 +1140,7 @@ class CompanyProfileSearchService:
     
     async def _try_direct_fetch_encyclopedia(self, company_name: str) -> Optional[Dict[str, Any]]:
         """
-        直接尝试从百科类网站获取企业信息（避免 SearXNG 搜索的不确定性）
+        直接尝试从百科类网站获取企业信息（避免 OpenClaw 搜索的不确定性）
         
         优先级顺序：
         1. 百度百科（最稳定、内容最全）
@@ -1218,41 +1153,46 @@ class CompanyProfileSearchService:
             企业 Profile 数据，如果获取失败则返回 None
         """
         print(f"📖 尝试直接从百科类网站获取: {company_name}")
-        
+        per_site_timeout = float(os.getenv("COMPANY_PROFILE_PER_SITE_TIMEOUT", "30"))
+
         # 1. 尝试百度百科
         baidu_url = self._build_baidu_baike_url(company_name)
         print(f"   → 尝试百度百科: {baidu_url}")
-        
+
         try:
-            html = await self._fetch_html(baidu_url)
+            html = await asyncio.wait_for(
+                self._fetch_html(baidu_url), timeout=per_site_timeout,
+            )
             if html:
-                # 解析 HTML
                 soup = BeautifulSoup(html, 'html.parser')
                 data = await self._extract_baidu_baike(soup, company_name)
                 if data and data.get("confidence", 0) > 0.5:
                     print(f"   ✅ 百度百科获取成功 (置信度: {data.get('confidence', 0):.2f})")
-                    # 格式化为标准 profile 结构
                     return self._format_single_source_profile(company_name, baidu_url, "baike.baidu.com", data)
+        except asyncio.TimeoutError:
+            print(f"   ⏱️ 百度百科超时 ({per_site_timeout}s)")
         except Exception as e:
             print(f"   ⚠️ 百度百科获取失败: {e}")
-        
-        # 2. 尝试维基百科（多个变体）
+
+        # 2. 尝试维基百科（只试第一个变体，减少无效重试）
         wiki_urls = self._build_wikipedia_urls(company_name)
-        for idx, wiki_url in enumerate(wiki_urls):
-            print(f"   → 尝试维基百科变体 {idx+1}: {wiki_url}")
-            
+        for idx, wiki_url in enumerate(wiki_urls[:1]):
+            print(f"   → 尝试维基百科: {wiki_url}")
             try:
-                html = await self._fetch_html(wiki_url)
+                html = await asyncio.wait_for(
+                    self._fetch_html(wiki_url), timeout=per_site_timeout,
+                )
                 if html:
-                    # 解析 HTML
                     soup = BeautifulSoup(html, 'html.parser')
                     data = self._extract_wikipedia(soup, company_name)
                     if data and data.get("confidence", 0) > 0.5:
                         print(f"   ✅ 维基百科获取成功 (置信度: {data.get('confidence', 0):.2f})")
                         return self._format_single_source_profile(company_name, wiki_url, "zh.wikipedia.org", data)
+            except asyncio.TimeoutError:
+                print(f"   ⏱️ 维基百科超时 ({per_site_timeout}s)")
             except Exception as e:
-                print(f"   ⚠️ 维基百科变体 {idx+1} 获取失败: {e}")
-        
+                print(f"   ⚠️ 维基百科获取失败: {e}")
+
         print(f"   ❌ 所有百科类网站均获取失败")
         return None
     
@@ -1279,19 +1219,20 @@ class CompanyProfileSearchService:
         
         finance_urls = self._build_finance_urls(stock_symbol)
         
+        per_site_timeout = float(os.getenv("COMPANY_PROFILE_PER_SITE_TIMEOUT", "30"))
         for url_info in finance_urls:
             url = url_info["url"]
             source = url_info["source"]
             extractor = url_info["extractor"]
-            
+
             print(f"   → 尝试{source}: {url}")
-            
+
             try:
-                html = await self._fetch_html(url)
+                html = await asyncio.wait_for(
+                    self._fetch_html(url), timeout=per_site_timeout,
+                )
                 if html:
-                    # 解析 HTML
                     soup = BeautifulSoup(html, 'html.parser')
-                    # 动态调用对应的提取器方法
                     extractor_method = getattr(self, extractor, None)
                     if extractor_method:
                         data = extractor_method(soup, company_name)
@@ -1299,6 +1240,8 @@ class CompanyProfileSearchService:
                             print(f"   ✅ {source}获取成功 (置信度: {data.get('confidence', 0):.2f})")
                             domain = urlparse(url).netloc
                             return self._format_single_source_profile(company_name, url, domain, data)
+            except asyncio.TimeoutError:
+                print(f"   ⏱️ {source}超时 ({per_site_timeout}s)")
             except Exception as e:
                 print(f"   ⚠️ {source}获取失败: {e}")
         
@@ -2715,3 +2658,5 @@ class CompanyProfileSearchService:
         except Exception as e:
             print(f"⚠️ Custom LLM hook invalid: {e}")
             return None
+
+

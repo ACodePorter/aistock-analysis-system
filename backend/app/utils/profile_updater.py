@@ -57,12 +57,13 @@ class ProfileUpdater:
                     StockProfile.symbol == symbol
                 ).first()
                 
-                # 计算完成度
+                # 计算完成度（排除占位文本）
                 filled_count = 0
                 if profile:
+                    from ..services.stock_pool_service import _is_meaningful_field
                     for field in self.profile_fields:
                         value = getattr(profile, field, None)
-                        if value and (isinstance(value, str) and value.strip() or isinstance(value, dict)):
+                        if _is_meaningful_field(field, value):
                             filled_count += 1
                 
                 completion_pct = (filled_count / self.total_fields)

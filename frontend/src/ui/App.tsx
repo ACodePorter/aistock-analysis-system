@@ -1,15 +1,11 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { sliceByTimeRange } from './utils/rangeSlice'
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Area, ComposedChart, Legend } from 'recharts'
-import * as ReactWindow from 'react-window'
+import { mergePriceAndPredictions } from './utils/mergePriceAndPredictions'
+import { Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, ComposedChart, Legend } from 'recharts'
 import Dashboard from './Dashboard'
 import DarkLayout from './DarkLayout'
 import DailyAnalysisPage from './DailyAnalysisPage'
 import MacroReportPage from './MacroReportPage'
-import FundFlowPanel from './FundFlowPanel'
-import WatchlistSnapshot from './WatchlistSnapshot'
-import FloatingModule from './FloatingModule'
-import WatchlistAnalysis from './WatchlistAnalysis'
 import ModernNewsComponent from './ModernNewsComponent'
 import NewsManagement from './NewsManagement'
 import QueryTemplateManager from './QueryTemplateManager'
@@ -17,24 +13,70 @@ import StocksNewsIndex from './StocksNewsIndex'
 import StockNewsDetail from './StockNewsDetail'
 import ProfileValidationManager from './ProfileValidationManager'
 import AnalysisCenterPage from './AnalysisCenterPage'
+import ModelCenterPage from './ModelCenterPage'
 import NewsListPage from './NewsListPage'
-import { API_BASE, buildApiUrl, API_ENDPOINTS } from '../config/api'
-
-const VirtualList = (ReactWindow as any).List as any
+import PipelineDiagnosticsDrawer from './PipelineDiagnosticsDrawer'
+import AgentChatPage from './agent/AgentChatPage'
+import AgentSkillManagementPage from './agent/AgentSkillManagementPage'
+import AgentLogsPage from './agent/AgentLogsPage'
+import HomeDecisionWorkspace from './home/HomeDecisionWorkspace'
+import WatchlistManagerDrawer from './home/WatchlistManagerDrawer'
+import { useHomeWatchlistControls } from './home/useHomeWatchlistControls'
+import { fetchPredictionHistory, fetchStockInsight, type PredictionHistoryResponse, type StockInsightResponse } from '../api/report'
+import { buildApiUrl } from '../config/api'
 
 // MOVERS endpoints centralization removed; using API_ENDPOINTS.MOVERS now
 
 async function jfetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = init?.headers ? { 'Content-Type': 'application/json', ...init.headers } : { 'Content-Type': 'application/json' }
   const r = await fetch(buildApiUrl(path), {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers||{}) }
+    headers,
   })
   if(!r.ok) throw new Error(await r.text())
   return r.json()
 }
 
-type WatchItem = { symbol: string; name?: string; sector?: string; enabled: boolean }
 type PriceRow = { trade_date: string; close: number; open?: number; high?: number; low?: number; vol?: number }
+type DialogType = 'alert' | 'confirm'
+type ToastType = 'success' | 'error' | 'info'
+
+type CustomDialogProps = Readonly<{
+  isOpen: boolean
+  onClose: () => void
+  title?: string
+  message: string
+  type?: DialogType
+  onConfirm?: () => void
+}>
+
+type ToastProps = Readonly<{
+  isVisible: boolean
+  message: string
+  type?: ToastType
+  onClose: () => void
+}>
+
+type LiveMoverRow = {
+  symbol: string
+  name?: string | null
+  pct_chg?: number | null
+  price?: number | null
+}
+
+type LiveInsightPayload = {
+  provider?: string | null
+  mock?: boolean
+  universe_size?: number
+  generated_at?: string
+  gainers: LiveMoverRow[]
+  losers: LiveMoverRow[]
+}
+
+type LiveSeriesPayload = {
+  rows: Array<Record<string, unknown>>
+}
+
 type ReportResp = {
   symbol: string
   data_updated: string | null
@@ -61,6 +103,10 @@ type ReportResp = {
     upper_bound: number
     lower_bound: number
     type: 'prediction'
+    status?: string
+    direction_snr?: number
+    direction_grade?: 'strong' | 'moderate' | 'neutral'
+    signal_level?: 'strong_bullish' | 'weak_bullish' | 'neutral' | 'weak_bearish' | 'strong_bearish'
   }[]
   
   // 前端兼容格式
@@ -86,6 +132,18 @@ type ReportResp = {
   forecast?: { target_date: string; yhat: number; yl: number; yu: number }[]
 }
 
+function predictionHistoryLookbackDays(timeRange: string): number {
+  switch (timeRange) {
+    case '5d': return 30
+    case '1m': return 60
+    case '3m': return 120
+    case '6m': return 210
+    case '1y': return 365
+    case 'all': return 365
+    default: return 60
+  }
+}
+
 // 自定义弹窗组件
 function CustomDialog({ 
   isOpen, 
@@ -94,14 +152,7 @@ function CustomDialog({
   message, 
   type = 'alert',
   onConfirm 
-}: {
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-  message: string
-  type?: 'alert' | 'confirm'
-  onConfirm?: () => void
-}) {
+}: CustomDialogProps) {
   if (!isOpen) return null
 
   const handleConfirm = () => {
@@ -195,12 +246,7 @@ function Toast({
   message, 
   type = 'success',
   onClose 
-}: {
-  isVisible: boolean
-  message: string
-  type?: 'success' | 'error' | 'info'
-  onClose: () => void
-}) {
+}: ToastProps) {
   useEffect(() => {
     if (isVisible) {
       const timer = setTimeout(() => {
@@ -278,79 +324,26 @@ function Toast({
   )
 }
 
-function Metric({ label, value }: { label: string; value: React.ReactNode }){
-  return <div style={{padding:'10px', border:'1px solid #e5e7eb', borderRadius:12}}>
-    <div style={{fontSize:12, color:'#6b7280'}}>{label}</div>
-    <div style={{fontSize:18, fontWeight:600}}>{value}</div>
-  </div>
-}
-
-// 自选汇总统计组件
-function WatchlistSummary({ watch, current }: { watch: any[]; current?: string }){
-  // 计算汇总：上涨/下跌家数、平均涨幅、主力净流入总和（需二次请求或已有实时数据，这里先从 window 缓存尝试）
-  const [stats, setStats] = React.useState({ up:0, down:0, flat:0, avgPct:0, totalNet:0 })
-
-  React.useEffect(()=>{
-    // 暂用全局缓存 window.__watchlistSnapshotRows (由 WatchlistSnapshot 渲染时可挂载) 若不可用则跳过
-    const g:any = (window as any).__watchlistSnapshotRows
-    if(!Array.isArray(g)) return
-    if(g.length===0){ setStats({up:0,down:0,flat:0,avgPct:0,totalNet:0}); return }
-    let up=0,down=0,flat=0,sum=0,totalNet=0
-    g.forEach((r:any)=>{
-      const pct = Number(r.pct_change)
-      if(!isNaN(pct)) sum += pct
-      if(pct>0) up++; else if(pct<0) down++; else flat++
-      const mainNet = Number(r.main_net)
-      if(!isNaN(mainNet)) totalNet += mainNet
-    })
-    const avgPct = sum / g.length
-    setStats({up,down,flat,avgPct,totalNet})
-  }, [watch, current])
-
-  const pillStyle:React.CSSProperties={
-    padding:'4px 10px',
-    background:'var(--surface-dark)',
-    borderRadius:999,
-    fontSize:11,
-    display:'flex',
-    alignItems:'center',
-    gap:4,
-    whiteSpace:'nowrap',
-    border:'1px solid var(--border)',
-    color:'var(--text-muted)'
-  }
-  return (
-    <div style={{marginTop:10, display:'flex', flexWrap:'wrap', gap:6}}>
-      <div style={pillStyle}>自选 {watch.length} 只</div>
-      <div style={pillStyle}>↑ {stats.up}</div>
-      <div style={pillStyle}>↓ {stats.down}</div>
-      {stats.flat>0 && <div style={pillStyle}>→ {stats.flat}</div>}
-      <div style={pillStyle}>平均涨幅 {stats.avgPct.toFixed(2)}%</div>
-      <div style={pillStyle}>主力净流入 {(stats.totalNet/1e8).toFixed(2)} 亿</div>
-    </div>
-  )
-}
-
 // 深度行情页面（占位版）
 function DeepMarketInsight(){
-  const [live, setLive] = React.useState<any|null>(null)
+  const [live, setLive] = React.useState<LiveInsightPayload | null>(null)
   const [exchange, setExchange] = React.useState<string>('ALL')
   const [selectedSymbol, setSelectedSymbol] = React.useState<string|undefined>()
-  const [series, setSeries] = React.useState<any|null>(null)
+  const [series, setSeries] = React.useState<LiveSeriesPayload | null>(null)
   const [loadingSeries, setLoadingSeries] = React.useState(false)
   const [error, setError] = React.useState<string|undefined>()
   const [autoRefresh, setAutoRefresh] = React.useState<boolean>(true)
   const [refreshIntervalMs, setRefreshIntervalMs] = React.useState<number>(15000)
-  const timerRef = React.useRef<any>(null)
+  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const fetchJSON = async (endpointOrFull:string) => {
+  const fetchJSON = async <T,>(endpointOrFull:string): Promise<T> => {
     const url = endpointOrFull.startsWith('http') ? endpointOrFull : buildApiUrl(endpointOrFull)
     const r = await fetch(url)
     if(!r.ok) throw new Error(await r.text())
-    return r.json()
+    return r.json() as Promise<T>
   }
   const loadLive = React.useCallback(()=>{
-    fetchJSON(`/api/movers/live_insight?exchange=${exchange}&limit=20`).then(d=>{
+    fetchJSON<LiveInsightPayload>(`/api/movers/live_insight?exchange=${exchange}&limit=20`).then(d=>{
       setLive(d); setError(undefined)
     }).catch(e=> setError(String(e)))
   },[exchange])
@@ -366,10 +359,10 @@ function DeepMarketInsight(){
   React.useEffect(()=>{
     if(!selectedSymbol) return
     setLoadingSeries(true)
-    fetchJSON(`/api/movers/live_series/${selectedSymbol}?days=60`).then(d=>{ setSeries(d); setLoadingSeries(false) }).catch(e=>{ setError(String(e)); setLoadingSeries(false) })
+    fetchJSON<LiveSeriesPayload>(`/api/movers/live_series/${selectedSymbol}?days=60`).then(d=>{ setSeries(d); setLoadingSeries(false) }).catch(e=>{ setError(String(e)); setLoadingSeries(false) })
   },[selectedSymbol])
 
-  const renderTable = (title:string, rows:any[]) => (
+  const renderTable = (title:string, rows: LiveMoverRow[]) => (
     <div style={{flex:1, minWidth:0}}>
       <div style={{fontWeight:600, marginBottom:6, color:'var(--text)'}}>{title}</div>
       <div style={{border:'1px solid var(--border)', borderRadius:8, overflow:'hidden'}}>
@@ -385,10 +378,26 @@ function DeepMarketInsight(){
           <tbody>
             {rows.map(r=> (
               <tr key={r.symbol}>
-                <td style={{padding:'6px 8px', borderTop:'1px solid var(--border)', color:'var(--text)'}}>{r.symbol}</td>
+                <td style={{padding:'6px 8px', borderTop:'1px solid var(--border)', color:'var(--text)'}}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSymbol(r.symbol)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      font: 'inherit',
+                      padding: 0,
+                      textAlign: 'left'
+                    }}
+                  >
+                    {r.symbol}
+                  </button>
+                </td>
                 <td style={{padding:'6px 8px', borderTop:'1px solid var(--border)', color:'var(--text-muted)'}}>{r.name||'-'}</td>
-                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid var(--border)', color: (r.pct_chg)>0?'var(--accent-lime)':'var(--accent-red)'}}>{r.pct_chg!=null? Number(r.pct_chg).toFixed(2):'-'}</td>
-                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid var(--border)', color:'var(--text)'}}>{r.price!=null? Number(r.price).toFixed(2):'-'}</td>
+                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid var(--border)', color: (r.pct_chg ?? 0)>0?'var(--accent-lime)':'var(--accent-red)'}}>{r.pct_chg == null ? '-' : Number(r.pct_chg).toFixed(2)}</td>
+                <td style={{padding:'6px 8px', textAlign:'right', borderTop:'1px solid var(--border)', color:'var(--text)'}}>{r.price == null ? '-' : Number(r.price).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -402,8 +411,8 @@ function DeepMarketInsight(){
       <h2 style={{margin:'0 0 12px', fontSize:22}}>深度每日行情（实时独立数据源）</h2>
       <div style={{display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom:12}}>
         <div style={{display:'flex', gap:6, alignItems:'center'}}>
-          <label style={{fontSize:12, color:'#64748b'}}>交易所:</label>
-          <select value={exchange} onChange={e=> setExchange(e.target.value)} style={{fontSize:12, padding:'4px 6px'}}>
+          <label htmlFor="deep-market-exchange" style={{fontSize:12, color:'#64748b'}}>交易所:</label>
+          <select id="deep-market-exchange" value={exchange} onChange={e=> setExchange(e.target.value)} style={{fontSize:12, padding:'4px 6px'}}>
             <option value="ALL">全部 A 股</option>
             <option value="SH">上证 (SH)</option>
             <option value="SZ">深证 (SZ)</option>
@@ -477,32 +486,67 @@ function DeepMarketInsight(){
 }
 
 export default function App(){
-  const [currentPage, setCurrentPage] = useState<'main' | 'dashboard' | 'daily-analysis' | 'macro-report' | 'news' | 'news-management' | 'news-list' | 'deep-insight' | 'query-templates' | 'stocks-news' | 'profile-manager' | 'analysis-center'>('main')
+  const [currentPage, setCurrentPage] = useState<'main' | 'dashboard' | 'daily-analysis' | 'macro-report' | 'news' | 'news-management' | 'news-list' | 'deep-insight' | 'query-templates' | 'stocks-news' | 'profile-manager' | 'analysis-center' | 'strategy' | 'agent-chat' | 'agent-skills' | 'agent-logs'>('main')
+  // Helper: allowed pages
+  const validPages = new Set(['main','dashboard','daily-analysis','macro-report','news','news-management','news-list','deep-insight','query-templates','stocks-news','profile-manager','analysis-center','strategy','agent-chat','agent-skills','agent-logs'])
+
+  const normalizeHash = (h: string) => h.replace(/^#\/?/, '')
+  const pageFromHash = (h: string) => normalizeHash(h).split('?')[0]
+
+  const navigateToPage = (p: string) => {
+    if (!validPages.has(p)) return
+    setCurrentPage(p as any)
+    const target = `#${p}`
+    if (globalThis.location.hash !== target) {
+      try { globalThis.history.pushState({}, '', target) } catch { globalThis.location.hash = target }
+    }
+  }
+
+  // Initialize from URL hash and keep in sync with browser navigation
+  useEffect(() => {
+    const init = pageFromHash(globalThis.location.hash)
+    if (init && validPages.has(init)) {
+      setCurrentPage(init as any)
+    } else {
+      // ensure URL reflects initial page
+      const currentHash = pageFromHash(globalThis.location.hash)
+      if (currentHash !== ('' + currentPage)) {
+        try { globalThis.history.replaceState({}, '', `#${currentPage}`) } catch { globalThis.location.hash = `#${currentPage}` }
+      }
+    }
+
+    const onHashChange = () => {
+      const h = pageFromHash(globalThis.location.hash)
+      if (h && validPages.has(h)) setCurrentPage(h as any)
+    }
+    globalThis.addEventListener('hashchange', onHashChange)
+    return () => globalThis.removeEventListener('hashchange', onHashChange)
+  }, [])
   const [stocksDetailSymbol, setStocksDetailSymbol] = useState<string | null>(null)
-  const [watch, setWatch] = useState<WatchItem[]>([])
   const [current, setCurrent] = useState<string | undefined>(undefined)
   const [report, setReport] = useState<ReportResp | undefined>(undefined)
+  const [insight, setInsight] = useState<StockInsightResponse | null>(null)
+  const [insightLoading, setInsightLoading] = useState(false)
+  const [predictionHistory, setPredictionHistory] = useState<PredictionHistoryResponse | null>(null)
+  const [predictionHistoryLoading, setPredictionHistoryLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [watchlistSnapshotRefresh, setWatchlistSnapshotRefresh] = useState<(() => void) | null>(null)
-
-  const [name, setName] = useState('')
-  const [searchResults, setSearchResults] = useState<{ts_code:string,symbol:string,name:string,market:string}[]>([])
-  const [searching, setSearching] = useState(false)
-  const [showSearchModal, setShowSearchModal] = useState(false)
 
   const [prices, setPrices] = useState<PriceRow[]>([])
 
   // 时间区间选择状态
   const [timeRange, setTimeRange] = useState<'5d' | '1m' | '3m' | '6m' | '1y' | 'all'>('5d')
-  const [customDays, setCustomDays] = useState<number>(5)
+
+  // 数据管道诊断抽屉状态
+  const [pipelineDrawerSymbol, setPipelineDrawerSymbol] = useState<string | null>(null)
 
   // 自定义弹窗状态
   const [dialog, setDialog] = useState({
     isOpen: false,
     title: '',
     message: '',
-    type: 'alert' as 'alert' | 'confirm',
+    type: 'alert' as DialogType,
     onConfirm: undefined as (() => void) | undefined
   })
 
@@ -510,19 +554,11 @@ export default function App(){
   const [toast, setToast] = useState({
     isVisible: false,
     message: '',
-    type: 'success' as 'success' | 'error' | 'info'
+    type: 'success' as ToastType
   })
 
-  // Drawer 管理自选列表
-  const [isWatchDrawerOpen, setWatchDrawerOpen] = useState(false)
-  const [watchSearch, setWatchSearch] = useState('')
-  const filteredWatch = useMemo(
-    () => watch.filter(w => (w.name || w.symbol).toLowerCase().includes(watchSearch.toLowerCase())),
-    [watch, watchSearch]
-  )
-
   // 显示 Toast 消息
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = (message: string, type: ToastType = 'success') => {
     setToast({
       isVisible: true,
       message,
@@ -536,17 +572,6 @@ export default function App(){
       isVisible: false,
       message: '',
       type: 'success'
-    })
-  }
-
-  // 显示提示弹窗（仅用于需要用户确认的情况）
-  const showAlert = (message: string, title?: string) => {
-    setDialog({
-      isOpen: true,
-      title: title || '提示',
-      message,
-      type: 'alert',
-      onConfirm: undefined
     })
   }
 
@@ -572,18 +597,40 @@ export default function App(){
     })
   }
 
-  async function loadWatch(){
-    const list = await jfetch<WatchItem[]>('/watchlist')
-    setWatch(list)
-    if(!current && list.length) setCurrent(list[0].symbol)
-  }
-  useEffect(()=>{ loadWatch() }, [])
+  const {
+    watch,
+    isWatchDrawerOpen,
+    setWatchDrawerOpen,
+    watchSearch,
+    setWatchSearch,
+    filteredWatch,
+    externalResults,
+    setExternalResults,
+    searchingExternal,
+    name,
+    setName,
+    searchResults,
+    searching,
+    showSearchModal,
+    setShowSearchModal,
+    loadWatch,
+    handleSearchStocks,
+    handleStockSelect,
+  } = useHomeWatchlistControls({
+    current,
+    setCurrent,
+    watchlistSnapshotRefresh,
+    jfetch,
+    showToast,
+  })
 
   useEffect(()=>{
     if(!current) return
-    ;(async()=>{
+
+    const loadReport = async () => {
       try{
-        setLoading(true); setError(undefined)
+        setLoading(true)
+        setError(undefined)
         const r = await jfetch<ReportResp>(`/api/report/${current}/full?timeRange=${timeRange}`)
         setReport(r)
         
@@ -612,74 +659,34 @@ export default function App(){
         }
       }
       finally{ setLoading(false) }
-    })()
+    }
+
+    const loadInsight = async () => {
+      try{
+        setInsightLoading(true)
+        const ins = await fetchStockInsight(current)
+        setInsight(ins)
+      }catch{
+        setInsight(null)
+      }finally{ setInsightLoading(false) }
+    }
+
+    const loadPredictionHistory = async () => {
+      try{
+        setPredictionHistoryLoading(true)
+        const hist = await fetchPredictionHistory(current, {
+          lookbackDays: predictionHistoryLookbackDays(timeRange),
+        })
+        setPredictionHistory(hist)
+      }catch{
+        setPredictionHistory(null)
+      }finally{ setPredictionHistoryLoading(false) }
+    }
+
+    void loadReport()
+    void loadInsight()
+    void loadPredictionHistory()
   },[current, timeRange])
-
-
-  // 股票搜索逻辑
-  // 按回车键触发搜索
-  const handleSearchStocks = async () => {
-    if(!name || name.length<2) { 
-      setSearchResults([])
-      setShowSearchModal(false)
-      return 
-    }
-    
-    setSearching(true)
-    // 立即显示搜索模态框显示加载状态
-    setShowSearchModal(true)
-    try {
-      const res = await jfetch<{ts_code:string,symbol:string,name:string,market:string}[]>(`/search_stock?q=${encodeURIComponent(name)}`)
-      setSearchResults(res)
-      // 如果没有结果，3秒后自动关闭弹窗
-      if(res.length === 0) {
-        setTimeout(() => {
-          setShowSearchModal(false)
-        }, 3000)
-      }
-    } catch(error) {
-      console.error('搜索失败:', error)
-      setSearchResults([])
-      // 搜索失败时也显示3秒后关闭
-      setTimeout(() => {
-        setShowSearchModal(false)
-      }, 3000)
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  // 处理股票选择 - 直接添加到自选列表
-  const handleStockSelect = async (selectedStock: {ts_code:string,symbol:string,name:string,market:string}) => {
-    // 立即关闭弹窗和清理搜索状态
-    setShowSearchModal(false)
-    setSearchResults([])
-    setSearching(false)
-    
-    // 清空输入框
-    setName('')
-    
-    // 直接添加到自选列表
-    setLoading(true)
-    setError(undefined)
-    try {
-      await jfetch('/watchlist', { 
-        method:'POST', 
-        body: JSON.stringify({
-          symbol: selectedStock.ts_code, 
-          name: selectedStock.name, 
-          enabled: true
-        }) 
-      })
-      await loadWatch()
-      showToast(`${selectedStock.name} 已加入自选列表`, 'success')
-    } catch(e:any) {
-      setError(String(e?.message||e))
-      showToast('添加失败，请检查后端服务或网络连接', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function runDaily(){
     try {
@@ -704,6 +711,14 @@ export default function App(){
           }))
           setPrices(priceRows)
         }
+        try {
+          const hist = await fetchPredictionHistory(current, {
+            lookbackDays: predictionHistoryLookbackDays(timeRange),
+          })
+          setPredictionHistory(hist)
+        } catch {
+          setPredictionHistory(null)
+        }
       }
     } catch (e) {
       console.error('Run daily failed:', e)
@@ -716,38 +731,29 @@ export default function App(){
   // 将历史数据裁剪逻辑抽离为 util（见 utils/rangeSlice.ts）。
   // 后端可能返回带 buffer 的区间（例如多返回几周数据以便指标计算），
   // 这里通过 sliceByTimeRange 再次确保图表展示严格符合用户选择的交易日长度。
+  // 合并历史 + 预测的纯函数已抽离到 utils/mergePriceAndPredictions.ts 并配套单测，
+  // 用于避免 "桥接行写入 yhat=close 导致 tooltip/legend 显示预测均值=收盘价" 的回归。
   const merged = useMemo(()=>{
-    const m:any[] = []
     if (report?.price_data && report?.predictions) {
-      // Apply strict slicing to historical segment before merging predictions.
-      // (Predictions are ALWAYS shown, even if they extend beyond the selected historical window.)
-      let hist = sliceByTimeRange(report.price_data, timeRange)
-      hist.forEach((p:any) => m.push({ date: p.date, close: p.close, type: 'historical' }))
-      if (hist.length > 0 && report.predictions.length > 0) {
-        const lastHistorical = hist[hist.length - 1]
-        m.push({
-          date: lastHistorical.date,
-          close: lastHistorical.close,
-          yhat: lastHistorical.close,
-          yl: lastHistorical.close,
-            yu: lastHistorical.close,
-          type: 'historical_extended'
-        })
-        report.predictions.forEach(pred => m.push({
-          date: pred.date,
-          yhat: pred.predicted_price,
-          yl: pred.lower_bound,
-          yu: pred.upper_bound,
-          type: 'prediction'
-        }))
-      }
-    } else {
-      const filteredPrices = prices || []
-      filteredPrices.forEach(p=>m.push({date:p.trade_date, close:p.close}))
-      report?.forecast?.forEach(f=>m.push({date:f.target_date, yhat:f.yhat, yl:f.yl, yu:f.yu}))
+      const hist = sliceByTimeRange(report.price_data, timeRange)
+      return mergePriceAndPredictions(hist as any, report.predictions as any, predictionHistory?.rows as any)
     }
-    return m.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  },[prices,report,timeRange])
+    const m:any[] = []
+    const filteredPrices = prices || []
+    filteredPrices.forEach(p=>m.push({date:p.trade_date, close:p.close, type:'historical'}))
+    report?.forecast?.forEach(f=>m.push({date:f.target_date, yhat:f.yhat, yl:f.yl, yu:f.yu, type:'prediction'}))
+    return m.sort((a, b) => a.date.localeCompare(b.date))
+  },[prices,report,timeRange,predictionHistory])
+
+  const chartSeries = useMemo(() => ({
+    hasHistoryD1: merged.some((row: any) => row.history_d1_yhat != null),
+    hasHistoryD1Band: merged.some((row: any) => row.history_d1_yl != null && row.history_d1_yu != null),
+    hasHistoryD5: merged.some((row: any) => row.history_d5_yhat != null),
+    hasForecast: merged.some((row: any) => row.forecastMean != null),
+    hasForecastBand: merged.some((row: any) => row.forecastLower != null && row.forecastUpper != null),
+    hasExpiredForecast: merged.some((row: any) => row.forecastMeanExpired != null),
+    hasExpiredForecastBand: merged.some((row: any) => row.forecastLowerExpired != null && row.forecastUpperExpired != null),
+  }), [merged])
 
   // Map currentPage to DarkLayout navigation IDs
   const getNavPage = () => {
@@ -763,18 +769,84 @@ export default function App(){
       case 'stocks-news': return 'monitor'
       case 'query-templates': return 'settings'
       case 'profile-manager': return 'settings'
+      case 'strategy': return 'strategy'
+      case 'agent-chat': return 'agent-chat'
+      case 'agent-skills': return 'agent-skills'
+      case 'agent-logs': return 'agent-logs'
       default: return 'dashboard'
     }
   }
 
   const handleNavigate = (navId: string) => {
     switch (navId) {
-      case 'dashboard': setCurrentPage('main'); break
-      case 'analysis': setCurrentPage('analysis-center'); break
-      case 'strategy': setCurrentPage('dashboard'); break
-      case 'monitor': setCurrentPage('stocks-news'); break
-      case 'daily': setCurrentPage('macro-report'); break
-      case 'settings': setCurrentPage('query-templates'); break
+      case 'dashboard': navigateToPage('main'); break
+      case 'analysis': navigateToPage('analysis-center'); break
+      case 'strategy': navigateToPage('strategy'); break
+      case 'monitor': navigateToPage('stocks-news'); break
+      case 'daily': navigateToPage('macro-report'); break
+      case 'settings': navigateToPage('query-templates'); break
+      case 'agent-chat': navigateToPage('agent-chat'); break
+      case 'agent-skills': navigateToPage('agent-skills'); break
+      case 'agent-logs': navigateToPage('agent-logs'); break
+    }
+  }
+
+  const renderCurrentPage = () => {
+    if (currentPage === 'main') {
+      return (
+        <HomeDecisionWorkspace
+          current={current}
+          watch={watch}
+          watchlistSnapshotRefresh={watchlistSnapshotRefresh}
+          name={name}
+          searching={searching}
+          error={error}
+          searchResults={searchResults}
+          showSearchModal={showSearchModal}
+          timeRange={timeRange}
+          predictionHistory={predictionHistory}
+          predictionHistoryLoading={predictionHistoryLoading}
+          loading={loading}
+          merged={merged}
+          chartSeries={chartSeries}
+          insight={insight}
+          insightLoading={insightLoading}
+          report={report}
+          jfetch={jfetch}
+          loadWatch={loadWatch}
+          runDaily={runDaily}
+          setCurrent={setCurrent}
+          setWatchlistSnapshotRefresh={setWatchlistSnapshotRefresh}
+          setName={setName}
+          setShowSearchModal={setShowSearchModal}
+          setWatchDrawerOpen={setWatchDrawerOpen}
+          setTimeRange={setTimeRange}
+          setPipelineDrawerSymbol={setPipelineDrawerSymbol}
+          setLoading={setLoading}
+          handleSearchStocks={handleSearchStocks}
+          handleStockSelect={handleStockSelect}
+          showToast={showToast}
+          showConfirm={showConfirm}
+        />
+      )
+    }
+
+    switch (currentPage) {
+      case 'dashboard': return <Dashboard />
+      case 'daily-analysis': return <DailyAnalysisPage />
+      case 'analysis-center': return <AnalysisCenterPage />
+      case 'strategy': return <ModelCenterPage initialSymbol={current} />
+      case 'news-list': return <NewsListPage />
+      case 'macro-report': return <MacroReportPage />
+      case 'news-management': return <NewsManagement />
+      case 'deep-insight': return <DeepMarketInsight />
+      case 'stocks-news': return stocksDetailSymbol ? <StockNewsDetail symbol={stocksDetailSymbol} onBack={() => setStocksDetailSymbol(null)} /> : <StocksNewsIndex onOpen={(sym) => setStocksDetailSymbol(sym)} />
+      case 'query-templates': return <QueryTemplateManager />
+      case 'profile-manager': return <ProfileValidationManager />
+      case 'agent-chat': return <AgentChatPage selectedStockCode={current} />
+      case 'agent-skills': return <AgentSkillManagementPage />
+      case 'agent-logs': return <AgentLogsPage />
+      default: return <ModernNewsComponent />
     }
   }
 
@@ -785,510 +857,7 @@ export default function App(){
       title="AI 股票监控"
       subtitle="A-Share Intelligence"
     >
-    {/* 页面内容 */}
-    {currentPage === 'main' ? (
-    <div>
-    <div style={{display:'flex', gap:12, alignItems:'flex-start'}}>
-      {/* 左侧：自选 + 图表 */}
-      <div style={{flex:2, minWidth:0}}>
-      <div style={{padding:12}}>
-
-        {/* 自选实时看板 */}
-        <FloatingModule
-          title="自选实时看板（今日）"
-          subtitle="每分钟自动刷新，帮助你快速洞察自选股票表现"
-          rightActions={
-            <button
-              onClick={() => watchlistSnapshotRefresh?.()}
-              className="dark-btn dark-btn-secondary"
-              disabled={!watchlistSnapshotRefresh}
-              style={{opacity: watchlistSnapshotRefresh ? 1 : 0.6}}
-            >
-              刷新
-            </button>
-          }
-          style={{paddingBottom: 12}}
-        >
-          <WatchlistSnapshot
-            variant="content"
-            onReadyRefresh={(refresh) => setWatchlistSnapshotRefresh(() => refresh)}
-          />
-        </FloatingModule>
-
-        <div style={{height:12}} />
-
-  <div style={{display:'flex', gap:6, marginBottom:0, alignItems:'center'}}>
-          <div style={{position: 'relative', display: 'flex', alignItems: 'center', flex: 1}}>
-            <input
-              placeholder='输入股票名称或代码进行搜索，按回车搜索...'
-              value={name}
-              onChange={e=>setName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  console.log('Enter pressed, searching stocks')
-                  e.preventDefault()
-                  handleSearchStocks()
-                }
-              }}
-              autoComplete="off"
-              style={{
-                width: '100%',
-                background: searching ? 'rgba(99, 102, 241, 0.1)' : 'var(--surface-dark)',
-                borderColor: searching ? 'var(--primary)' : 'var(--border)',
-                border: '1px solid',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                paddingRight: searching ? '100px' : '16px',
-                fontSize: '14px',
-                color: 'var(--text)'
-              }}
-            />
-            {searching && (
-              <div style={{
-                position: 'absolute',
-                right: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: '12px',
-                color: 'var(--primary)',
-                pointerEvents: 'none',
-                fontWeight: '500'
-              }}>
-                搜索中...
-              </div>
-            )}
-          </div>
-          {/* 已按需求移除“搜索后点击选择即可加入自选”提示文字 */}
-        </div>
-        {error && <div style={{color:'red', fontSize:'12px', marginBottom:12}}>{error}</div>}
-
-        {/* 查询结果弹窗 */}
-        {showSearchModal && (
-          <div style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.5)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setShowSearchModal(false)}>
-            <div style={{background:'var(--surface-dark)',borderRadius:12,padding:24,minWidth:320,maxWidth:480,border:'1px solid var(--border)'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontWeight:600,fontSize:16,marginBottom:12,color:'var(--text)'}}>
-                {searching ? '搜索中...' : searchResults.length > 0 ? '查询结果' : '未找到结果'}
-              </div>
-              
-              {searching && (
-                <div style={{display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 0'}}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    border: '3px solid var(--border)',
-                    borderTop: '3px solid var(--primary)',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }}></div>
-                  <style>
-                    {`
-                      @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                      }
-                    `}
-                  </style>
-                  <span style={{marginLeft: '12px', color: 'var(--text-muted)'}}>正在搜索股票信息...</span>
-                </div>
-              )}
-              
-              {!searching && searchResults.length === 0 && (
-                <div style={{textAlign:'center', padding:'40px 0', color:'#6b7280'}}>
-                  <div style={{fontSize:'48px', marginBottom:'12px'}}>🔍</div>
-                  <div>没有找到匹配的股票</div>
-                  <div style={{fontSize:'12px', marginTop:'8px'}}>请尝试使用不同的关键词搜索</div>
-                </div>
-              )}
-              
-              {!searching && searchResults.length > 0 && (
-                <div style={{maxHeight:320,overflowY:'auto'}}>
-                  {searchResults.map(s => (
-                    <div key={s.ts_code} style={{ padding: '8px 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{fontWeight:500}}>{s.name}</div>
-                        <div style={{fontSize:'12px', color:'#888'}}>{s.ts_code} ({s.symbol}) - {s.market}</div>
-                      </div>
-                      <button
-                        style={{ 
-                          padding: '8px 16px', 
-                          border: 'none', 
-                          borderRadius: 6, 
-                          background: '#10b981', 
-                          color: '#fff',
-                          cursor: 'pointer', 
-                          fontSize:'12px',
-                          fontWeight: '500'
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleStockSelect(s)
-                        }}>
-                        + 加入自选
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <button 
-                className="dark-btn dark-btn-secondary"
-                style={{marginTop:16,cursor:'pointer'}} 
-                onClick={()=>setShowSearchModal(false)}
-                disabled={searching}
-              >
-                {searching ? '搜索中...' : '关闭'}
-              </button>
-            </div>
-          </div>
-        )}
-  <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:0, paddingTop:4, borderTop:'1px solid var(--border)', maxHeight:100, overflow:'hidden', alignItems:'center'}}>
-          {watch.slice(0, 10).map(w => {
-            const label = w.name && w.name.trim() ? `${w.name}(${w.symbol})` : w.symbol
-            return (
-              <div
-                key={w.symbol}
-                style={{
-                  display:'flex',
-                  alignItems:'center',
-                  gap:4,
-                  padding:'3px 8px',
-                  border:'1px solid var(--border)',
-                  borderRadius:999,
-                  background: current===w.symbol?'rgba(99, 102, 241, 0.15)':'var(--surface-dark)',
-                  fontSize:12,
-                  lineHeight:1.05
-                }}
-              >
-                <button
-                  onClick={()=>setCurrent(w.symbol)}
-                  style={{border:'none', background:'transparent', cursor:'pointer', padding:0, color:'var(--text)'}}
-                >
-                  {label}
-                </button>
-                <button
-                  onClick={async ()=>{
-                    const stockDisplayName = w.name && w.name.trim() ? w.name : w.symbol
-                    showConfirm(
-                      `确定要删除 ${stockDisplayName} 吗？`,
-                      async () => {
-                        setLoading(true)
-                        try{
-                          await jfetch(`/watchlist/${w.symbol}`, { method:'DELETE' })
-                          await loadWatch()
-                          if(current===w.symbol) setCurrent(undefined)
-                          showToast(`${stockDisplayName} 已删除`, 'success')
-                        }catch(e){
-                          showToast('删除失败', 'error')
-                        }finally{
-                          setLoading(false)
-                        }
-                      },
-                      '确认删除'
-                    )
-                  }}
-                  title="删除自选"
-                  style={{
-                    border:'none',
-                    background:'transparent',
-                    color:'#dc2626',
-                    cursor:'pointer',
-                    padding:0,
-                    fontSize:12,
-                    lineHeight:1
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )
-          })}
-          {watch.length > 10 && (
-            <button onClick={() => setWatchDrawerOpen(true)} 
-              style={{padding:'4px 12px', border:'1px solid #3b82f6', borderRadius:999, background:'#eff6ff', color:'#1d4ed8', fontSize:12, fontWeight:500, cursor:'pointer'}}>
-              管理全部 {watch.length} 只 →
-            </button>
-          )}
-        </div>
-        {/* 利用下方空白：可放置一个紧凑信息条或后续扩展模块 */}
-        {/* 汇总统计条 */}
-        {watch.length > 0 && (
-          <WatchlistSummary watch={watch} current={current} />
-        )}
-        {watch.length === 0 && (
-          <div style={{marginTop:10, padding:'6px 10px', background:'rgba(255,255,255,0.02)', border:'1px dashed var(--border)', borderRadius:8, fontSize:11, color:'var(--text-muted)'}}>
-            暂无自选股票，请先搜索添加。添加后这里将显示自选整体统计（数量、上涨/下跌、平均涨幅、主力净流入合计）。
-          </div>
-        )}
-
-      </div>
-      {/* 图表卡片紧跟自选，去除中间空白 */}
-      <FloatingModule style={{marginTop:12, padding:12, borderRadius:12}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
-          <div style={{fontWeight:600}}>价格走势 & 预测区间</div>
-          
-          {/* 时间区间选择器 */}
-          <div style={{display:'flex', alignItems:'center', gap:8}}>
-            <span style={{fontSize:12, color:'#6b7280'}}>时间区间:</span>
-            <div style={{display:'flex', gap:4}}>
-              {[
-                {key: '5d', label: '5日'},
-                {key: '1m', label: '1月'},
-                {key: '3m', label: '3月'},
-                {key: '6m', label: '6月'},
-                {key: '1y', label: '1年'},
-                {key: 'all', label: '全部'}
-              ].map(option => (
-                <button
-                  key={option.key}
-                  onClick={() => setTimeRange(option.key as any)}
-                  style={{
-                    padding: '4px 8px',
-                    border: '1px solid var(--border)',
-                    borderRadius: 4,
-                    background: timeRange === option.key ? 'var(--primary)' : 'var(--surface-dark)',
-                    color: timeRange === option.key ? '#fff' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: timeRange === option.key ? '500' : '400'
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        {loading? <div>加载中…</div> :
-          <ResponsiveContainer width="100%" height={320}>
-            <ComposedChart data={merged} margin={{ top: 10, right: 12, bottom: 4, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={24} />
-              <YAxis tick={{ fontSize: 12 }} domain={['auto','auto']} />
-              <Tooltip />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="close" 
-                name="收盘" 
-                dot={false} 
-                strokeWidth={2} 
-                stroke="#2563eb"
-                connectNulls={false}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="yhat" 
-                name="预测均值" 
-                dot={false} 
-                strokeWidth={2} 
-                stroke="#8884d8" 
-                strokeDasharray="5 5"
-                connectNulls={false}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="yu" 
-                name="预测上界" 
-                dot={false} 
-                strokeWidth={1} 
-                fillOpacity={0.1} 
-                stroke="#8884d8"
-                fill="#8884d8"
-                strokeDasharray="3 3"
-                connectNulls={false}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="yl" 
-                name="预测下界" 
-                dot={false} 
-                strokeWidth={1} 
-                fillOpacity={0.1} 
-                stroke="#8884d8"
-                fill="#8884d8"
-                strokeDasharray="3 3"
-                connectNulls={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        }
-      </FloatingModule>
-
-      {/* 数据详情表格（放在左侧列，避免右侧更高导致出现大块空白） */}
-      <FloatingModule style={{marginTop:12, padding:12, borderRadius:12}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
-          <div style={{fontWeight:600, color:'var(--text)'}}>数据详情</div>
-          <div style={{fontSize:12, color:'var(--text-muted)'}}>
-            显示区间: {timeRange === '5d' ? '最近5个工作日' : timeRange === '1m' ? '最近1个月' : timeRange === '3m' ? '最近3个月' : timeRange === '6m' ? '最近6个月' : timeRange === '1y' ? '最近1年' : '全部数据'} + 未来预测
-          </div>
-        </div>
-        
-        {merged.length > 0 ? (
-          <div style={{maxHeight: 300, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8}}>
-            <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 12}}>
-              <thead style={{background: 'rgba(255,255,255,0.03)', position: 'sticky', top: 0}}>
-                <tr>
-                  <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>日期</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>实际收盘</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>预测均值</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>预测下界</th>
-                  <th style={{padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>预测上界</th>
-                  <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)', color:'var(--text-muted)'}}>类型</th>
-                </tr>
-              </thead>
-              <tbody>
-                {merged.map((row, idx) => {
-                  const isHistorical = row.close !== undefined
-                  const isFuture = row.yhat !== undefined
-                  return (
-                    <tr key={idx} style={{background: isFuture ? 'rgba(99, 102, 241, 0.08)' : 'transparent'}}>
-                      <td style={{padding: '6px 12px', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>{row.date}</td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
-                        {isHistorical ? Number(row.close).toFixed(2) : '-'}
-                      </td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
-                        {isFuture ? Number(row.yhat).toFixed(2) : '-'}
-                      </td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
-                        {isFuture && row.yl ? Number(row.yl).toFixed(2) : '-'}
-                      </td>
-                      <td style={{padding: '6px 12px', textAlign: 'right', borderBottom: '1px solid var(--border)', color:'var(--text)'}}>
-                        {isFuture && row.yu ? Number(row.yu).toFixed(2) : '-'}
-                      </td>
-                      <td style={{padding: '6px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)'}}>
-                        <span style={{
-                          padding: '2px 6px',
-                          borderRadius: 4,
-                          fontSize: 10,
-                          background: isHistorical ? 'rgba(255,255,255,0.1)' : 'rgba(99, 102, 241, 0.15)',
-                          color: isHistorical ? 'var(--text-muted)' : 'var(--primary)'
-                        }}>
-                          {isHistorical ? '历史' : '预测'}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{fontSize:12, color:'#6b7280', textAlign: 'center', padding: 20}}>
-            暂无数据显示
-          </div>
-        )}
-      </FloatingModule>
-
-      <FloatingModule style={{marginTop:12, padding:12, borderRadius:12}}>
-        <div style={{fontWeight:600, marginBottom:8}}>预测复盘</div>
-        <div style={{fontSize:12, color:'#6b7280'}}>当目标日期已过去，系统将用实际收盘与当日预测均值比对，计算误差（如 MAPE）。</div>
-      </FloatingModule>
-
-      {/* 近1-2周数据分析与建议 */}
-      <div className="card-panel watchlist-analysis-card" style={{marginTop:12}}>
-        <style>
-          {`
-            .watchlist-analysis-card > div {
-              border: none !important;
-              padding: 0 !important;
-              border-radius: 0 !important;
-            }
-          `}
-        </style>
-        <WatchlistAnalysis />
-      </div>
-
-      <div style={{fontSize:12, color:'#6b7280', marginTop:12}}>
-        仅供学习研究，不构成投资建议。
-      </div>
-      </div>
-      {/* 右侧：模型计划 + 个股数据报表 */}
-      <div style={{flex:1, display:'flex', flexDirection:'column', gap:12}}>
-        <FloatingModule style={{padding:12, borderRadius:12}}>
-          <div style={{fontWeight:600, marginBottom:8, color:'var(--text)'}}>模型与计划</div>
-          <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:6}}>
-            📅 每日 16:10 Asia/Taipei 自动训练（由后端 APScheduler 执行）
-          </div>
-            <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:8}}>
-            🎯 点击右上角按钮可手动拉数/训练/生成
-          </div>
-          <div style={{fontSize:11, color:'var(--text-muted)', background:'rgba(255,255,255,0.02)', padding:8, borderRadius:6, border:'1px solid var(--border)'}}>
-            <div style={{fontWeight:500, marginBottom:4}}>当日训练流程：</div>
-            <div>• 📊 抓取最新股价数据</div>
-            <div>• 🔍 计算技术指标与信号</div>
-            <div>• 🤖 SARIMAX + Ridge 预测建模</div>
-            <div>• 📈 生成5天价格预测</div>
-            <div>• 📝 更新分析报告</div>
-          </div>
-          <div style={{marginTop:12}}>
-            <FundFlowPanel variant="content" />
-          </div>
-        </FloatingModule>
-        <FloatingModule style={{padding:12, borderRadius:12}}>
-          <div style={{fontWeight:600, marginBottom:8}}>个股数据报表</div>
-          {report?.latest ? (
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
-              <Metric label="收盘价" value={Number(report.latest.close).toFixed(2)} />
-              <Metric label="涨跌幅(%)" value={(Number(report.latest.pct_chg)>=0?'+':'')+Number(report.latest.pct_chg).toFixed(2)} />
-              <Metric label="短均线" value={report.signal? Number(report.signal.ma_short).toFixed(2): '-'} />
-              <Metric label="长均线" value={report.signal? Number(report.signal.ma_long).toFixed(2): '-'} />
-              <Metric label="RSI" value={report.signal? Number(report.signal.rsi).toFixed(1): '-'} />
-              <Metric label="MACD" value={report.signal? Number(report.signal.macd).toFixed(4): '-'} />
-              <Metric label="打分" value={report.signal? Number(report.signal.signal_score).toFixed(1): '-'} />
-              <Metric label="建议" value={report.signal? report.signal.action : '-'} />
-            </div>
-          ) : <div style={{fontSize:12, color:'#6b7280'}}>尚无报告，请先添加并选择股票。</div>}
-        </FloatingModule>
-      </div>
-    </div>
-
-    {/* Toast 消息组件 */}
-    <Toast
-      isVisible={toast.isVisible}
-      message={toast.message}
-      type={toast.type}
-      onClose={closeToast}
-    />
-
-    {/* 自定义弹窗组件 */}
-    <CustomDialog
-      isOpen={dialog.isOpen}
-      onClose={closeDialog}
-      title={dialog.title}
-      message={dialog.message}
-      type={dialog.type}
-      onConfirm={dialog.onConfirm}
-    />
-    </div>
-    ) : currentPage === 'dashboard' ? (
-      <Dashboard />
-    ) : currentPage === 'daily-analysis' ? (
-      <DailyAnalysisPage />
-    ) : currentPage === 'analysis-center' ? (
-      <AnalysisCenterPage />
-    ) : currentPage === 'news-list' ? (
-      <NewsListPage />
-    ) : currentPage === 'macro-report' ? (
-      <MacroReportPage />
-    ) : currentPage === 'news-management' ? (
-      <NewsManagement />
-    ) : currentPage === 'deep-insight' ? (
-      <DeepMarketInsight />
-    ) : currentPage === 'stocks-news' ? (
-      stocksDetailSymbol ? (
-        <StockNewsDetail symbol={stocksDetailSymbol} onBack={() => setStocksDetailSymbol(null)} />
-      ) : (
-        <StocksNewsIndex onOpen={(sym) => setStocksDetailSymbol(sym)} />
-      )
-    ) : currentPage === 'query-templates' ? (
-      <QueryTemplateManager />
-    ) : currentPage === 'profile-manager' ? (
-      <ProfileValidationManager />
-    ) : (
-      <ModernNewsComponent />
-    )}
+      {renderCurrentPage()}
 
       {/* Toast 消息组件 */}
       <Toast
@@ -1308,141 +877,29 @@ export default function App(){
         onConfirm={dialog.onConfirm}
       />
 
-      {/* 自选管理 Drawer */}
-      {isWatchDrawerOpen && (
-      <div 
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          zIndex: 2000,
-        }}
-        onClick={() => setWatchDrawerOpen(false)}
-      >
-        <div 
-          style={{
-            width: 440,
-            maxWidth: '90vw',
-            height: '100vh',
-            background: 'var(--surface-dark)',
-            boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
-            padding: 24,
-            display: 'flex',
-            flexDirection: 'column',
-            borderLeft: '1px solid var(--border)',
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
-            <div style={{fontSize:18, fontWeight:700, color:'var(--text)'}}>自选管理 · {filteredWatch.length} 只</div>
-            <button 
-              onClick={() => setWatchDrawerOpen(false)}
-              style={{fontSize:24, border:'none', background:'transparent', cursor:'pointer', color:'var(--text-muted)', lineHeight:1}}
-            >
-              ×
-            </button>
-          </div>
-          
-          <input 
-            value={watchSearch} 
-            onChange={e => setWatchSearch(e.target.value)} 
-            placeholder="搜索名称或代码"
-            className="dark-search-input"
-            style={{
-              width:'100%',
-              marginBottom:16,
-              borderRadius: 8
-            }}
-          />
-          
-          <div style={{flex:1, minHeight:0}}>
-            <VirtualList
-              height={window.innerHeight - 180}
-              width="100%"
-              itemSize={48}
-              itemCount={filteredWatch.length}
-              overscanCount={10}
-            >
-              {({ index, style }) => {
-                const w = filteredWatch[index]
-                const label = w.name && w.name.trim() ? `${w.name} (${w.symbol})` : w.symbol
-                const isActive = current === w.symbol
-                return (
-                  <div 
-                    style={{
-                      ...style,
-                      display:'flex',
-                      alignItems:'center',
-                      justifyContent:'space-between',
-                      padding:'0 12px',
-                      borderBottom:'1px solid var(--border)',
-                      background: isActive ? 'var(--primary-light)' : 'transparent'
-                    }}
-                  >
-                    <button 
-                      onClick={() => {
-                        setCurrent(w.symbol)
-                        setWatchDrawerOpen(false)
-                      }}
-                      style={{
-                        flex:1,
-                        textAlign:'left',
-                        border:'none',
-                        background:'transparent',
-                        padding:'8px 4px',
-                        fontSize:13,
-                        cursor:'pointer',
-                        color: isActive ? 'var(--primary)' : 'var(--text)',
-                        fontWeight: isActive ? 600 : 400
-                      }}
-                    >
-                      {label}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        const stockDisplayName = w.name && w.name.trim() ? w.name : w.symbol
-                        showConfirm(
-                          `确定要删除 ${stockDisplayName} 吗？`,
-                          async () => {
-                            setLoading(true)
-                            try{
-                              await jfetch(`/watchlist/${w.symbol}`, {method:'DELETE'})
-                              await loadWatch()
-                              if(current===w.symbol) setCurrent(undefined)
-                              showToast(`${stockDisplayName} 已删除`, 'success')
-                            }catch(e:any){
-                              showToast('删除失败', 'error')
-                            }finally{
-                              setLoading(false)
-                            }
-                          },
-                          '确认删除'
-                        )
-                      }}
-                      style={{
-                        padding:'4px 10px',
-                        border:'1px solid rgba(239, 68, 68, 0.3)',
-                        borderRadius:6,
-                        background:'rgba(239, 68, 68, 0.1)',
-                        color:'var(--accent-red)',
-                        fontSize:11,
-                        cursor:'pointer',
-                        fontWeight:500
-                      }}
-                    >
-                      删除
-                    </button>
-                  </div>
-                )
-              }}
-            </VirtualList>
-          </div>
-        </div>
-      </div>
-      )}
+      <WatchlistManagerDrawer
+        open={isWatchDrawerOpen}
+        filteredWatch={filteredWatch}
+        current={current}
+        watchSearch={watchSearch}
+        externalResults={externalResults}
+        searchingExternal={searchingExternal}
+        jfetch={jfetch}
+        loadWatch={loadWatch}
+        watchlistSnapshotRefresh={watchlistSnapshotRefresh}
+        setCurrent={setCurrent}
+        setWatchDrawerOpen={setWatchDrawerOpen}
+        setWatchSearch={setWatchSearch}
+        setExternalResults={setExternalResults}
+        setLoading={setLoading}
+        showToast={showToast}
+        showConfirm={showConfirm}
+      />
+      <PipelineDiagnosticsDrawer
+        symbol={pipelineDrawerSymbol}
+        open={!!pipelineDrawerSymbol}
+        onClose={() => setPipelineDrawerSymbol(null)}
+      />
     </DarkLayout>
   )
 }

@@ -295,7 +295,7 @@ class DailyReportGenerator:
                 messages=[
                     {
                         "role": "system",
-                        "content": "你是一位专业的股票分析师，需要根据每日分析数据生成综合投资报告。报告应该专业、客观、有洞察力，同时注意风险提示。"
+                        "content": "你是一位资深A股投资分析师，擅长技术分析和基本面研究。你的报告以数据为驱动，给出明确的买卖建议、参考价位和仓位管理策略。你始终提醒投资者注意风险，但不回避给出明确的操作建议。你的目标是帮助投资者做出可执行的投资决策。"
                     },
                     {
                         "role": "user",
@@ -317,33 +317,57 @@ class DailyReportGenerator:
                                hold_list: List[AnalysisResult],
                                sell_list: List[AnalysisResult]) -> str:
         """构建 LLM 分析提示"""
+        avg_score = sum(r.scores.total for r in results) / len(results) if results else 50
         
-        prompt = f"""请根据以下今日股票分析数据，生成一份专业的每日投资分析报告。
+        prompt = f"""请根据以下A股股票分析数据，生成一份专业、可操作的每日投资分析报告。报告须具有明确的买卖指导价值。
 
 ## 今日分析概况
 - 分析股票数：{len(results)}只
-- 推荐买入：{len(buy_list)}只
-- 建议持有：{len(hold_list)}只
-- 建议卖出：{len(sell_list)}只
-- 平均评分：{sum(r.scores.total for r in results) / len(results):.1f}分
+- 推荐买入：{len(buy_list)}只 | 建议持有：{len(hold_list)}只 | 建议卖出：{len(sell_list)}只
+- 平均评分：{avg_score:.1f}分
 
-## 推荐买入股票 Top 5
+## 推荐买入股票详细数据
 """
         for r in sorted(buy_list, key=lambda x: x.scores.total, reverse=True)[:5]:
-            prompt += f"- {r.name or r.symbol}({r.symbol}): 评分{r.scores.total:.1f}, 涨跌{r.pct_change or 0:.2f}%, 关键因素: {', '.join(r.key_factors[:2])}\n"
+            tech_detail = f"技术{r.scores.technical:.0f}/基本面{r.scores.fundamental:.0f}/情绪{r.scores.sentiment:.0f}/资金{r.scores.fund_flow:.0f}/周期{r.scores.cycle:.0f}"
+            prompt += f"""- **{r.name or r.symbol}**({r.symbol}): 综合{r.scores.total:.1f}分, 置信度{r.confidence:.0%}
+  收盘¥{r.close_price or 0:.2f}, 涨跌{r.pct_change or 0:+.2f}%, MA5={r.ma5 or 0:.2f}, MA20={r.ma20 or 0:.2f}, RSI={r.rsi or 0:.1f}
+  五维评分: {tech_detail}
+  利好因素: {', '.join(r.key_factors[:3]) or '无'}
+  风险因素: {', '.join(r.risk_factors[:2]) or '无'}
+  新闻情报: {r.news_count}篇, 情感均值{r.news_sentiment_avg or 0.5:.2f}
+"""
         
         prompt += "\n## 建议卖出/高风险股票\n"
         for r in sorted(sell_list, key=lambda x: x.scores.total)[:5]:
-            prompt += f"- {r.name or r.symbol}({r.symbol}): 评分{r.scores.total:.1f}, 风险因素: {', '.join(r.risk_factors[:2])}\n"
+            prompt += f"""- **{r.name or r.symbol}**({r.symbol}): 综合{r.scores.total:.1f}分, 收盘¥{r.close_price or 0:.2f}, 涨跌{r.pct_change or 0:+.2f}%
+  风险因素: {', '.join(r.risk_factors[:3]) or '无'}
+"""
         
-        prompt += """
-## 请生成报告内容
-1. 市场整体研判（2-3句话）
-2. 重点关注股票分析（选择2-3只推荐买入的股票详细分析）
-3. 风险提示（针对高风险股票的警示）
-4. 操作建议（简短的投资建议）
+        prompt += f"""
+## 报告要求（严格按以下结构输出）
 
-请保持专业客观，控制在500字以内。
+### 一、市场整体研判
+- 用2-3句话概括今日A股市场走势和资金动向
+- 明确给出短期（1-3天）市场方向判断
+
+### 二、重点推荐股票分析（选2-3只评分最高的详细分析）
+对每只股票须包含：
+- **买入逻辑**：为什么现在值得买入（技术面+基本面+消息面综合判断）
+- **参考介入价位**：基于MA和支撑位给出合理买入区间
+- **目标价位**：基于阻力位和趋势给出短期目标
+- **止损位**：给出明确的止损参考价位
+- **仓位建议**：建议占总仓位的百分比
+
+### 三、风险警示
+- 对高风险/建议卖出的股票给出明确的操作建议
+- 如持有则给出减仓/止损建议
+
+### 四、今日操作策略
+- 给出2-3条具体可执行的操作建议
+- 整体仓位建议（轻仓/半仓/重仓）
+
+请用中文输出，专业客观，控制在800字以内。数据驱动，不说空话。
 """
         return prompt
     
@@ -357,35 +381,60 @@ class DailyReportGenerator:
         avg_score = sum(r.scores.total for r in results) / total if total else 50
         
         report = f"## 每日分析报告\n\n"
-        report += f"### 市场概况\n"
+        report += f"### 一、市场整体研判\n"
         report += f"今日共分析{total}只观察列表股票，平均评分{avg_score:.1f}分。"
         
         if avg_score >= 65:
-            report += "整体市场情绪偏多，建议积极关注买入机会。\n\n"
+            report += "整体市场情绪偏多，短期看涨概率较大，建议适度加仓至六到七成。\n\n"
         elif avg_score <= 45:
-            report += "整体市场情绪偏空，建议谨慎操作，注意风险控制。\n\n"
+            report += "整体市场情绪偏空，短期回调风险较大，建议降低仓位至三成以下。\n\n"
         else:
-            report += "整体市场情绪中性，建议选股为主。\n\n"
+            report += "整体市场处于震荡格局，建议维持半仓，精选个股操作。\n\n"
         
         if buy_list:
-            report += f"### 推荐买入（{len(buy_list)}只）\n"
-            for r in sorted(buy_list, key=lambda x: x.scores.total, reverse=True)[:3]:
-                report += f"- **{r.name or r.symbol}**（{r.symbol}）：评分{r.scores.total:.1f}分\n"
-                report += f"  - {r.analysis_summary}\n"
+            sorted_buys = sorted(buy_list, key=lambda x: x.scores.total, reverse=True)
+            report += f"### 二、重点推荐（{len(buy_list)}只）\n"
+            for r in sorted_buys[:3]:
+                report += f"\n**{r.name or r.symbol}**（{r.symbol}）— 综合评分{r.scores.total:.1f}分，置信度{r.confidence:.0%}\n"
+                report += f"- 收盘价：¥{r.close_price or 0:.2f}，涨跌幅：{r.pct_change or 0:+.2f}%\n"
+                if r.ma5 and r.ma20 and r.close_price:
+                    if r.close_price > r.ma5 > r.ma20:
+                        report += f"- 技术面：多头排列（价>{r.ma5:.2f}>{r.ma20:.2f}），趋势良好\n"
+                    elif r.close_price > r.ma20:
+                        report += f"- 技术面：站上20日均线{r.ma20:.2f}，短期支撑有效\n"
+                    else:
+                        report += f"- 技术面：均线{r.ma5:.2f}/{r.ma20:.2f}附近，关注突破方向\n"
+                if r.key_factors:
+                    report += f"- 买入逻辑：{', '.join(r.key_factors[:3])}\n"
+                if r.risk_factors:
+                    report += f"- 注意风险：{', '.join(r.risk_factors[:2])}\n"
+                # 参考价位
+                if r.close_price and r.ma20:
+                    report += f"- 参考介入区间：¥{min(r.close_price, r.ma20) * 0.98:.2f} - ¥{r.close_price:.2f}\n"
+                    report += f"- 建议止损位：¥{r.ma20 * 0.95:.2f}\n"
             report += "\n"
         
         if sell_list:
-            report += f"### 风险提示（{len(sell_list)}只）\n"
+            report += f"### 三、风险警示（{len(sell_list)}只）\n"
             for r in sell_list[:3]:
                 report += f"- **{r.name or r.symbol}**（{r.symbol}）：评分{r.scores.total:.1f}分，风险等级{r.risk_level}\n"
                 if r.risk_factors:
-                    report += f"  - 风险因素：{', '.join(r.risk_factors[:2])}\n"
+                    report += f"  风险因素：{', '.join(r.risk_factors[:3])}\n"
+                if r.close_price and r.ma20:
+                    report += f"  当前价¥{r.close_price:.2f}，建议在¥{r.close_price * 1.02:.2f}以上减仓\n"
             report += "\n"
         
-        report += "### 操作建议\n"
-        report += "1. 对推荐买入的股票，可逢低分批建仓\n"
-        report += "2. 对高风险股票，建议减仓或观望\n"
-        report += "3. 注意控制整体仓位，保持资金灵活性\n"
+        report += "### 四、操作策略\n"
+        if avg_score >= 65:
+            report += "1. 推荐股票可逢低分批建仓，单只不超过总仓位15%\n"
+            report += "2. 整体仓位可维持在六到七成\n"
+        elif avg_score <= 45:
+            report += "1. 控制仓位在三成以下，以防守为主\n"
+            report += "2. 高风险股票果断止损，不抱侥幸心理\n"
+        else:
+            report += "1. 精选高评分个股轻仓试探，单只不超过10%\n"
+            report += "2. 维持半仓操作，保留足够现金应对变化\n"
+        report += "3. 严格执行止损纪律，亏损超过5%坚决离场\n"
         
         return report
     

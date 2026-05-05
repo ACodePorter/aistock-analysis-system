@@ -102,7 +102,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, and_, text, update
+from sqlalchemy import select, and_, text, update, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from ..core.db import SessionLocal
@@ -320,11 +320,23 @@ class TaskManager:
                 .limit(1)
             ).scalar_one_or_none()
 
-            # 获取预测数据
-            forecasts = session.execute(
-                select(Forecast).where(Forecast.symbol == symbol)
-                .order_by(Forecast.target_date)
-            ).scalars().all()
+            # 获取预测数据：只取最新批次，避免多批次 run_at 混入导致 forecast_data 错位
+            latest_run = session.execute(
+                select(func.max(Forecast.run_at)).where(Forecast.symbol == symbol)
+            ).scalar()
+            if latest_run is None:
+                forecasts = []
+            else:
+                forecasts = session.execute(
+                    select(Forecast)
+                    .where(
+                        and_(
+                            Forecast.symbol == symbol,
+                            Forecast.run_at == latest_run,
+                        )
+                    )
+                    .order_by(Forecast.target_date)
+                ).scalars().all()
 
             # 构建报告数据
             price_data = None

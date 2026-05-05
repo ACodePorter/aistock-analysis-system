@@ -74,10 +74,6 @@ yarn-error.log*
 .npm
 .yarn-integrity
 
-# Frontend build
-dist/
-build/
-
 # Database
 *.db
 *.sqlite
@@ -103,20 +99,49 @@ temp/
 tmp/
 
 # AI Stock Project specific
-backend/app/__pycache__/
+# Note: frontend/dist and frontend/build are already covered by the global
+# `dist/` and `build/` patterns above; keep only frontend-specific additions here.
 frontend/node_modules/
-frontend/dist/
-frontend/build/
+frontend/coverage/
 
-# Prevent stray Python scripts in repo root
+# Runtime cache & storage (all levels)
+cache/
+backend/cache/
+backend/storage/documents/
+
+# Scraper task queue & runtime data
+queue/
+snapshot.json
+
+# Agent reports / operational output
+agent_reports/
+backend/agent_reports/
+
+# Profiling artifacts
+*.raw
+
+# Env duplicates / secrets
+.env copy
+.env.local
+
+# Vite pre-bundle cache
+.vite/
+
+# SearXNG backup configs
+infra/searxng/settings.yml.bak
+infra/searxng/settings.yml.new
+
+# Generated frontend artifacts
+frontend/report*.json
+
+# Prevent stray scripts/docs in repo root
 /*.py
-
-# Prevent stray docs/scripts in repo root
 /*.md
 /*.txt
 !/README.md
 /*.ps1
 /*.sh
 
-# Keep logs consolidated
-/logs/
+# Future refactor candidates (tracked, not executed in this cleanup round):
+# - Consolidate dependency ownership between root and frontend/package.json
+# - Evaluate slimming deprecated backend modules (see plan batch 5)

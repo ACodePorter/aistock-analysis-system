@@ -421,9 +421,12 @@ export default function AnalysisCenterPage() {
   const [history, setHistory] = useState<AnalysisHistoryItem[]>([])
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'watchlist' | 'history' | 'period'>('overview')
   const [filterRec, setFilterRec] = useState<string>('')
+  const [autoTriggeredTodayRun, setAutoTriggeredTodayRun] = useState(false)
   
   // 股票详情弹窗状态
   const [selectedStock, setSelectedStock] = useState<StockAnalysis | null>(null)
@@ -437,6 +440,11 @@ export default function AnalysisCenterPage() {
   const [periodType, setPeriodType] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly')
   const [periodReport, setPeriodReport] = useState<PeriodReport | null>(null)
   const [periodLoading, setPeriodLoading] = useState(false)
+  const todayDate = new Date().toISOString().split('T')[0]
+  
+  // 最新交易日状态
+  const [latestTradingDay, setLatestTradingDay] = useState<string>(todayDate)
+  const [tradingDayInfo, setTradingDayInfo] = useState<{needs_analysis: boolean; data_stale: boolean; analysis_count: number} | null>(null)
 
   // 加载股票相关新闻
   const loadStockNews = useCallback(async (symbol: string) => {
@@ -470,21 +478,109 @@ export default function AnalysisCenterPage() {
 
   // 加载每日分析数据
   const loadDailyAnalysis = useCallback(async () => {
+    console.log('[AnalysisCenter] loadDailyAnalysis start', { selectedDate, filterRec, todayDate })
     setLoading(true)
     setError(null)
+    setNotice(null)
     try {
+      // 先获取最新交易日信息
+      const tdInfo = await fetchJSON<{latest_trading_day: string; analysis_count: number; has_report: boolean; needs_analysis: boolean; data_stale: boolean}>('/api/analysis/latest-trading-day').catch(() => null)
+      console.log('[AnalysisCenter] tdInfo', tdInfo)
+      if (tdInfo) {
+        setLatestTradingDay(tdInfo.latest_trading_day)
+        setTradingDayInfo({ needs_analysis: tdInfo.needs_analysis, data_stale: tdInfo.data_stale, analysis_count: tdInfo.analysis_count })
+        // 如果选的是今天但不是交易日，自动切换到最近交易日
+        if (selectedDate === todayDate && tdInfo.latest_trading_day !== todayDate) {
+          setSelectedDate(tdInfo.latest_trading_day)
+          return
+        }
+      }
+      
       const [analysisData, reportData] = await Promise.all([
         fetchJSON<StockAnalysis[]>(`/api/analysis/daily/${selectedDate}${filterRec ? `?recommendation=${filterRec}` : ''}`),
         fetchJSON<DailyReport>(`/api/analysis/report/${selectedDate}`).catch(() => null)
       ])
+      console.log('[AnalysisCenter] fetched', { stocks: analysisData.length, hasReport: !!reportData })
+
+      if (!filterRec && analysisData.length === 0) {
+        const targetDate = tdInfo?.latest_trading_day || todayDate
+        const isLatestTradingDay = selectedDate === targetDate
+
+        // 如果当前选的就是最新交易日且尚未自动触发过 → 先尝试自动生成分析
+        if (isLatestTradingDay && !autoTriggeredTodayRun) {
+          setAutoTriggeredTodayRun(true)
+          setLoading(false) // 先结束 loading，让页面可交互
+          setNotice(`${targetDate} 分析数据尚未生成，正在后台自动触发分析任务...`)
+
+          try {
+            await fetchJSON('/api/analysis/run', {
+              method: 'POST',
+              body: JSON.stringify({ generate_report: true, refresh_data: false, fetch_latest_news: false })
+            })
+            // 分析完成后重新获取数据
+            const [rerunData, rerunReport] = await Promise.all([
+              fetchJSON<StockAnalysis[]>(`/api/analysis/daily/${selectedDate}`),
+              fetchJSON<DailyReport>(`/api/analysis/report/${selectedDate}`).catch(() => null)
+            ])
+            setAnalyses(rerunData)
+            setReport(rerunReport)
+            if (rerunData.length > 0) {
+              setNotice(`已自动生成 ${targetDate} 分析数据`)
+              return
+            }
+            // 自动分析完成但无有效数据 → 继续往下走 fallback 到历史
+            setNotice('自动分析完成，但暂无有效数据。正在切换到最近有数据日期...')
+          } catch (runErr: any) {
+            // 自动分析失败 → 继续 fallback
+            console.error('Auto-trigger failed:', runErr)
+          }
+        }
+
+        // fallback：尝试切换到最近有数据的日期
+        const latestHistory = await fetchJSON<AnalysisHistoryItem[]>('/api/analysis/history?days=30').catch(() => [])
+        const latestDate = latestHistory[0]?.analysis_date
+
+        if (latestDate && latestDate !== selectedDate) {
+          setNotice(`所选日期暂无数据，已自动切换到最近有数据日期：${latestDate}`)
+          setSelectedDate(latestDate)
+          return
+        }
+
+        // 既无历史数据也无法自动生成 → 提示用户手动操作
+        setNotice('暂无分析数据。你可以点击上方"立即生成分析"来生成。')
+      }
+
       setAnalyses(analysisData)
       setReport(reportData)
     } catch (e: any) {
+      console.error('[AnalysisCenter] loadDailyAnalysis error', e)
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [selectedDate, filterRec])
+  }, [selectedDate, filterRec, todayDate, autoTriggeredTodayRun])
+
+  const triggerTodayAnalysis = useCallback(async () => {
+    setIsGenerating(true)
+    setError(null)
+    setNotice('正在生成分析（含数据刷新和新闻抓取），请稍候...')
+    try {
+      await fetchJSON('/api/analysis/run', {
+        method: 'POST',
+        body: JSON.stringify({ generate_report: true, refresh_data: true, fetch_latest_news: true })
+      })
+      if (selectedDate !== latestTradingDay) {
+        setSelectedDate(latestTradingDay)
+      } else {
+        await loadDailyAnalysis()
+      }
+      setNotice('分析生成完成，页面已刷新')
+    } catch (e: any) {
+      setError(e.message || '生成分析失败')
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [selectedDate, latestTradingDay, loadDailyAnalysis])
 
   // 加载历史记录
   const loadHistory = useCallback(async () => {
@@ -532,7 +628,6 @@ export default function AnalysisCenterPage() {
   }
 
   useEffect(() => {
-    loadDailyAnalysis()
     loadHistory()
     loadWatchlist()
     loadSchedulerStatus()
@@ -615,6 +710,26 @@ export default function AnalysisCenterPage() {
           >
             🔄 刷新
           </button>
+          <button
+            onClick={triggerTodayAnalysis}
+            disabled={isGenerating}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 8,
+              border: '1px solid rgba(16, 185, 129, 0.45)',
+              background: isGenerating ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.2)',
+              color: '#10b981',
+              cursor: isGenerating ? 'not-allowed' : 'pointer',
+              fontWeight: 600
+            }}
+          >
+            {isGenerating ? '⏳ 生成中...' : '⚡ 立即生成分析'}
+          </button>
+          {tradingDayInfo?.data_stale && (
+            <span style={{ fontSize: 11, color: '#f59e0b', padding: '4px 8px' }}>
+              ⚠ 数据非最新交易日
+            </span>
+          )}
         </div>
       </div>
 
@@ -655,6 +770,20 @@ export default function AnalysisCenterPage() {
           marginBottom: 20
         }}>
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div style={{
+          padding: 12,
+          background: 'rgba(59, 130, 246, 0.1)',
+          border: '1px solid rgba(59, 130, 246, 0.35)',
+          borderRadius: 8,
+          color: '#93c5fd',
+          marginBottom: 16,
+          fontSize: 13
+        }}>
+          {notice}
         </div>
       )}
 
@@ -844,7 +973,9 @@ export default function AnalysisCenterPage() {
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>加载中...</div>
           ) : analyses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-              暂无分析数据。系统将于每日 18:00 自动执行分析任务。
+              {watchlist.length === 0
+                ? '观察列表为空，当前无法生成每日分析。请先在“观察列表”页添加并启用股票。'
+                : '暂无分析数据。你可以点击上方“立即生成分析”按钮来生成，或切换到历史有数据日期查看。'}
               {schedulerStatus && (
                 <div style={{ marginTop: 8, fontSize: 12 }}>
                   下次分析时间: {new Date(schedulerStatus.next_analysis_time).toLocaleString('zh-CN')}

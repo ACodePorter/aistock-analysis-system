@@ -1,17 +1,19 @@
 
 // 更早期的错误过滤 - 在任何其他代码执行之前
 (function() {
+  const isFilteredExtensionError = (reason: any) => !!reason && (
+    reason.name === 'i' ||
+    reason.code === 403 ||
+    reason.message === 'permission error' ||
+    reason.data?.code === 403
+  )
   // 立即设置错误过滤器
-  const originalAddEventListener = window.addEventListener;
-  window.addEventListener = function(type, listener, options) {
+  const originalAddEventListener = globalThis.addEventListener;
+  globalThis.addEventListener = function(type, listener, options) {
     if (type === 'unhandledrejection') {
       const wrappedListener = function(event) {
         const reason = event.reason;
-        if (reason && 
-            (reason.name === 'i' || 
-             reason.code === 403 || 
-             reason.message === 'permission error' ||
-             (reason.data && reason.data.code === 403))) {
+        if (isFilteredExtensionError(reason)) {
           event.preventDefault();
           event.stopImmediatePropagation();
           return false;
@@ -24,13 +26,9 @@
   };
 
   // 立即设置 Promise rejection 处理器
-  window.addEventListener('unhandledrejection', function(event) {
+  globalThis.addEventListener('unhandledrejection', function(event) {
     const reason = event.reason;
-    if (reason && 
-        (reason.name === 'i' || 
-         reason.code === 403 || 
-         reason.message === 'permission error' ||
-         (reason.data && reason.data.code === 403))) {
+    if (isFilteredExtensionError(reason)) {
       event.preventDefault();
       event.stopImmediatePropagation();
       console.debug('🔇 Extension error filtered early:', reason.name || reason.code);
@@ -46,24 +44,26 @@ import './index.css'
 import App from './ui/App'
 import { ConfigProvider, theme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import { antdThemeConfig } from './theme/tokens'
 
 // 开发环境提示和额外保护
-const isDevelopment = window.location.hostname === 'localhost';
+const isDevelopment = globalThis.location.hostname === 'localhost';
 if (isDevelopment) {
   console.info('%c🚀 AI Stock Analysis App', 'color: #00ff00; font-weight: bold; font-size: 16px;');
   console.info('%c📢 Extension errors are filtered - your app is working normally', 'color: #ffa500; font-size: 12px;');
 }
 
-createRoot(document.getElementById('root')!).render(
-  <ConfigProvider
-    locale={zhCN}
-    theme={{
-      algorithm: [theme.compactAlgorithm, theme.defaultAlgorithm],
-      token: {
-        borderRadius: 8,
-      }
-    }}
-  >
-    <App />
-  </ConfigProvider>
-)
+const rootElement = document.getElementById('root')
+if (rootElement) {
+  createRoot(rootElement).render(
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        algorithm: [theme.darkAlgorithm, theme.compactAlgorithm],
+        ...antdThemeConfig,
+      }}
+    >
+      <App />
+    </ConfigProvider>
+  )
+}

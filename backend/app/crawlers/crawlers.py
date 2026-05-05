@@ -7,7 +7,7 @@
 3. 财联社 - 电报快讯
 4. 巨潮资讯 - 官方公告
 5. 同花顺 - 新闻、资讯
-6. SearXNG - 通用搜索兜底
+6. OpenClaw Web Retrieval - 通用检索兜底
 
 作者：AI Stock Analysis Enhancement
 日期：2026-01
@@ -568,72 +568,43 @@ class CNInfoCrawler(BaseCrawler):
         return results
 
 
-class SearXNGCrawler(BaseCrawler):
-    """SearXNG爬虫（兜底方案）"""
+class OpenClawCrawler(BaseCrawler):
+    """OpenClaw 检索爬虫（通用兜底方案）"""
     
-    def __init__(self, base_url: str = None, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.base_url = (base_url or os.getenv('SEARXNG_URL', 'http://localhost:10000')).rstrip('/')
+        from ..agent.web_agent import AgenticWebRetriever
+        self.retriever = AgenticWebRetriever()
     
     def crawl(self, query: str, task_type: str = 'news', limit: int = 10, **kwargs) -> List[Dict[str, Any]]:
-        """通用搜索
-        
-        Args:
-            query: 搜索关键词
-            task_type: 任务类型
-            limit: 返回数量
-        
-        Returns:
-            搜索结果列表
-        """
-        results = []
-        
         try:
-            params = {
-                'q': query,
-                'format': 'json',
-                'categories': 'news' if task_type == 'news' else 'general',
-                'time_range': 'week',
-                'language': 'zh-CN',
-            }
-            # Try rotating proxies from SEARXNG_PROXY_POOL if configured
-            searx_proxies = os.getenv('SEARXNG_PROXY_POOL', '')
-            proxies = None
-            if searx_proxies:
-                pool = [p.strip() for p in searx_proxies.split(',') if p.strip()]
-                if pool:
-                    # pick random proxy to distribute load
-                    chosen = random.choice(pool)
-                    proxies = {'http': chosen, 'https': chosen}
-
-            resp = self._safe_request('get', f"{self.base_url}/search", params=params, proxies=proxies)
-            
-            if resp:
-                data = resp.json()
-                
-                for item in data.get('results', [])[:limit]:
-                    results.append({
-                        'title': item.get('title', ''),
-                        'url': item.get('url', ''),
-                        'content': item.get('content', ''),
-                        'source': 'searxng',
-                        'publish_time': item.get('publishedDate', ''),
-                        'search_query': query,
-                    })
+            docs = self.retriever.retrieve_sync(
+                question=query,
+                max_results=limit,
+                category='news' if task_type == 'news' else 'general',
+                time_range='week',
+                language='zh-CN',
+            )
+            results = []
+            for item in docs[:limit]:
+                results.append({
+                    'title': item.get('title', ''),
+                    'url': item.get('url', ''),
+                    'content': item.get('summary') or item.get('content', ''),
+                    'source': 'openclaw_web',
+                    'publish_time': item.get('published', ''),
+                    'search_query': query,
+                })
+            return results
         except Exception as e:
-            logger.warning(f"[SearXNG] 搜索失败: {e}")
-        
-        return results
+            logger.warning(f"[OpenClawCrawler] 搜索失败: {e}")
+            return []
     
     def crawl_stock_news(self, stock_code: str, stock_name: str = '', limit: int = 10) -> List[Dict[str, Any]]:
-        """搜索个股新闻"""
         query = f'"{stock_name}" 股票' if stock_name else f'{stock_code} 股票'
         results = self.crawl(query, 'news', limit)
-        
-        # 添加股票代码标记
-        for r in results:
-            r['stock_code'] = stock_code
-        
+        for item in results:
+            item['stock_code'] = stock_code
         return results
 
 
@@ -724,8 +695,8 @@ def get_crawler(source: str) -> Optional[BaseCrawler]:
             _crawler_instances[source] = TongHuaShunCrawler()
         elif source == 'xueqiu':
             _crawler_instances[source] = XueqiuCrawler()
-        elif source == 'searxng':
-            _crawler_instances[source] = SearXNGCrawler()
+        elif source == 'openclaw':
+            _crawler_instances[source] = OpenClawCrawler()
         else:
             return None
     
@@ -741,7 +712,7 @@ def crawl_stock_news_multi(stock_code: str, stock_name: str = '', limit_per_sour
     seen_urls = set()
     
     # 按优先级排序的源列表
-    sources = ['cls', 'eastmoney', 'sina_finance', 'tonghuashun', 'xueqiu', 'searxng']
+    sources = ['cls', 'eastmoney', 'sina_finance', 'tonghuashun', 'xueqiu', 'openclaw']
     
     for source in sources:
         crawler = get_crawler(source)
@@ -765,3 +736,4 @@ def crawl_stock_news_multi(stock_code: str, stock_name: str = '', limit_per_sour
             break
     
     return all_results
+

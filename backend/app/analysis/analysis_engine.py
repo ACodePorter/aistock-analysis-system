@@ -125,6 +125,16 @@ class AnalysisEngine:
         name = watchlist.name if watchlist else None
         sector = watchlist.sector if watchlist else None
         
+        # 如果名称为空，尝试从 AKShare 获取并回填
+        if not name:
+            name = self._resolve_stock_name(symbol)
+            if name and watchlist:
+                try:
+                    watchlist.name = name
+                    self.session.flush()
+                except Exception:
+                    pass
+        
         # 获取价格数据（最近60天）
         prices = self._get_price_history(symbol, analysis_date, days=60)
         if not prices or len(prices) < 5:
@@ -141,6 +151,16 @@ class AnalysisEngine:
         cycle_score, cycle_factors = self._calculate_cycle_score(prices)
         
         # 计算综合评分
+        # 检测哪些维度有真实数据（默认分=50.0 表示无数据）
+        has_real_data = {
+            'technical': abs(technical_score - 50.0) > 0.01,
+            'fundamental': abs(fundamental_score - 50.0) > 0.01,
+            'sentiment': abs(sentiment_score - 50.0) > 0.01,
+            'fund_flow': abs(fund_flow_score - 50.0) > 0.01,
+            'cycle': abs(cycle_score - 50.0) > 0.01,
+        }
+        real_data_count = sum(1 for v in has_real_data.values() if v)
+        
         total_score = (
             technical_score * self.WEIGHTS['technical'] +
             fundamental_score * self.WEIGHTS['fundamental'] +
@@ -161,11 +181,21 @@ class AnalysisEngine:
         # 确定推荐和风险等级
         recommendation = self._determine_recommendation(total_score, tech_factors)
         risk_level = self._determine_risk_level(scores, tech_factors + flow_factors)
-        confidence = self._calculate_confidence(prices, news_stats)
+        confidence = self._calculate_confidence(prices, news_stats, real_data_count)
         
-        # 收集关键因素
-        key_factors = [f for f in tech_factors + fund_factors + sent_factors + flow_factors + cycle_factors if '利好' in f or '突破' in f or '强' in f]
-        risk_factors = [f for f in tech_factors + fund_factors + sent_factors + flow_factors + cycle_factors if '风险' in f or '弱' in f or '流出' in f]
+        # 收集关键因素（更全面的关键词匹配）
+        positive_keywords = ['利好', '突破', '强', '金叉', '多头', '反弹', '增长', '优秀', '稳健', '放量上涨', '正面', '流入']
+        negative_keywords = ['风险', '弱', '流出', '死叉', '空头', '下跌', '负面', '超买', '承压', '下滑', '抛压']
+        
+        all_factors = tech_factors + fund_factors + sent_factors + flow_factors + cycle_factors
+        key_factors = [f for f in all_factors if any(k in f for k in positive_keywords)]
+        risk_factors = [f for f in all_factors if any(k in f for k in negative_keywords)]
+        
+        # 标注数据缺失维度
+        dim_names = {'technical': '技术面', 'fundamental': '基本面', 'sentiment': '舆情', 'fund_flow': '资金流', 'cycle': '周期'}
+        missing_dims = [dim_names[k] for k, v in has_real_data.items() if not v]
+        if missing_dims:
+            risk_factors.append(f"数据不足: {'/'.join(missing_dims)}维度使用默认值")
         
         # 生成分析摘要
         analysis_summary = self._generate_summary(symbol, name, scores, recommendation, risk_level, key_factors, risk_factors)
@@ -204,6 +234,33 @@ class AnalysisEngine:
             risk_factors=risk_factors[:5]
         )
     
+    # ── 股票名称解析 ──────────────────────────
+    _stock_name_cache: dict = {}
+    
+    def _resolve_stock_name(self, symbol: str) -> Optional[str]:
+        """通过 AKShare 查找股票中文名称"""
+        if symbol in self._stock_name_cache:
+            return self._stock_name_cache[symbol]
+        try:
+            # 懒加载全量映射（只加载一次）
+            if not self._stock_name_cache:
+                from app.data.data_source import search_stocks
+                import akshare as _ak
+                df = _ak.stock_info_a_code_name()
+                for _, row in df.iterrows():
+                    code = str(row['code'])
+                    nm = str(row['name'])
+                    if code.startswith('6') or code.startswith('9'):
+                        self._stock_name_cache[f"{code}.SH"] = nm
+                    if code.startswith(('0', '1', '2', '3')):
+                        self._stock_name_cache[f"{code}.SZ"] = nm
+                    self._stock_name_cache[code] = nm
+                logger.info(f"Stock name cache loaded: {len(self._stock_name_cache)} entries")
+            return self._stock_name_cache.get(symbol)
+        except Exception as e:
+            logger.warning(f"Failed to resolve stock name for {symbol}: {e}")
+            return None
+    
     def _get_price_history(self, symbol: str, end_date: date, days: int = 60) -> List[PriceDaily]:
         """获取价格历史"""
         start_date = end_date - timedelta(days=days * 2)  # 扩大范围以确保足够交易日
@@ -224,10 +281,12 @@ class AnalysisEngine:
         """计算技术面评分
         
         考虑因素:
-        - 趋势：MA5 vs MA20
+        - 趋势：MA5 vs MA20, MA10 vs MA30
+        - RSI: 超买超卖信号
+        - MACD: 金叉死叉及柱体变化
+        - 布林带: 价格相对位置
+        - 成交量: 量价配合分析
         - 动量：近期涨跌幅
-        - 波动：振幅
-        - 成交量变化
         """
         if len(prices) < 20:
             return 50.0, ["数据不足"]
@@ -239,50 +298,163 @@ class AnalysisEngine:
         if len(closes) < 20:
             return 50.0, ["价格数据不足"]
         
-        # MA5 vs MA20 趋势
+        # ---- MA均线系统（含多层趋势） ----
         ma5 = sum(closes[:5]) / 5
+        ma10 = sum(closes[:10]) / 10 if len(closes) >= 10 else ma5
         ma20 = sum(closes[:20]) / 20
+        ma30 = sum(closes[:30]) / 30 if len(closes) >= 30 else ma20
         
+        # 短期趋势（MA5 vs MA20）
         if ma5 > ma20 * 1.02:
-            score += 15
+            score += 12
             factors.append("MA5上穿MA20，短期趋势强")
         elif ma5 < ma20 * 0.98:
-            score -= 10
+            score -= 8
             factors.append("MA5下穿MA20，短期趋势弱")
         
-        # 近5日涨幅
+        # 中期趋势（MA10 vs MA30）
+        if len(closes) >= 30:
+            if ma10 > ma30 * 1.01:
+                score += 8
+                factors.append("MA10站上MA30，中期趋势向好")
+            elif ma10 < ma30 * 0.99:
+                score -= 6
+                factors.append("MA10跌破MA30，中期趋势偏弱")
+        
+        # 均线多头/空头排列
+        if ma5 > ma10 > ma20:
+            score += 5
+            factors.append("均线多头排列(利好)")
+        elif ma5 < ma10 < ma20:
+            score -= 5
+            factors.append("均线空头排列(风险)")
+        
+        # ---- RSI 分析 ----
+        try:
+            import pandas as pd
+            from app.analysis.signals import rsi as calc_rsi
+            close_series = pd.Series(list(reversed(closes)))
+            rsi_series = calc_rsi(close_series, period=14)
+            current_rsi = rsi_series.iloc[-1] if not rsi_series.empty else None
+            
+            if current_rsi is not None and not pd.isna(current_rsi):
+                if current_rsi > 80:
+                    score -= 10
+                    factors.append(f"RSI={current_rsi:.1f}，严重超买(风险)")
+                elif current_rsi > 70:
+                    score -= 5
+                    factors.append(f"RSI={current_rsi:.1f}，超买区域")
+                elif current_rsi < 20:
+                    score += 10
+                    factors.append(f"RSI={current_rsi:.1f}，严重超卖(利好)")
+                elif current_rsi < 30:
+                    score += 5
+                    factors.append(f"RSI={current_rsi:.1f}，超卖区域，反弹可期")
+                elif 40 <= current_rsi <= 60:
+                    factors.append(f"RSI={current_rsi:.1f}，中性区间")
+        except Exception:
+            pass
+        
+        # ---- MACD 分析 ----
+        try:
+            from app.analysis.signals import macd as calc_macd
+            close_series = pd.Series(list(reversed(closes)))
+            macd_line, signal_line, hist = calc_macd(close_series)
+            
+            if len(hist) >= 2:
+                curr_hist = hist.iloc[-1]
+                prev_hist = hist.iloc[-2]
+                curr_macd = macd_line.iloc[-1]
+                curr_signal = signal_line.iloc[-1]
+                
+                if not pd.isna(curr_hist) and not pd.isna(prev_hist):
+                    # MACD金叉
+                    if curr_macd > curr_signal and macd_line.iloc[-2] <= signal_line.iloc[-2]:
+                        score += 8
+                        factors.append("MACD金叉，买入信号")
+                    # MACD死叉
+                    elif curr_macd < curr_signal and macd_line.iloc[-2] >= signal_line.iloc[-2]:
+                        score -= 8
+                        factors.append("MACD死叉，卖出信号")
+                    
+                    # MACD柱体变化趋势
+                    if curr_hist > 0 and curr_hist > prev_hist:
+                        score += 3
+                        factors.append("MACD柱体放大，动能增强")
+                    elif curr_hist < 0 and curr_hist < prev_hist:
+                        score -= 3
+                        factors.append("MACD柱体扩大负值，动能减弱")
+        except Exception:
+            pass
+        
+        # ---- 布林带分析 ----
+        if len(closes) >= 20:
+            import math
+            ma20_val = sum(closes[:20]) / 20
+            std20 = math.sqrt(sum((c - ma20_val) ** 2 for c in closes[:20]) / 20)
+            upper_band = ma20_val + 2 * std20
+            lower_band = ma20_val - 2 * std20
+            
+            current = closes[0]
+            if std20 > 0:
+                bb_position = (current - lower_band) / (upper_band - lower_band)
+                if current > upper_band:
+                    score -= 5
+                    factors.append(f"突破布林带上轨，短期超买")
+                elif current < lower_band:
+                    score += 5
+                    factors.append(f"跌破布林带下轨，短期超卖")
+                
+                # 布林带收窄 → 变盘信号
+                band_width = (upper_band - lower_band) / ma20_val
+                if band_width < 0.04:
+                    factors.append("布林带收窄，变盘在即")
+        
+        # ---- 近5日涨幅 ----
         if len(closes) >= 6:
             recent_return = (closes[0] - closes[5]) / closes[5] * 100
             if recent_return > 5:
-                score += 10
+                score += 8
                 factors.append(f"近5日涨幅{recent_return:.1f}%，动量强")
+            elif recent_return > 10:
+                score += 5  # 涨太多反而减少加分（追高风险）
+                factors.append(f"近5日涨幅{recent_return:.1f}%，注意追高风险")
             elif recent_return < -5:
-                score -= 10
+                score -= 8
                 factors.append(f"近5日跌幅{abs(recent_return):.1f}%，动量弱")
         
-        # 相对位置（当前价格在20日高低点的位置）
+        # ---- 相对位置（20日高低点） ----
         high_20 = max(closes[:20])
         low_20 = min(closes[:20])
         if high_20 > low_20:
             position = (closes[0] - low_20) / (high_20 - low_20)
             if position > 0.8:
-                score += 5
+                score += 3
                 factors.append("接近20日高点，突破可能性大")
             elif position < 0.2:
-                score -= 5
+                score -= 3
                 factors.append("接近20日低点，存在下跌风险")
         
-        # 成交量分析
+        # ---- 成交量分析（量价配合） ----
         vols = [p.vol for p in prices[:20] if p.vol]
         if len(vols) >= 5:
             avg_vol = sum(vols) / len(vols)
             recent_vol = sum(vols[:5]) / 5
+            price_up = closes[0] > closes[4] if len(closes) > 4 else False
+            
             if recent_vol > avg_vol * 1.5:
-                score += 5
-                factors.append("成交量放大，关注度提升")
+                if price_up:
+                    score += 8
+                    factors.append("放量上涨，量价配合良好(利好)")
+                else:
+                    score -= 5
+                    factors.append("放量下跌，抛压较大(风险)")
             elif recent_vol < avg_vol * 0.5:
-                score -= 5
-                factors.append("成交量萎缩")
+                if price_up:
+                    factors.append("缩量上涨，持续性存疑")
+                else:
+                    score -= 3
+                    factors.append("缩量阴跌")
         
         return max(0, min(100, score)), factors
     
@@ -411,49 +583,152 @@ class AnalysisEngine:
         return max(0, min(100, score)), factors
     
     def _calculate_sentiment_score(self, symbol: str, analysis_date: date) -> Tuple[float, List[str], Dict]:
-        """计算新闻情感评分"""
+        """计算新闻情感评分
+        
+        增强版：
+        - 时间衰减加权（越近的新闻权重越高）
+        - 区分正面/负面/中性新闻数量
+        - 检测舆情突变
+        - 新闻数量不足时明确标注
+        - 当 related_stocks 查询无结果时，根据股票名称在标题中搜索
+        """
         factors = []
         score = 50.0
-        stats = {'count': 0, 'sentiment_avg': None}
+        stats = {'count': 0, 'sentiment_avg': None, 'positive': 0, 'negative': 0, 'neutral': 0}
         
         # 获取最近7天的相关新闻
         start_date = analysis_date - timedelta(days=7)
+        # analysis_date 是 date 类型，需要包含当天全天的文章
+        end_dt = datetime.combine(analysis_date, datetime.max.time()) if hasattr(datetime, 'combine') else analysis_date
         
         articles = self.session.execute(
             select(NewsArticle).where(
                 and_(
                     NewsArticle.related_stocks.contains([symbol]),
                     NewsArticle.published_at >= start_date,
-                    NewsArticle.published_at <= analysis_date
+                    NewsArticle.published_at <= end_dt
                 )
             )
         ).scalars().all()
         
+        # 回退：如果 related_stocks 查询无结果，尝试按股票名称搜索标题
+        if not articles:
+            stock_name = self._resolve_stock_name(symbol)
+            # 也尝试纯数字代码搜索
+            code_only = symbol.split('.')[0] if '.' in symbol else symbol
+            if stock_name:
+                articles = self.session.execute(
+                    select(NewsArticle).where(
+                        and_(
+                            NewsArticle.published_at >= start_date,
+                            NewsArticle.published_at <= end_dt,
+                            NewsArticle.title.ilike(f'%{stock_name}%')
+                        )
+                    ).limit(20)
+                ).scalars().all()
+            if not articles and code_only:
+                articles = self.session.execute(
+                    select(NewsArticle).where(
+                        and_(
+                            NewsArticle.published_at >= start_date,
+                            NewsArticle.published_at <= end_dt,
+                            NewsArticle.title.ilike(f'%{code_only}%')
+                        )
+                    ).limit(20)
+                ).scalars().all()
+        
         stats['count'] = len(articles)
         
         if not articles:
-            return 50.0, ["近期无相关新闻"], stats
+            return 50.0, ["近期无相关新闻，情感评分按中性处理"], stats
         
-        # 计算情感分数
-        sentiments = [a.sentiment_score for a in articles if a.sentiment_score is not None]
-        if sentiments:
-            avg_sentiment = sum(sentiments) / len(sentiments)
+        # 时间衰减加权情感分数
+        weighted_sum = 0.0
+        weight_total = 0.0
+        
+        for a in articles:
+            if a.sentiment_score is None:
+                continue
+            
+            # 时间衰减：发布越近权重越高
+            days_ago = (analysis_date - a.published_at.date()).days if hasattr(a.published_at, 'date') else 3
+            decay = 1.0 / (1 + days_ago * 0.3)
+            
+            weighted_sum += a.sentiment_score * decay
+            weight_total += decay
+            
+            # 分类统计
+            if a.sentiment_score > 0.2:
+                stats['positive'] += 1
+            elif a.sentiment_score < -0.2:
+                stats['negative'] += 1
+            else:
+                stats['neutral'] += 1
+        
+        # 如果没有文章有 sentiment_score，尝试标题关键词分析
+        if weight_total == 0 and articles:
+            pos_kw = ['利好', '上涨', '增长', '突破', '大涨', '盈利', '反弹', '创新高', '利润']
+            neg_kw = ['利空', '下跌', '下滑', '亏损', '风险', '暴跌', '减持', '处罚', '退市']
+            pos_count = 0
+            neg_count = 0
+            for a in articles:
+                title = a.title or ''
+                pos_count += sum(1 for k in pos_kw if k in title)
+                neg_count += sum(1 for k in neg_kw if k in title)
+            total_kw = pos_count + neg_count
+            if total_kw > 0:
+                sentiment_ratio = (pos_count - neg_count) / total_kw
+                avg_sentiment = sentiment_ratio * 0.5  # 标题分析可信度较低，缩小范围
+                stats['sentiment_avg'] = avg_sentiment
+                score = 50 + avg_sentiment * 50
+                weight_total = 1  # 标记已有结果
+                factors.append(f"基于{len(articles)}篇新闻标题关键词分析(可信度较低)")
+                if pos_count > neg_count:
+                    stats['positive'] = pos_count
+                    stats['negative'] = neg_count
+                elif neg_count > pos_count:
+                    stats['positive'] = pos_count
+                    stats['negative'] = neg_count
+            else:
+                factors.append(f"找到{len(articles)}篇相关新闻，但无情感评分数据")
+        
+        if weight_total > 0:
+            avg_sentiment = weighted_sum / weight_total
             stats['sentiment_avg'] = avg_sentiment
             
             # 情感分数范围 -1 到 1，转换为 0-100
             score = 50 + avg_sentiment * 50
             
-            if avg_sentiment > 0.3:
+            if avg_sentiment > 0.5:
+                factors.append(f"新闻情感强烈正面({avg_sentiment:.2f})，舆论利好")
+            elif avg_sentiment > 0.3:
                 factors.append(f"新闻情感偏正面({avg_sentiment:.2f})")
+            elif avg_sentiment < -0.5:
+                factors.append(f"新闻情感强烈负面({avg_sentiment:.2f})，舆论风险")
             elif avg_sentiment < -0.3:
                 factors.append(f"新闻情感偏负面({avg_sentiment:.2f})")
             else:
                 factors.append("新闻情感中性")
         
-        # 新闻数量因素
-        if len(articles) > 10:
+        # 舆情热度分析
+        if len(articles) > 15:
             score += 5
-            factors.append(f"近期热度高({len(articles)}篇新闻)")
+            factors.append(f"近期热度极高({len(articles)}篇新闻)")
+        elif len(articles) > 10:
+            score += 3
+            factors.append(f"近期热度较高({len(articles)}篇新闻)")
+        elif len(articles) < 3:
+            factors.append(f"新闻覆盖较少({len(articles)}篇)，情感参考价值有限")
+        
+        # 正负面对比
+        if stats['positive'] > 0 and stats['negative'] > 0:
+            ratio = stats['positive'] / (stats['positive'] + stats['negative'])
+            if ratio > 0.7:
+                score += 5
+                factors.append(f"正面新闻占比{ratio:.0%}，舆论环境良好")
+            elif ratio < 0.3:
+                score -= 5
+                factors.append(f"负面新闻占比{1-ratio:.0%}，需关注负面舆情")
         
         return max(0, min(100, score)), factors, stats
     
@@ -502,7 +777,11 @@ class AnalysisEngine:
     def _calculate_cycle_score(self, prices: List[PriceDaily]) -> Tuple[float, List[str]]:
         """计算周期规律评分
         
-        分析价格的周期性模式
+        增强版：
+        - 支撑/阻力位分析（30日&60日）
+        - 趋势强度分析
+        - 波动率分析（ATR方式）
+        - 价格动量连续性
         """
         factors = []
         score = 50.0
@@ -512,40 +791,105 @@ class AnalysisEngine:
         
         closes = [p.close for p in prices if p.close]
         
-        # 简单周期分析：检查是否在历史支撑/阻力位附近
+        # ---- 支撑/阻力位分析 ----
         if len(closes) >= 30:
             current = closes[0]
             high_30 = max(closes[:30])
             low_30 = min(closes[:30])
             
             # 接近支撑位（潜在反弹）
-            if current < low_30 * 1.05:
-                score += 10
-                factors.append("接近30日支撑位，可能反弹")
+            if current < low_30 * 1.03:
+                score += 8
+                factors.append(f"接近30日支撑位{low_30:.2f}，可能反弹")
             
             # 突破阻力位
             if current > high_30 * 0.98:
-                score += 10
-                factors.append("接近30日阻力位，突破可期")
+                score += 8
+                factors.append(f"接近30日阻力位{high_30:.2f}，突破可期")
         
-        # 波动率分析
+        # 60日支撑/阻力
+        if len(closes) >= 60:
+            high_60 = max(closes[:60])
+            low_60 = min(closes[:60])
+            if current > high_60 * 0.95:
+                score += 5
+                factors.append("接近60日新高")
+            elif current < low_60 * 1.05:
+                score -= 5
+                factors.append("接近60日新低(风险)")
+        
+        # ---- 趋势强度（ADX简化版） ----
         if len(closes) >= 20:
-            returns = [(closes[i] - closes[i+1]) / closes[i+1] for i in range(min(19, len(closes)-1))]
-            volatility = (sum(r**2 for r in returns) / len(returns)) ** 0.5
+            # 用连续上涨/下跌天数衡量趋势
+            up_days = 0
+            down_days = 0
+            for i in range(min(10, len(closes) - 1)):
+                if closes[i] > closes[i + 1]:
+                    up_days += 1
+                elif closes[i] < closes[i + 1]:
+                    down_days += 1
             
-            if volatility > 0.03:  # 日均波动>3%
-                factors.append(f"波动率较高({volatility*100:.1f}%)")
-            elif volatility < 0.01:
-                factors.append("波动率较低，趋势稳定")
+            if up_days >= 7:
+                score += 8
+                factors.append(f"近10日{up_days}天上涨，趋势强劲")
+            elif down_days >= 7:
+                score -= 8
+                factors.append(f"近10日{down_days}天下跌，下跌趋势明显(风险)")
+        
+        # ---- 波动率分析（ATR思路） ----
+        if len(prices) >= 20:
+            # 使用价格变动幅度（模拟ATR）
+            daily_ranges = []
+            for i in range(min(20, len(prices))):
+                p = prices[i]
+                if p.high and p.low and p.close:
+                    tr = p.high - p.low
+                    daily_ranges.append(tr / p.close)  # 相对波动率
+            
+            if daily_ranges:
+                avg_volatility = sum(daily_ranges) / len(daily_ranges) * 100
+                
+                if avg_volatility > 4:
+                    score -= 3
+                    factors.append(f"波动率较高({avg_volatility:.1f}%)，风险加大")
+                elif avg_volatility > 3:
+                    factors.append(f"波动率偏高({avg_volatility:.1f}%)")
+                elif avg_volatility < 1:
+                    factors.append(f"波动率极低({avg_volatility:.1f}%)，趋势可能延续")
+        
+        # ---- 价格动量连续性 ----
+        if len(closes) >= 5:
+            returns = [(closes[i] - closes[i+1]) / closes[i+1] for i in range(min(4, len(closes)-1))]
+            positive_returns = sum(1 for r in returns if r > 0)
+            
+            if positive_returns == len(returns):
+                score += 5
+                factors.append("连续上涨，动量持续")
+            elif positive_returns == 0:
+                score -= 5
+                factors.append("连续下跌，动量衰竭")
         
         return max(0, min(100, score)), factors
     
     def _determine_recommendation(self, score: float, factors: List[str]) -> str:
-        """确定推荐等级"""
+        """确定推荐等级
+        
+        增强版：综合评分 + 一致性检查
+        """
         if score >= self.THRESHOLDS['buy']:
+            # 额外检查：如果有明显风险因素，降级为hold
+            risk_signals = sum(1 for f in factors if '风险' in f or '死叉' in f or '超买' in f)
+            if risk_signals >= 2:
+                return 'hold'
             return 'buy'
         elif score < self.THRESHOLDS['sell']:
             return 'sell'
+        elif score >= 60:
+            # 60-70分区间：检查是否有明显利好因素
+            bullish_signals = sum(1 for f in factors if '利好' in f or '金叉' in f or '突破' in f or '反弹' in f)
+            if bullish_signals >= 2:
+                return 'buy'
+            return 'hold'
         else:
             return 'hold'
     
@@ -561,23 +905,58 @@ class AnalysisEngine:
         else:
             return 'medium'
     
-    def _calculate_confidence(self, prices: List[PriceDaily], news_stats: Dict) -> float:
-        """计算置信度"""
-        confidence = 0.5
+    def _calculate_confidence(self, prices: List[PriceDaily], news_stats: Dict, real_data_count: int = 5) -> float:
+        """计算置信度
         
-        # 数据充足性
-        if len(prices) >= 30:
-            confidence += 0.2
+        增强版：基于数据完整性、一致性、新鲜度、维度覆盖
+        """
+        confidence = 0.3
+        
+        # 维度数据覆盖（最高+0.2）
+        # 5维全有真实数据 → +0.2, 4维 → +0.15 ... 0维 → 0
+        confidence += real_data_count * 0.04
+        
+        # 数据充足性（最高+0.25）
+        if len(prices) >= 60:
+            confidence += 0.25
+        elif len(prices) >= 30:
+            confidence += 0.15
         elif len(prices) >= 20:
             confidence += 0.1
         
-        # 新闻数据
-        if news_stats.get('count', 0) > 5:
+        # 新闻数据覆盖（最高+0.15）
+        news_count = news_stats.get('count', 0)
+        if news_count >= 10:
+            confidence += 0.15
+        elif news_count >= 5:
             confidence += 0.1
+        elif news_count >= 1:
+            confidence += 0.05
         
-        # 情感一致性
+        # 情感一致性（最高+0.1）
         if news_stats.get('sentiment_avg') is not None:
             if abs(news_stats['sentiment_avg']) > 0.3:
+                confidence += 0.1
+        
+        # 数据新鲜度（最高+0.15）
+        if prices:
+            latest_trade = prices[0].trade_date
+            from app.tasks.scheduler import get_last_trading_day
+            expected = get_last_trading_day()
+            days_stale = (expected - latest_trade).days if latest_trade else 30
+            if days_stale <= 1:
+                confidence += 0.15
+            elif days_stale <= 3:
+                confidence += 0.08
+            # 超过3天没更新的数据，置信度不增加
+        
+        # 多维度一致性检查（最高+0.1）
+        # 如果资金流/新闻/技术面方向一致，增加置信度
+        positive_count = news_stats.get('positive', 0)
+        negative_count = news_stats.get('negative', 0)
+        if positive_count > 0 or negative_count > 0:
+            dominance = abs(positive_count - negative_count) / (positive_count + negative_count)
+            if dominance > 0.6:
                 confidence += 0.1
         
         return min(1.0, confidence)

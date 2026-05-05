@@ -13,7 +13,7 @@ services:
       TZ: ${TZ}
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./initdb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./infra/initdb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     networks: [aistock]
 
   api:
@@ -21,10 +21,35 @@ services:
     container_name: aistock-api
     restart: unless-stopped
     env_file: .env
+    environment:
+      - ENABLE_SCHEDULER=0
     depends_on: [db, keycloak, minio]
     ports:
-      - "8080:8080"
+      - "8081:8081"
     networks: [aistock]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  worker:
+    build: ./backend
+    container_name: aistock-worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - ENABLE_SCHEDULER=1
+      - ENABLE_TASK_SCHEDULER=1
+      - WORKER_MEMORY_LIMIT_MB=1800
+      - WORKER_BATCH_SIZE=50
+      - WORKER_STOCK_TIMEOUT=120
+    command: ["python", "-m", "app.worker"]
+    depends_on: [db]
+    networks: [aistock]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   web:
     build: ./frontend
@@ -32,9 +57,9 @@ services:
     restart: unless-stopped
     depends_on: [api]
     environment:
-      - VITE_API_BASE=http://api:8080
+      - VITE_API_BASE=http://api:8081
     ports:
-      - "8081:80"
+      - "3000:80"
     networks: [aistock]
 
   minio:
@@ -58,7 +83,7 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-    # 对外映射为 8099 以避免与后端 8080 端口冲突
+    # 对外映射为 8099 以避免与后端 8081 端口冲突
     ports:
       - "8099:8080"
     networks: [aistock]

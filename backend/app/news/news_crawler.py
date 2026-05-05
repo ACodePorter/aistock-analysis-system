@@ -166,11 +166,13 @@ class NewsContentCrawler:
     
     async def __aenter__(self):
         """异步上下文管理器入口"""
+        # httpx.AsyncClient uses `proxy` parameter (singular) in current versions.
+        # Use `proxy` and pass through the configured proxy URL or None.
         self.session = httpx.AsyncClient(
             timeout=self.timeout,
             follow_redirects=True,
             headers={'User-Agent': self.user_agents[0]},
-            proxies=self.proxies
+            proxy=self.proxies,
         )
         return self
     

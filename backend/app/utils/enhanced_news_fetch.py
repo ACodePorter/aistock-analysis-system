@@ -36,7 +36,7 @@ except ImportError:
     CRAWLER_SYSTEM_AVAILABLE = False
     logger.info("[增强新闻] 爬虫系统未启用，使用传统模式")
 
-# 尝试导入直接API模块（绕过SearXNG）
+# 尝试导入直接API模块（绕过OpenClaw）
 try:
     from app.utils.direct_news_api import fetch_news_direct, get_direct_api, DIRECT_API_ENABLED
     DIRECT_API_AVAILABLE = True
@@ -53,8 +53,8 @@ ENHANCED_SEARCH_MAX_INDUSTRY_NEWS = int(os.getenv('ENHANCED_SEARCH_MAX_INDUSTRY_
 ENHANCED_SEARCH_TIMEOUT = float(os.getenv('ENHANCED_SEARCH_TIMEOUT', '30'))
 
 # 后端API
-BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8080")
-SEARXNG_URL = os.getenv("SEARXNG_URL", "http://localhost:10000")
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8081")
+OPENCLAW_SEARCH_ALIAS = os.getenv("WEB_RETRIEVAL_MODE", "openclaw")
 
 
 # ============ 行业分类映射 ============
@@ -398,12 +398,13 @@ class EnhancedNewsFetcher:
     1. 从信源库(NewsStore)获取已抓取的新闻
     2. 从后端数据库获取
     3. 使用爬虫系统实时抓取
-    4. 最后使用SearXNG兜底
+    4. 最后使用 OpenClaw 检索兜底
     """
     
-    def __init__(self, backend_url: str = BACKEND_BASE_URL, searxng_url: str = SEARXNG_URL):
+    def __init__(self, backend_url: str = BACKEND_BASE_URL, OpenClaw_url: str = OPENCLAW_SEARCH_ALIAS):
         self.backend_url = backend_url.rstrip('/')
-        self.searxng_url = searxng_url.rstrip('/')
+        from ..agent.web_agent import AgenticWebRetriever
+        self._web_retriever = AgenticWebRetriever()
         
         # 尝试获取爬虫系统
         self._orchestrator = None
@@ -412,8 +413,8 @@ class EnhancedNewsFetcher:
                 self._orchestrator = get_orchestrator()
             except Exception as e:
                 logger.debug(f"[增强新闻] 获取爬虫调度器失败: {e}")
-        # Proxy pool for SearXNG / fallback requests (comma-separated)
-        raw_pool = os.getenv('SEARXNG_PROXY_POOL', '') or ''
+        # Proxy pool for OpenClaw / fallback requests (comma-separated)
+        raw_pool = os.getenv('WEB_FETCH_PROXY_POOL', '') or os.getenv('SEARXNG_PROXY_POOL', '') or ''
         self.proxy_pool = [p.strip() for p in raw_pool.split(',') if p.strip()]
         self._proxy_index = 0
         # Default NEWS_HTTP_PROXY fallback
@@ -489,40 +490,25 @@ class EnhancedNewsFetcher:
             logger.warning(f"Request failed for {url}: {e}")
             return None
 
-    def _is_searxng_healthy(self, force: bool = False) -> bool:
-        """快速健康检查 SearXNG 实例，结果会被短时缓存以减少请求量"""
+    def _is_web_search_healthy(self, force: bool = False) -> bool:
+        """快速健康检查共享检索链路"""
         now = datetime.utcnow()
-        last = getattr(self, '_searxng_last_check', None)
-        healthy_cache = getattr(self, '_searxng_healthy', None)
+        last = getattr(self, "_web_last_check", None)
+        healthy_cache = getattr(self, "_web_healthy", None)
         if not force and last and healthy_cache is not None and (now - last) < timedelta(seconds=30):
             return healthy_cache
 
-        self._searxng_last_check = now
+        self._web_last_check = now
         try:
-            # 首先尝试根路径
-            resp = self._safe_request('get', f"{self.searxng_url}/", timeout=3)
-            if resp and resp.status_code == 200:
-                self._searxng_healthy = True
-                return True
-
-            # 尝试 info 页面
-            resp = self._safe_request('get', f"{self.searxng_url}/info/en", timeout=3)
-            if resp and resp.status_code == 200:
-                self._searxng_healthy = True
-                return True
-
-            # 最后尝试简单的 search 请求
-            resp = self._safe_request('get', f"{self.searxng_url}/search", params={'q': 'test', 'format': 'json'}, timeout=3)
-            healthy = bool(resp and resp.status_code == 200)
-            self._searxng_healthy = healthy
-            if not healthy:
-                logger.warning(f"SearXNG appears unhealthy at {self.searxng_url}")
+            health = asyncio.run(self._web_retriever.health_check(query="A股 公司 新闻"))
+            healthy = bool(health.get("ok"))
+            self._web_healthy = healthy
             return healthy
         except Exception as e:
-            logger.warning(f"SearXNG health check exception: {e}")
-            self._searxng_healthy = False
+            logger.warning(f"OpenClaw health check exception: {e}")
+            self._web_healthy = False
             return False
-    
+
     def _identify_industry(self, stock: Dict[str, Any], profile_data: Optional[Dict] = None) -> Tuple[str, List[str]]:
         """识别股票所属行业及关键词
         
@@ -599,7 +585,7 @@ class EnhancedNewsFetcher:
         return None
     
     def _search_company_realtime(self, company_name: str, limit: int = 3) -> List[Dict[str, Any]]:
-        """使用SearXNG实时搜索公司新闻
+        """使用OpenClaw实时搜索公司新闻
         
         当数据库和行业新闻都不足时的最后备选方案
         
@@ -630,9 +616,9 @@ class EnhancedNewsFetcher:
                     'time_range': 'week',
                     'language': 'zh-CN',
                 }
-                # 如果 SearXNG 不可用，回退到后端 DB 搜索接口
-                if not self._is_searxng_healthy():
-                    logger.warning(f"SearXNG unavailable, falling back to backend DB search for '{query}'")
+                # 如果 OpenClaw 不可用，回退到后端 DB 搜索接口
+                if not self._is_web_search_healthy():
+                    logger.warning(f"OpenClaw unavailable, falling back to backend DB search for '{query}'")
                     resp = self._safe_request('get', f"{self.backend_url}/api/news/search_db", params={'query': query, 'limit': limit, 'include_content': True}, timeout=8)
                     if resp and resp.status_code == 200:
                         try:
@@ -655,11 +641,11 @@ class EnhancedNewsFetcher:
                             logger.debug(f"DB fallback parse failed for '{query}'")
                     continue
 
-                resp = self._safe_request('get', f"{self.searxng_url}/search", params=params, timeout=15)
+                resp = self._safe_request('get', f"{self.backend_url}/api/news/search", params=params, timeout=15)
                 
                 if resp and resp.status_code == 200:
                     data = resp.json()
-                    for r in data.get('results', []):
+                    for r in data.get('articles', []):
                         url = (r.get('url') or '').strip()
                         if not url or url in seen_urls:
                             continue
@@ -669,7 +655,7 @@ class EnhancedNewsFetcher:
                             'title': (r.get('title') or '').strip(),
                             'url': url,
                             'content': (r.get('content') or '').strip()[:500],
-                            'source': 'searx_realtime',
+                            'source': 'openclaw_realtime',
                             'search_query': query,
                         })
                         
@@ -719,8 +705,8 @@ class EnhancedNewsFetcher:
                     'time_range': 'week',
                     'language': 'zh-CN',
                 }
-                if not self._is_searxng_healthy():
-                    logger.warning(f"SearXNG unavailable, falling back to backend DB industry search for '{query}'")
+                if not self._is_web_search_healthy():
+                    logger.warning(f"OpenClaw unavailable, falling back to backend DB industry search for '{query}'")
                     resp = self._safe_request('get', f"{self.backend_url}/api/news/search_db", params={'query': query, 'limit': limit, 'include_content': True}, timeout=8)
                     if resp and resp.status_code == 200:
                         try:
@@ -744,11 +730,11 @@ class EnhancedNewsFetcher:
                             logger.debug(f"DB fallback parse failed for industry query '{query}'")
                     continue
 
-                resp = self._safe_request('get', f"{self.searxng_url}/search", params=params, timeout=15)
+                resp = self._safe_request('get', f"{self.backend_url}/api/news/search", params=params, timeout=15)
                 
                 if resp and resp.status_code == 200:
                     data = resp.json()
-                    for r in data.get('results', []):
+                    for r in data.get('articles', []):
                         url = (r.get('url') or '').strip()
                         if not url or url in seen_urls:
                             continue
@@ -805,8 +791,8 @@ class EnhancedNewsFetcher:
                     'time_range': 'month',
                     'language': 'zh-CN',
                 }
-                if not self._is_searxng_healthy():
-                    logger.debug(f"SearXNG unavailable, falling back to DB for keyword expand query '{query}'")
+                if not self._is_web_search_healthy():
+                    logger.debug(f"OpenClaw unavailable, falling back to DB for keyword expand query '{query}'")
                     resp = self._safe_request('get', f"{self.backend_url}/api/news/search_db", params={'query': query, 'limit': 5, 'include_content': True}, timeout=8)
                     if resp and resp.status_code == 200:
                         try:
@@ -829,11 +815,11 @@ class EnhancedNewsFetcher:
                             logger.debug(f"DB fallback parse failed for keyword query '{query}'")
                     continue
 
-                resp = self._safe_request('get', f"{self.searxng_url}/search", params=params, timeout=15)
+                resp = self._safe_request('get', f"{self.backend_url}/api/news/search", params=params, timeout=15)
                 
                 if resp and resp.status_code == 200:
                     data = resp.json()
-                    for r in data.get('results', []):
+                    for r in data.get('articles', []):
                         url = (r.get('url') or '').strip()
                         if not url or url in seen_urls:
                             continue
@@ -926,7 +912,7 @@ class EnhancedNewsFetcher:
         2. 从后端数据库获取
         3. 使用扩展关键词搜索
         4. 获取行业新闻作为背景
-        5. 最后使用SearXNG兜底
+        5. 最后使用OpenClaw兜底
         6. 数据不足时触发后台爬虫补充
         
         Args:
@@ -984,7 +970,7 @@ class EnhancedNewsFetcher:
                 result.search_strategies_used.append('keyword_expand')
                 result.diagnostics['keyword_expand_count'] = len(expanded)
         
-        # ===== 策略1.5: 直接API获取（SearXNG不可用时的主要信源）=====
+        # ===== 策略1.5: 直接API获取（OpenClaw不可用时的主要信源）=====
         if len(result.direct_news) < min_required and DIRECT_API_AVAILABLE and DIRECT_API_ENABLED:
             try:
                 direct_news = fetch_news_direct(
@@ -1043,10 +1029,10 @@ class EnhancedNewsFetcher:
                 except Exception as e:
                     logger.debug(f"[直接API] 行业新闻获取失败: {e}")
             
-            # ===== 策略3: 如果还是不足，使用SearXNG实时搜索补充 =====
+            # ===== 策略3: 如果还是不足，使用OpenClaw实时搜索补充 =====
             remaining = ENHANCED_SEARCH_MAX_INDUSTRY_NEWS - len(result.industry_news)
             if remaining > 0 and len(result.industry_news) < 3:
-                # SearXNG行业新闻搜索
+                # OpenClaw行业新闻搜索
                 searx_industry = self._search_industry_news(industry, keywords, limit=remaining)
                 if searx_industry:
                     # 去重
@@ -1083,7 +1069,7 @@ def enhance_stock_news_for_analysis(
     stock: Dict[str, Any],
     existing_news: List[Dict[str, Any]],
     backend_url: str = BACKEND_BASE_URL,
-    searxng_url: str = SEARXNG_URL,
+    OpenClaw_url: str = OPENCLAW_SEARCH_ALIAS,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
     增强新闻获取的简化接口，供 top20_llm_agent_full.py 调用
@@ -1092,7 +1078,7 @@ def enhance_stock_news_for_analysis(
         stock: 股票信息
         existing_news: 已有新闻
         backend_url: 后端URL
-        searxng_url: SearXNG URL
+        OpenClaw_url: OpenClaw retrieval alias
     
     Returns:
         (合并后的新闻列表, 诊断信息)
@@ -1101,7 +1087,7 @@ def enhance_stock_news_for_analysis(
         return existing_news, {'enhanced': False}
     
     try:
-        fetcher = EnhancedNewsFetcher(backend_url, searxng_url)
+        fetcher = EnhancedNewsFetcher(backend_url, OpenClaw_url)
         result = fetcher.enhance_stock_news(stock, existing_news)
         
         # 合并新闻（去重）
@@ -1282,3 +1268,8 @@ if __name__ == '__main__':
     print(f"\n新闻标题:")
     for i, n in enumerate(enhanced[:5], 1):
         print(f"  {i}. {n.get('title', 'N/A')[:60]}...")
+
+
+
+
+

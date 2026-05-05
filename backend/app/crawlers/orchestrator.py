@@ -33,7 +33,7 @@ from .crawlers import (
     SinaFinanceCrawler,
     CLSCrawler,
     CNInfoCrawler,
-    SearXNGCrawler,
+    OpenClawCrawler,
 )
 
 logger = logging.getLogger(__name__)
@@ -428,8 +428,8 @@ class CrawlerOrchestrator:
             'sina_finance': self._crawl_sina,
             'cls': self._crawl_cls,
             'cninfo': self._crawl_cninfo,
-            'searxng': self._crawl_searxng,
-            'default': self._crawl_searxng,
+            'openclaw': self._crawl_openclaw,
+            'default': self._crawl_openclaw,
         }
         
         self.queue.start(crawler_funcs)
@@ -484,9 +484,9 @@ class CrawlerOrchestrator:
             kwargs.get('limit', 10)
         )
     
-    def _crawl_searxng(self, query: str, task_type: str, **kwargs) -> List[Dict[str, Any]]:
-        """SearXNG爬虫入口"""
-        crawler = SearXNGCrawler()
+    def _crawl_openclaw(self, query: str, task_type: str, **kwargs) -> List[Dict[str, Any]]:
+        """OpenClaw 检索爬虫入口"""
+        crawler = OpenClawCrawler()
         return crawler.crawl(query, task_type, kwargs.get('limit', 10))
     
     def start(self):
@@ -671,7 +671,7 @@ class CrawlerOrchestrator:
         # SearXNG补充
         search_query = f'{industry} 行业 政策'
         task_id = self.queue.submit(
-            source='searxng',
+            source='openclaw',
             task_type='industry_news',
             query=search_query,
             params={'limit': 10},
@@ -753,3 +753,5 @@ def init_crawler_system():
     orchestrator.start()
     logger.info("✅ 爬虫系统初始化完成")
     return orchestrator
+
+

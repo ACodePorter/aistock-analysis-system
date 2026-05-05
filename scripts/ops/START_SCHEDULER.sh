@@ -8,11 +8,11 @@ echo ""
 
 # 检查后端是否运行
 echo "✅ Step 1: 检查后端服务..."
-if curl -s http://localhost:8080/api/news/stocks/progress > /dev/null 2>&1; then
+if curl -s http://localhost:8081/api/news/stocks/progress > /dev/null 2>&1; then
     echo "   ✅ 后端服务已运行"
 else
     echo "   ❌ 后端服务未运行，请先启动后端"
-    echo "   在 backend 目录运行: python -m uvicorn app.main:app --host 0.0.0.0 --port 8080"
+    echo "   在 backend 目录运行: python -m uvicorn app.main:app --host 0.0.0.0 --port 8081"
     exit 1
 fi
 
@@ -29,7 +29,7 @@ fi
 # 获取 API 状态
 echo ""
 echo "✅ Step 3: 获取 Profile 进度..."
-curl -s http://localhost:8080/api/news/stocks/progress?page=1&page_size=5 | python -m json.tool
+curl -s http://localhost:8081/api/news/stocks/progress?page=1&page_size=5 | python -m json.tool
 
 echo ""
 echo "=========================================="
@@ -43,7 +43,7 @@ echo "   - 完成度: 0.10%"
 echo ""
 echo "📍 访问地址:"
 echo "   - 前端: http://localhost:3000"
-echo "   - API 进度: http://localhost:8080/api/news/stocks/progress"
+echo "   - API 进度: http://localhost:8081/api/news/stocks/progress"
 echo ""
 echo "🔔 定时任务:"
 echo "   - 每周一 02:00 自动执行"

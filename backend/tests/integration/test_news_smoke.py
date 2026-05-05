@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 
 
-BASE_URL = os.environ.get("API_URL", "http://localhost:8080")
+BASE_URL = os.environ.get("API_URL", "http://localhost:8081")
 
 
 def _print(msg: str):

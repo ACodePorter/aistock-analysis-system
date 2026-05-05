@@ -498,8 +498,8 @@ python backend/scripts/cleanup_empty_summaries.py
 
 4. **测试 API**:
    ```bash
-   curl http://localhost:8080/api/stock-profile/000001.SZ
-   curl http://localhost:8080/api/stock-profile/000001.SZ/details
+  curl http://localhost:8081/api/stock-profile/000001.SZ
+  curl http://localhost:8081/api/stock-profile/000001.SZ/details
    ```
 
 ---

@@ -1,6 +1,0 @@
-{
-  "error": "[Errno 22] Invalid argument",
-  "traceback": "Traceback (most recent call last):\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 5814, in <module>\n    agent_main(report_date=report_date)\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 5183, in agent_main\n    report = validate_stock_json(llm_analyze_news(name, news_list, symbol=symbol, basic_profile=bp))\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\workspace\\mpj\\aistock-full-project\\backend\\app\\scripts\\top20_llm_agent_full.py\", line 4322, in llm_analyze_news\n    print(f\"[llm-raw-stock] {stock_name} snippet: {raw[:220].replace('\\n',' ')} ...\")\nOSError: [Errno 22] Invalid argument\n",
-  "finished_at": "2026-01-30T17:26:07.718545+00:00",
-  "fallback": "error"
-}

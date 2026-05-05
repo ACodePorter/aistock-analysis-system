@@ -6,7 +6,7 @@
 - 股票行情：Yahoo Finance、Sina Finance、东方财富
 - 百科知识：Wikipedia API、百度百科
 - 新闻搜索：NewsAPI、Google News RSS、RSS聚合
-- 通用搜索：SearXNG (增强版)、DuckDuckGo Instant Answer
+- 通用搜索：OpenClaw Agentic Retrieval、DuckDuckGo Instant Answer
 
 设计原则：
 1. 多源冗余：每种数据类型至少有2个备选源
@@ -1466,92 +1466,44 @@ class CLSNewsProvider(BaseDataProvider):
 
 # ============== 通用搜索提供器 ==============
 
-class SearXNGEnhancedProvider(BaseDataProvider):
-    """增强版 SearXNG 提供器"""
+class OpenClawSearchProvider(BaseDataProvider):
+    """OpenClaw 风格检索提供器"""
     
-    name = "searxng_enhanced"
+    name = "openclaw_search"
     category = DataCategory.SEARCH
-    priority = 3
+    priority = 1
     
-    def __init__(self, base_url: str = None, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.base_url = (base_url or os.getenv('SEARXNG_URL', 'http://localhost:10000')).rstrip('/')
-        # 支持多实例负载均衡
-        self._instances = self._parse_instances()
-        self._instance_index = 0
-    
-    def _parse_instances(self) -> List[str]:
-        """解析多个 SearXNG 实例"""
-        pool = os.getenv('SEARXNG_INSTANCE_POOL', '')
-        if pool:
-            return [u.strip().rstrip('/') for u in pool.split(',') if u.strip()]
-        return [self.base_url]
-    
-    def _get_instance(self) -> str:
-        """轮询获取实例"""
-        instance = self._instances[self._instance_index % len(self._instances)]
-        self._instance_index += 1
-        return instance
+        from ..agent.web_agent import AgenticWebRetriever
+        self.retriever = AgenticWebRetriever()
     
     def query(self, keyword: str, categories: str = "general", time_range: str = "", limit: int = 10, **kwargs) -> ProviderResult:
-        """搜索
-        
-        Args:
-            keyword: 搜索关键词
-            categories: 分类 (general, news, images, videos, etc.)
-            time_range: 时间范围 (day, week, month, year)
-            limit: 返回数量
-        """
         start = time.time()
-        last_error = ""
-        
-        # 尝试多个实例
-        for _ in range(len(self._instances)):
-            instance = self._get_instance()
-            try:
-                params = {
-                    'q': keyword,
-                    'format': 'json',
-                    'categories': categories,
-                    'language': 'zh-CN',
-                }
-                if time_range:
-                    params['time_range'] = time_range
-                
-                resp = self._safe_get(f"{instance}/search", params=params, timeout=self.timeout)
-                if not resp:
-                    last_error = f"Instance {instance} failed"
-                    continue
-                
-                data = resp.json()
-                results = []
-                
-                for item in data.get('results', [])[:limit]:
-                    results.append({
-                        'title': item.get('title', ''),
-                        'url': item.get('url', ''),
-                        'content': item.get('content', ''),
-                        'engine': item.get('engine', ''),
-                        'published_date': item.get('publishedDate', ''),
-                    })
-                
-                result = {
-                    'keyword': keyword,
-                    'results': results,
-                    'instance': instance,
-                }
-                
-                self._record_success()
-                latency = int((time.time() - start) * 1000)
-                return ProviderResult(success=True, data=result, source=self.name, latency_ms=latency)
-                
-            except Exception as e:
-                last_error = str(e)
-                logger.debug(f"[searxng] instance {instance} error: {e}")
-                continue
-        
-        self._record_error(last_error)
-        return ProviderResult(success=False, error=last_error, source=self.name)
+        try:
+            docs = self.retriever.retrieve_sync(
+                question=keyword,
+                max_results=limit,
+                category=categories or "general",
+                time_range=time_range or None,
+                language=kwargs.get('language'),
+                engines=kwargs.get('engines'),
+            )
+            result = {
+                'keyword': keyword,
+                'results': docs,
+                'mode': 'openclaw_web',
+            }
+            self._record_success()
+            return ProviderResult(
+                success=True,
+                data=result,
+                source=self.name,
+                latency_ms=int((time.time() - start) * 1000),
+            )
+        except Exception as e:
+            self._record_error(str(e))
+            return ProviderResult(success=False, error=str(e), source=self.name)
 
 
 class DuckDuckGoProvider(BaseDataProvider):
@@ -1655,7 +1607,7 @@ class WebDataManager:
         self.register_provider(RSSHubFinanceProvider())    # RSSHub聚合
         
         # 搜索
-        self.register_provider(SearXNGEnhancedProvider())
+        self.register_provider(OpenClawSearchProvider())
         self.register_provider(DuckDuckGoProvider())
     
     def register_provider(self, provider: BaseDataProvider):
@@ -2067,3 +2019,4 @@ if __name__ == "__main__":
         print(f"\n{cat}:")
         for p in providers:
             print(f"  {p['name']}: {p['status']} (errors={p['error_count']}, success={p['success_count']})")
+

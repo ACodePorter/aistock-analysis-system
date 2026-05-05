@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { API_ENDPOINTS, buildApiUrl } from '../config/api'
+import HelpTooltip, { HelpIcon } from './components/HelpTooltip'
+import { helpTips } from '../config/helpTips'
 
 interface FundFlowRow {
   symbol: string
+  display_name?: string
+  name?: string
   trade_date: string
   main_net: number | null
   main_ratio: number | null
@@ -52,8 +56,13 @@ export default function FundFlowPanel({ variant = 'card' }: FundFlowPanelProps){
 
   useEffect(()=>{ load(); const t = setInterval(load, 5*60*1000); return ()=>clearInterval(t) }, [])
 
-  const topInflow = [...rows].sort((a,b)=> (b.main_net??0) - (a.main_net??0)).slice(0,5)
-  const topOutflow = [...rows].sort((a,b)=> (a.main_net??0) - (b.main_net??0)).slice(0,5)
+  // deduplicate by symbol (keep first occurrence which has the highest/lowest main_net after sort)
+  const dedup = (arr: FundFlowRow[]) => {
+    const seen = new Set<string>()
+    return arr.filter(r => { if (seen.has(r.symbol)) return false; seen.add(r.symbol); return true })
+  }
+  const topInflow = dedup([...rows].sort((a,b)=> (b.main_net??0) - (a.main_net??0))).slice(0,5)
+  const topOutflow = dedup([...rows].sort((a,b)=> (a.main_net??0) - (b.main_net??0))).slice(0,5)
 
   const body = (
     <>
@@ -67,21 +76,24 @@ export default function FundFlowPanel({ variant = 'card' }: FundFlowPanelProps){
         <div className="section-grid two">
           <div style={{padding:18}}>
             <div className="card-panel-header" style={{marginBottom:12}}>
-              <div className="card-panel-title" style={{fontSize:16}}>主力净流入 TOP5</div>
+              <div className="card-panel-title" style={{fontSize:16, display:'flex', alignItems:'center', gap:6}}>
+                主力净流入 TOP5
+                <HelpTooltip {...helpTips.mainNetInflow}><HelpIcon /></HelpTooltip>
+              </div>
             </div>
             <div className="table-wrapper" style={{marginTop:6}}>
               <table className="table-beauty" style={{fontSize:12}}>
                 <thead>
                   <tr>
                     <th>股票</th>
-                    <th style={{textAlign:'right'}}>净额（万/亿）</th>
-                    <th style={{textAlign:'right'}}>净占比(%)</th>
+                    <th style={{textAlign:'right'}}><span style={{display:'inline-flex', alignItems:'center', gap:5, justifyContent:'flex-end', width:'100%'}}>净额（万/亿）<HelpTooltip {...helpTips.mainNetInflow}><HelpIcon /></HelpTooltip></span></th>
+                    <th style={{textAlign:'right'}}><span style={{display:'inline-flex', alignItems:'center', gap:5, justifyContent:'flex-end', width:'100%'}}>净占比(%)<HelpTooltip {...helpTips.mainNetRatio}><HelpIcon /></HelpTooltip></span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {topInflow.map((r)=> (
                     <tr key={`in-${r.symbol}`}>
-                      <td>{r.symbol}</td>
+                      <td>{r.display_name ?? (r.name ? `${r.name} (${r.symbol})` : r.symbol)}</td>
                       <td style={{textAlign:'right'}}>{fmtWanYi(r.main_net)}</td>
                       <td style={{textAlign:'right'}}>{r.main_ratio!=null? r.main_ratio.toFixed(2) : '-'}</td>
                     </tr>
@@ -92,21 +104,24 @@ export default function FundFlowPanel({ variant = 'card' }: FundFlowPanelProps){
           </div>
           <div style={{padding:18}}>
             <div className="card-panel-header" style={{marginBottom:12}}>
-              <div className="card-panel-title" style={{fontSize:16}}>主力净流出 TOP5</div>
+              <div className="card-panel-title" style={{fontSize:16, display:'flex', alignItems:'center', gap:6}}>
+                主力净流出 TOP5
+                <HelpTooltip {...helpTips.mainNetOutflow}><HelpIcon /></HelpTooltip>
+              </div>
             </div>
             <div className="table-wrapper" style={{marginTop:6}}>
               <table className="table-beauty" style={{fontSize:12}}>
                 <thead>
                   <tr>
                     <th>股票</th>
-                    <th style={{textAlign:'right'}}>净额（万/亿）</th>
-                    <th style={{textAlign:'right'}}>净占比(%)</th>
+                    <th style={{textAlign:'right'}}><span style={{display:'inline-flex', alignItems:'center', gap:5, justifyContent:'flex-end', width:'100%'}}>净额（万/亿）<HelpTooltip {...helpTips.mainNetOutflow}><HelpIcon /></HelpTooltip></span></th>
+                    <th style={{textAlign:'right'}}><span style={{display:'inline-flex', alignItems:'center', gap:5, justifyContent:'flex-end', width:'100%'}}>净占比(%)<HelpTooltip {...helpTips.mainNetRatio}><HelpIcon /></HelpTooltip></span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {topOutflow.map((r)=> (
                     <tr key={`out-${r.symbol}`}>
-                      <td>{r.symbol}</td>
+                      <td>{r.display_name ?? (r.name ? `${r.name} (${r.symbol})` : r.symbol)}</td>
                       <td style={{textAlign:'right'}}>{fmtWanYi(r.main_net)}</td>
                       <td style={{textAlign:'right'}}>{r.main_ratio!=null? r.main_ratio.toFixed(2) : '-'}</td>
                     </tr>
@@ -135,7 +150,10 @@ export default function FundFlowPanel({ variant = 'card' }: FundFlowPanelProps){
     <div className="card-panel">
       <div className="card-panel-header">
         <div>
-          <div className="card-panel-title">大单资金流向榜</div>
+          <div className="card-panel-title" style={{display:'flex', alignItems:'center', gap:6}}>
+            大单资金流向榜
+            <HelpTooltip {...helpTips.agentCapitalFlow}><HelpIcon /></HelpTooltip>
+          </div>
           <div className="card-panel-subtitle">追踪主力资金动向，洞察市场资金侧重点</div>
         </div>
         <div className="info-pill">{date ? `最新交易日：${date}` : '等待更新'}</div>

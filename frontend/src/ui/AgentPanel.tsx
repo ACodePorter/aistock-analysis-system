@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { buildApiUrl } from '../config/api';
+import HelpTooltip from './components/HelpTooltip';
+import { helpTips } from '../config/helpTips';
 
 interface AgentStatus {
   status: string;
@@ -79,8 +81,8 @@ const AgentPanel: React.FC = () => {
   const canFetchReport = status && ['finished','failed'].includes(status.status);
 
   return (
-    <div className="border rounded p-4 space-y-4 bg-white shadow-sm">
-      <h2 className="text-lg font-semibold">Top20 智能分析 Agent</h2>
+    <div className="rounded p-4 space-y-4 shadow-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+      <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>Top20 智能分析 Agent</h2>
       <div className="flex items-center gap-3 flex-wrap">
         <label className="flex items-center gap-1 text-sm">
           <input type="checkbox" checked={strict} onChange={e=>setStrict(e.target.checked)} /> 严格JSON
@@ -88,13 +90,21 @@ const AgentPanel: React.FC = () => {
         <label className="flex items-center gap-1 text-sm">
           <input type="checkbox" checked={withMarkdown} onChange={e=>setWithMarkdown(e.target.checked)} /> 带Markdown
         </label>
-        <button disabled={loading} onClick={runAgent} className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded disabled:opacity-50">
-          {loading ? '启动中...' : '启动运行'}
-        </button>
-        <button disabled={!canFetchReport || fetchingReport} onClick={fetchLatestReport} className="px-3 py-1.5 bg-gray-700 text-white text-sm rounded disabled:opacity-40">
-          {fetchingReport ? '获取中...' : '拉取最新报告'}
-        </button>
-        {jobId && <span className="text-xs text-gray-500">Job: {jobId.slice(0,10)}...</span>}
+        <HelpTooltip {...helpTips.generateAgentReport}>
+          <span style={{ display: 'inline-flex' }}>
+            <button disabled={loading} onClick={runAgent} className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded disabled:opacity-50">
+              {loading ? '启动中...' : '启动运行'}
+            </button>
+          </span>
+        </HelpTooltip>
+        <HelpTooltip {...helpTips.viewDetails} content="拉取最近一次 Agent 报告，用于查看报告摘要、诊断告警和 Markdown 预览。">
+          <span style={{ display: 'inline-flex' }}>
+            <button disabled={!canFetchReport || fetchingReport} onClick={fetchLatestReport} className="px-3 py-1.5 bg-gray-700 text-white text-sm rounded disabled:opacity-40">
+              {fetchingReport ? '获取中...' : '拉取最新报告'}
+            </button>
+          </span>
+        </HelpTooltip>
+        {jobId && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Job: {jobId.slice(0,10)}...</span>}
       </div>
       {status && (
         <div className="text-sm space-y-1">
@@ -102,17 +112,17 @@ const AgentPanel: React.FC = () => {
           {status.duration_sec !== undefined && <div>耗时: {status.duration_sec}s</div>}
           {status.return_code !== undefined && <div>返回码: {status.return_code}</div>}
           {status.concurrency_limit && <div>并发上限: {status.concurrency_limit}</div>}
-          {status.error && <div className="text-red-600">错误: {status.error}</div>}
+          {status.error && <div style={{ color: 'var(--accent-red)' }}>错误: {status.error}</div>}
           {status.stdout_tail && status.stdout_tail.length > 0 && (
             <details className="mt-2">
-              <summary className="cursor-pointer text-blue-600">stdout尾部</summary>
-              <pre className="max-h-48 overflow-auto text-xs bg-gray-50 p-2 border">{status.stdout_tail.join('\n')}</pre>
+              <summary className="cursor-pointer" style={{ color: '#93c5fd' }}>stdout尾部</summary>
+              <pre className="max-h-48 overflow-auto text-xs p-2" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)' }}>{status.stdout_tail.join('\n')}</pre>
             </details>
           )}
           {status.stderr_tail && status.stderr_tail.length > 0 && (
             <details className="mt-2">
-              <summary className="cursor-pointer text-red-600">stderr尾部</summary>
-              <pre className="max-h-48 overflow-auto text-xs bg-red-50 p-2 border">{status.stderr_tail.join('\n')}</pre>
+              <summary className="cursor-pointer" style={{ color: 'var(--action-sell-fg)' }}>stderr尾部</summary>
+              <pre className="max-h-48 overflow-auto text-xs p-2" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid var(--action-sell-border)', color: 'var(--action-sell-fg)' }}>{status.stderr_tail.join('\n')}</pre>
             </details>
           )}
         </div>
@@ -120,7 +130,7 @@ const AgentPanel: React.FC = () => {
       {latestReport && (
         <div className="text-sm space-y-2">
           <h3 className="font-medium">最新报告 JSON 概览</h3>
-          <pre className="max-h-64 overflow-auto text-xs bg-gray-50 p-2 border">{JSON.stringify({
+          <pre className="max-h-64 overflow-auto text-xs p-2" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)' }}>{JSON.stringify({
             started_at: latestReport.started_at,
             finished_at: latestReport.finished_at,
             top20_count: latestReport.top20_count,
@@ -129,8 +139,8 @@ const AgentPanel: React.FC = () => {
           }, null, 2)}</pre>
           {latestMarkdown && (
             <details>
-              <summary className="cursor-pointer text-indigo-600">Markdown 预览</summary>
-              <pre className="max-h-72 overflow-auto text-xs bg-white p-2 border whitespace-pre-wrap">{latestMarkdown}</pre>
+              <summary className="cursor-pointer" style={{ color: '#a5b4fc' }}>Markdown 预览</summary>
+              <pre className="max-h-72 overflow-auto text-xs p-2 whitespace-pre-wrap" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text)' }}>{latestMarkdown}</pre>
             </details>
           )}
         </div>

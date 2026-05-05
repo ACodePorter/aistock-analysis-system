@@ -10,6 +10,7 @@ LLM 服务代理 - 支持多个 LLM 后端
 
 import os
 import logging
+import json
 from typing import Optional
 from enum import Enum
 
@@ -84,12 +85,23 @@ class LLMServiceProxy:
         """
         
         if self.provider == LLMProvider.LOCAL_QWEN:
-            return await self._generate_with_qwen(prompt, system_prompt, **kwargs)
-        elif self.provider == LLMProvider.AZURE:
-            return await self._generate_with_azure(prompt, system_prompt, **kwargs)
-        else:
-            logger.error("❌ 没有可用的 LLM 提供商")
+            text = await self._generate_with_qwen(prompt, system_prompt, **kwargs)
+            if text:
+                return text
+            if self._azure_configured():
+                logger.warning("⚠️ 本地 Qwen 不可用，回退到 Azure OpenAI")
+                return await self._generate_with_azure(prompt, system_prompt, **kwargs)
             return None
+
+        if self.provider == LLMProvider.AZURE:
+            return await self._generate_with_azure(prompt, system_prompt, **kwargs)
+
+        if self._azure_configured():
+            logger.warning("⚠️ 使用 Azure OpenAI 作为兜底 LLM 提供商")
+            return await self._generate_with_azure(prompt, system_prompt, **kwargs)
+
+        logger.error("❌ 没有可用的 LLM 提供商")
+        return None
     
     async def generate_json(
         self,
@@ -110,12 +122,28 @@ class LLMServiceProxy:
         """
         
         if self.provider == LLMProvider.LOCAL_QWEN:
-            return await self._generate_json_with_qwen(prompt, system_prompt, **kwargs)
-        elif self.provider == LLMProvider.AZURE:
-            return await self._generate_json_with_azure(prompt, system_prompt, **kwargs)
-        else:
-            logger.error("❌ 没有可用的 LLM 提供商")
+            data = await self._generate_json_with_qwen(prompt, system_prompt, **kwargs)
+            if data:
+                return data
+            if self._azure_configured():
+                logger.warning("⚠️ 本地 Qwen JSON 不可用，回退到 Azure OpenAI")
+                return await self._generate_json_with_azure(prompt, system_prompt, **kwargs)
             return None
+
+        if self.provider == LLMProvider.AZURE:
+            return await self._generate_json_with_azure(prompt, system_prompt, **kwargs)
+
+        if self._azure_configured():
+            logger.warning("⚠️ 使用 Azure OpenAI 作为兜底 JSON 提供商")
+            return await self._generate_json_with_azure(prompt, system_prompt, **kwargs)
+
+        logger.error("❌ 没有可用的 LLM 提供商")
+        return None
+
+    def _azure_configured(self) -> bool:
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        key = os.getenv("AZURE_OPENAI_KEY")
+        return bool(endpoint and key)
     
     async def _generate_with_qwen(
         self,
@@ -169,10 +197,17 @@ class LLMServiceProxy:
     ) -> Optional[str]:
         """使用 Azure OpenAI 生成文本"""
         try:
-            # 这里需要调用 LLMNewsProcessor 的相应方法
-            # 由于 LLMNewsProcessor 已经是异步的，我们直接使用其方法
-            logger.warning("⚠️ Azure OpenAI 后端暂未在此模块实现，请使用 LLMNewsProcessor 直接调用")
-            return None
+            from .llm_processor import LLMNewsProcessor
+
+            if self.azure_processor is None:
+                self.azure_processor = LLMNewsProcessor()
+
+            full_prompt = prompt
+            if system_prompt:
+                full_prompt = f"{system_prompt}\n\n{prompt}"
+
+            response_text = await self.azure_processor._call_azure_openai_responses(full_prompt)
+            return response_text if isinstance(response_text, str) and response_text.strip() else None
         except Exception as e:
             logger.error(f"❌ Azure OpenAI 生成失败: {e}")
             return None
@@ -185,8 +220,28 @@ class LLMServiceProxy:
     ) -> Optional[dict]:
         """使用 Azure OpenAI 生成 JSON"""
         try:
-            logger.warning("⚠️ Azure OpenAI 后端暂未在此模块实现，请使用 LLMNewsProcessor 直接调用")
-            return None
+            from .llm_processor import LLMNewsProcessor
+
+            if self.azure_processor is None:
+                self.azure_processor = LLMNewsProcessor()
+
+            full_prompt = prompt
+            if system_prompt:
+                full_prompt = f"{system_prompt}\n\n{prompt}"
+
+            response_text = await self.azure_processor._call_azure_openai_responses(full_prompt)
+            if not response_text:
+                return None
+
+            parsed = self.azure_processor._parse_llm_response(response_text)
+            if isinstance(parsed, dict):
+                return parsed
+
+            try:
+                decoded = json.loads(response_text)
+                return decoded if isinstance(decoded, dict) else None
+            except Exception:
+                return None
         except Exception as e:
             logger.error(f"❌ Azure OpenAI JSON 生成失败: {e}")
             return None

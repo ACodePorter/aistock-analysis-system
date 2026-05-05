@@ -6,7 +6,7 @@
 2. 专业资讯：财联社、同花顺、雪球
 3. 官方公告：巨潮资讯、上交所、深交所、证监会
 4. 行业报告：券商研报、行业协会
-5. 通用搜索：SearXNG（作为兜底）
+5. 通用搜索：OpenClaw Web Retrieval（作为兜底）
 
 作者：AI Stock Analysis Enhancement
 日期：2026-01
@@ -178,13 +178,13 @@ class SourceRegistry:
         ),
         
         # ===== 搜索引擎（兜底） =====
-        'searxng': NewsSource(
-            name='searxng',
+        'openclaw': NewsSource(
+            name='openclaw',
             source_type=SourceType.SEARCH,
-            base_url=os.getenv('SEARXNG_URL', 'http://localhost:10000'),
+            base_url='openclaw_web',
             rate_limit=0.2,  # 更保守的限速
             priority=10,     # 最低优先级
-            description='SearXNG - 自托管搜索引擎'
+            description='OpenClaw 风格 Web Retrieval'
         ),
     }
     
@@ -383,3 +383,4 @@ def get_source_registry() -> SourceRegistry:
     if _source_registry is None:
         _source_registry = SourceRegistry()
     return _source_registry
+

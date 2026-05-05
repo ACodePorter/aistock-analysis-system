@@ -65,6 +65,8 @@ class TestRunner:
             ("tests/unit/test_stock_pool.py", "股票池脚本单元测试"),
             ("tests/unit/test_stock_pool_api.py", "股票池API单元测试"),
             ("tests/unit/test_fund_flow_fallback.py", "资金流回退健壮性单元测试"),
+            ("tests/unit/test_retail_decision_service.py", "散户决策服务单元测试"),
+            ("tests/unit/test_trade_playbook_service.py", "交易剧本服务单元测试"),
         ]
         
         integration_tests = [
@@ -148,7 +150,7 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='股票系统测试套件')
     parser.add_argument('--api-url', 
-                       help='API服务器URL，用于API测试 (例如: http://localhost:8080)')
+                       help='API服务器URL，用于API测试 (例如: http://localhost:8081)')
     parser.add_argument('--data-only', action='store_true',
                        help='只运行数据相关测试，跳过API测试')
     parser.add_argument('--type', choices=['unit', 'integration', 'data'],
@@ -167,7 +169,7 @@ def main():
             success = runner.run_all_tests(api_url=api_url, test_type=args.type)
         else:
             # 只有在运行全部测试时才设置默认API URL
-            api_url = args.api_url or "http://localhost:8080"
+            api_url = args.api_url or "http://localhost:8081"
             success = runner.run_all_tests(api_url=api_url, test_type=args.type)
         
         sys.exit(0 if success else 1)

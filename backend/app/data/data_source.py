@@ -245,6 +245,63 @@ def normalize_symbol(symbol: str) -> str:
         return f"{s}.SH"
     return f"{s}.SZ"
 
+def _fetch_daily_akshare_tx(symbol: str, start_date: str = None) -> pd.DataFrame:
+    """使用 akshare 的腾讯数据源获取日 K 线数据（前复权）。
+
+    腾讯源 (stock_zh_a_hist_tx) 不依赖 eastmoney.com，
+    当 eastmoney 不可达时可作为备用数据源。
+
+    注意: 腾讯源返回列为 [date, open, close, high, low, amount]，
+    无 vol（成交量手数） 和 pct_chg（涨跌幅）。
+    pct_chg 由 close 推算；vol 从 amount 估算或置 None。
+    """
+    _EMPTY = pd.DataFrame(columns=["symbol","trade_date","open","high","low","close","pct_chg","vol","amount"])
+    sym = normalize_symbol(symbol)
+    base = sym.replace(".SH", "").replace(".SZ", "")
+    # 腾讯源 symbol 格式: sz002594 / sh600519
+    tx_prefix = "sh" if sym.endswith(".SH") else "sz"
+    tx_symbol = f"{tx_prefix}{base}"
+    try:
+        kwargs = {"symbol": tx_symbol}
+        if start_date:
+            kwargs["start_date"] = start_date
+        kwargs["end_date"] = pd.Timestamp.now().strftime("%Y%m%d")
+        df = ak.stock_zh_a_hist_tx(**kwargs)
+    except Exception as e:
+        logger.warning(f"ak.stock_zh_a_hist_tx failed for {sym}: {e}")
+        return _EMPTY
+    if df is None or df.empty:
+        return _EMPTY
+    # 列名清洗
+    df.columns = [str(c).strip() for c in df.columns]
+    # 重命名
+    df = df.rename(columns={"date": "trade_date"})
+    df["trade_date"] = pd.to_datetime(df["trade_date"], errors="coerce").dt.date
+    # 数值转换
+    for col in ["open", "high", "low", "close", "amount"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        else:
+            df[col] = None
+    # 推算 pct_chg (涨跌幅 %)
+    if "close" in df.columns:
+        df = df.sort_values("trade_date").reset_index(drop=True)
+        df["pct_chg"] = df["close"].pct_change() * 100.0
+    else:
+        df["pct_chg"] = None
+    # 腾讯源无 vol 列，置空
+    if "vol" not in df.columns:
+        df["vol"] = None
+    else:
+        df["vol"] = pd.to_numeric(df["vol"], errors="coerce").astype("Int64")
+    df["symbol"] = sym
+    cols = ["symbol","trade_date","open","high","low","close","pct_chg","vol","amount"]
+    out = df[cols].dropna(subset=["close"]).reset_index(drop=True)
+    if not out.empty:
+        logger.info(f"[TX fallback] fetched {len(out)} rows for {sym} via Tencent source")
+    return out
+
+
 def fetch_daily_akshare(symbol: str, start_date: str = None) -> pd.DataFrame:
     """使用 akshare 获取日 K 线数据（前复权）。
 
@@ -262,10 +319,11 @@ def fetch_daily_akshare(symbol: str, start_date: str = None) -> pd.DataFrame:
     try:
         df = ak.stock_zh_a_hist(symbol=base, period="daily", start_date=start_date, adjust="qfq")
     except Exception as e:
-        logger.warning(f"ak.stock_zh_a_hist failed for {sym}: {e}")
-        return pd.DataFrame(columns=["symbol","trade_date","open","high","low","close","pct_chg","vol","amount"])
+        logger.warning(f"ak.stock_zh_a_hist (eastmoney) failed for {sym}: {e}, trying Tencent source...")
+        return _fetch_daily_akshare_tx(symbol, start_date)
     if df is None or df.empty:
-        return pd.DataFrame(columns=["symbol","trade_date","open","high","low","close","pct_chg","vol","amount"])
+        logger.info(f"ak.stock_zh_a_hist returned empty for {sym}, trying Tencent source...")
+        return _fetch_daily_akshare_tx(symbol, start_date)
     # 清洗列名
     df.columns = [str(c).strip().replace("\n", "").replace("\r", "") for c in df.columns]
     # 重命名核心列
@@ -471,6 +529,57 @@ def _load_fund_flow_rank_today(max_age_sec: int = 20, retries: int = 3, backoff_
             f"fund flow rank unavailable after retries: {last_err}",
             60,
         )
+    # 最后的兜底：尝试使用东方财富单票/批量回退构建今日排行（按成交额挑选候选票并逐票查询 f62）
+    try:
+        try:
+            spot = ak.stock_zh_a_spot_em()
+        except Exception:
+            spot = None
+        candidates = []
+        if spot is not None and not spot.empty:
+            # 兼容不同列名的成交额识别
+            amt_col = None
+            for c in ['成交额', '成交额(万元)', 'amount', 'amount_x']:
+                if c in spot.columns:
+                    amt_col = c
+                    break
+            if amt_col:
+                try:
+                    spot[amt_col] = pd.to_numeric(spot.get(amt_col), errors='coerce').fillna(0)
+                except Exception:
+                    pass
+            # 按成交额选取前 N 个候选
+            try:
+                top = spot.sort_values(by=amt_col if amt_col else spot.columns[0], ascending=False).head(200)
+                for _, row in top.iterrows():
+                    code = str(row.get('代码') or row.get('code') or '')
+                    name = row.get('名称') or row.get('name') or ''
+                    if not code:
+                        continue
+                    candidates.append((code, name))
+            except Exception:
+                candidates = []
+        records = []
+        for code, name in candidates:
+            try:
+                rec = _fetch_fund_flow_intraday_eastmoney(code)
+                if rec and rec.get('main_net') is not None:
+                    records.append({
+                        '代码': code,
+                        '名称': name,
+                        '今日主力净流入-净额': rec.get('main_net') / 1e4 if rec.get('main_net') is not None else None,
+                        '主力净流入-净额': rec.get('main_net') / 1e4 if rec.get('main_net') is not None else None,
+                    })
+            except Exception:
+                continue
+        if records:
+            rdf2 = pd.DataFrame.from_records(records)
+            with _fund_flow_rank_lock:
+                _fund_flow_rank_cache['records'] = rdf2.to_dict(orient='records')
+                _fund_flow_rank_cache['ts'] = time.time()
+            return rdf2
+    except Exception:
+        pass
     return pd.DataFrame(columns=cols_min)
 
 
@@ -545,6 +654,23 @@ def fetch_fund_flow_daily(symbol: str, start_date: str | None = None, include_to
     # 快速熔断开关：允许关闭所有资金流抓取
     if os.getenv("FUND_FLOW_DISABLE", "false").lower() in ("1","true","yes"):
         return pd.DataFrame(columns=cols)
+
+    # EOD 场景优先使用东方财富历史接口，规避部分环境下 akshare 异步清理导致的
+    # "RuntimeError: Event loop is closed" 噪声。
+    prefer_em_eod = os.getenv("FUND_FLOW_PREFER_EASTMONEY_EOD", "true").lower() in ("1", "true", "yes")
+    try_ak_on_eod_miss = os.getenv("FUND_FLOW_TRY_AK_ON_EOD_MISS", "true").lower() in ("1", "true", "yes")
+    if not include_today_rank and prefer_em_eod:
+        em_hist = fetch_fund_flow_eod_history_eastmoney(symbol, start_date=start_date)
+        if em_hist is not None and not em_hist.empty:
+            return em_hist
+        if not try_ak_on_eod_miss:
+            _log_throttled(
+                f"ff_hist_all_fail:{normalize_symbol(symbol).replace('.SH','').replace('.SZ','')}",
+                logging.WARNING,
+                f"Fund flow history unavailable for {normalize_symbol(symbol)} via eastmoney EOD.",
+                300,
+            )
+            return pd.DataFrame(columns=cols)
 
     # Use global `ak` proxy to run akshare calls in an isolated thread/loop
     sym = normalize_symbol(symbol)

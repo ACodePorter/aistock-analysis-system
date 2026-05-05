@@ -154,7 +154,143 @@ def init_database():
                 ))
         except Exception as mig_err:
             print(f"Migration note (watchlist.added_at): {mig_err}")
+
+            # Ensure fundflow_daily unique constraint exists (idempotent)
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(
+                        """
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM pg_constraint c
+                                JOIN pg_class t ON c.conrelid = t.oid
+                                JOIN pg_namespace n ON t.relnamespace = n.oid
+                                WHERE c.contype = 'u' AND t.relname = 'fundflow_daily' AND array_to_string(c.conkey, ',') IS NOT NULL
+                            ) THEN
+                                BEGIN
+                                    ALTER TABLE fundflow_daily ADD CONSTRAINT uq_fundflow_symbol_date UNIQUE (symbol, trade_date);
+                                EXCEPTION WHEN duplicate_object THEN
+                                    -- ignore
+                                END;
+                            END IF;
+                        END $$;
+                        """
+                    ))
+            except Exception:
+                # best-effort only; ignore failures here
+                pass
         
+        # 添加 watchlist.pinned 字段（若不存在）
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='pinned'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN pinned BOOLEAN DEFAULT FALSE;
+                            CREATE INDEX IF NOT EXISTS idx_watchlist_pinned ON watchlist(pinned);
+                        END IF;
+                    END $$;
+                    """
+                ))
+        except Exception as mig_err:
+            print(f"Migration note (watchlist.pinned): {mig_err}")
+
+        # 补齐 watchlist 扩展字段（兼容旧库结构）
+        # 这些字段已在 ORM 模型中定义；若数据库未迁移，会在 select(Watchlist) 时触发 UndefinedColumn。
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='status'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN status VARCHAR(20) DEFAULT 'active';
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='last_active_at'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN last_active_at TIMESTAMP NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='last_updated_at'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN last_updated_at TIMESTAMP NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='source'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN source VARCHAR(32) DEFAULT 'manual';
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='score'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN score DOUBLE PRECISION NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='investment_potential'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN investment_potential DOUBLE PRECISION NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='remove_suggested'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN remove_suggested BOOLEAN DEFAULT FALSE;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='remove_reason'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN remove_reason TEXT NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='last_analysis_at'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN last_analysis_at TIMESTAMP NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='watchlist' AND column_name='clean_rule_tag'
+                        ) THEN
+                            ALTER TABLE watchlist ADD COLUMN clean_rule_tag VARCHAR(100) NULL;
+                        END IF;
+
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_indexes
+                            WHERE schemaname = 'public' AND indexname = 'idx_watchlist_status'
+                        ) THEN
+                            CREATE INDEX idx_watchlist_status ON watchlist(status);
+                        END IF;
+                    END $$;
+                    """
+                ))
+        except Exception as mig_err:
+            print(f"Migration note (watchlist.extended_columns): {mig_err}")
+
         # 添加 stock_profiles.market 字段（若不存在）并自动填充
         try:
             with engine.begin() as conn:
@@ -195,7 +331,98 @@ def init_database():
                     print("✓ market field populated")
         except Exception as mig_err:
             print(f"Migration note (stock_profiles.market): {mig_err}")
-        
+
+        # 添加 stock_pool_members.source 字段（若不存在）
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='stock_pool_members' AND column_name='source'
+                        ) THEN
+                            ALTER TABLE stock_pool_members ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'top_movers';
+                        END IF;
+                    END $$;
+                    """
+                ))
+        except Exception as mig_err:
+            print(f"Migration note (stock_pool_members.source): {mig_err}")
+
+        # 补齐 qe_signals 扩展字段（兼容旧库结构）
+        # 这些字段已在 quant_engine/models 中定义；若旧库未迁移，
+        # 会在 /api/quant/signals/ranked 与 /api/report/{sym}/insight 上触发 UndefinedColumn。
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.tables
+                            WHERE table_name='qe_signals'
+                        ) THEN
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='direction') THEN
+                                ALTER TABLE qe_signals ADD COLUMN direction VARCHAR(20) NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='trigger_price') THEN
+                                ALTER TABLE qe_signals ADD COLUMN trigger_price DOUBLE PRECISION NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='stop_loss') THEN
+                                ALTER TABLE qe_signals ADD COLUMN stop_loss DOUBLE PRECISION NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='take_profit') THEN
+                                ALTER TABLE qe_signals ADD COLUMN take_profit DOUBLE PRECISION NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='holding_period') THEN
+                                ALTER TABLE qe_signals ADD COLUMN holding_period INTEGER NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='signal_source') THEN
+                                ALTER TABLE qe_signals ADD COLUMN signal_source VARCHAR(50) NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='event_id') THEN
+                                ALTER TABLE qe_signals ADD COLUMN event_id VARCHAR(64) NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='regime') THEN
+                                ALTER TABLE qe_signals ADD COLUMN regime VARCHAR(50) NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='confidence') THEN
+                                ALTER TABLE qe_signals ADD COLUMN confidence DOUBLE PRECISION NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='direction_prob_up') THEN
+                                ALTER TABLE qe_signals ADD COLUMN direction_prob_up DOUBLE PRECISION NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='predicted_return') THEN
+                                ALTER TABLE qe_signals ADD COLUMN predicted_return DOUBLE PRECISION NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='factors_json') THEN
+                                ALTER TABLE qe_signals ADD COLUMN factors_json JSONB NULL;
+                            END IF;
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                WHERE table_name='qe_signals' AND column_name='model_version_id') THEN
+                                ALTER TABLE qe_signals ADD COLUMN model_version_id BIGINT NULL;
+                            END IF;
+                        END IF;
+                    END $$;
+                    """
+                ))
+        except Exception as mig_err:
+            print(f"Migration note (qe_signals.extended_columns): {mig_err}")
+
         print("✓ Database tables created/updated successfully")
     except Exception as e:
         print(f"✗ Database initialization error: {e}")

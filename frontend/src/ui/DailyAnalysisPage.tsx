@@ -3,6 +3,8 @@ import ReactMarkdown from 'react-markdown'
 import { fetchLatestAgentReport, fetchStockPoolPage, fetchModelPrediction, StockPoolItem, runAgent, fetchAgentStatus, ensureNewsCounts } from '../api/dailyAnalysis'
 import { fetchFullReport, FullReportResponse } from '../api/report'
 import FloatingModule from './FloatingModule'
+import HelpTooltip, { HelpIcon } from './components/HelpTooltip'
+import { helpTips } from '../config/helpTips'
 
 interface PredictionRow {
   symbol: string
@@ -11,9 +13,12 @@ interface PredictionRow {
   prob_up?: number
 }
 
-function SectionCard({ title, extra, children }: { title: string; extra?: React.ReactNode; children: React.ReactNode }) {
+function SectionCard({ title, extra, children, tip }: { title: string; extra?: React.ReactNode; children: React.ReactNode; tip?: keyof typeof helpTips }) {
   return (
-    <FloatingModule title={title} rightActions={extra}>
+    <FloatingModule
+      title={<span style={{display:'inline-flex', alignItems:'center', gap:6}}>{title}{tip && <HelpTooltip {...helpTips[tip]}><HelpIcon /></HelpTooltip>}</span> as any}
+      rightActions={extra}
+    >
       {children}
     </FloatingModule>
   )
@@ -173,9 +178,9 @@ export default function DailyAnalysisPage() {
       {loading && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>加载中...</div>}
       {!loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <SectionCard title='Agent 概览' extra={<div style={{ display: 'flex', gap: 6 }}>
-            <button className="dark-btn dark-btn-secondary" onClick={loadAll}>刷新</button>
-            <button className="dark-btn dark-btn-secondary" disabled={agentFSLoading} title='直接读取最新文件，绕过数据库缓存' onClick={async ()=>{
+          <SectionCard title='Agent 概览' tip="agentReason" extra={<div style={{ display: 'flex', gap: 6 }}>
+            <HelpTooltip {...helpTips.refreshData}><button className="dark-btn dark-btn-secondary" onClick={loadAll}>刷新</button></HelpTooltip>
+            <HelpTooltip {...helpTips.hardRefresh}><span style={{display:'inline-flex'}}><button className="dark-btn dark-btn-secondary" disabled={agentFSLoading} onClick={async ()=>{
               try {
                 setAgentFSLoading(true)
                 const latest = await fetchLatestAgentReport({ forceFilesystem: true })
@@ -183,8 +188,8 @@ export default function DailyAnalysisPage() {
               } catch(e) {
                 console.warn('hard refresh failed', e)
               } finally { setAgentFSLoading(false) }
-            }}>{agentFSLoading ? '硬刷新中...' : '硬刷新(文件)'}</button>
-            <button className="dark-btn dark-btn-secondary" disabled={liveEnsuring || !agent || !Array.isArray((agent as any)?.stock_reports)} title='逐个股票补齐并回读最新计数' onClick={async ()=>{
+            }}>{agentFSLoading ? '硬刷新中...' : '硬刷新(文件)'}</button></span></HelpTooltip>
+            <HelpTooltip {...helpTips.ensureNewsCounts}><span style={{display:'inline-flex'}}><button className="dark-btn dark-btn-secondary" disabled={liveEnsuring || !agent || !Array.isArray((agent as any)?.stock_reports)} onClick={async ()=>{
               if (!agent || !Array.isArray((agent as any)?.stock_reports)) return
               try {
                 setLiveEnsuring(true)
@@ -196,8 +201,8 @@ export default function DailyAnalysisPage() {
               } catch(e) {
                 console.warn('ensureNewsCounts failed', e)
               } finally { setLiveEnsuring(false) }
-            }}>{liveEnsuring ? '校验中...' : '校验并补齐新闻数'}</button>
-            <button className="dark-btn dark-btn-primary" disabled={runningAgent} onClick={async ()=>{
+            }}>{liveEnsuring ? '校验中...' : '校验并补齐新闻数'}</button></span></HelpTooltip>
+            <HelpTooltip {...helpTips.generateAgentReport}><span style={{display:'inline-flex'}}><button className="dark-btn dark-btn-primary" disabled={runningAgent} onClick={async ()=>{
               if (runningAgent) return
               try {
                 setRunningAgent(true)
@@ -207,7 +212,7 @@ export default function DailyAnalysisPage() {
               } catch(e) {
                 console.warn('runAgent failed', e)
               } finally { setRunningAgent(false) }
-            }}>{runningAgent ? '生成中...' : '生成报告'}</button>
+            }}>{runningAgent ? '生成中...' : '生成报告'}</button></span></HelpTooltip>
           </div>}>
             {agent ? (
               <div style={{ fontSize: 12, lineHeight: 1.5 }}>
@@ -272,7 +277,7 @@ export default function DailyAnalysisPage() {
             )}
           </SectionCard>
 
-          <SectionCard title='动态股票池' extra={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SectionCard title='动态股票池' tip="manageStockPool" extra={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ fontSize: 11 }}>第 {poolPageNum} / {totalPages} 页</div>
             <button className="dark-btn dark-btn-secondary" disabled={poolPageNum <= 1} onClick={() => setPoolPageNum(p => Math.max(1, p - 1))}>上一页</button>
             <button className="dark-btn dark-btn-secondary" disabled={poolPageNum >= totalPages} onClick={() => setPoolPageNum(p => Math.min(totalPages, p + 1))}>下一页</button>
@@ -348,7 +353,7 @@ export default function DailyAnalysisPage() {
             </SectionCard>
           )}
 
-          <SectionCard title='预测结果'>
+          <SectionCard title='预测结果' tip="predictionTask">
             {predictions.length > 0 ? (
               <table className="dark-table" style={{ width: '100%', fontSize: 12 }}>
                 <thead>

@@ -1,4 +1,6 @@
 import React from 'react';
+import HelpTooltip from './components/HelpTooltip';
+import { helpTips } from '../config/helpTips';
 
 interface Props {
   sentiment?: 'positive' | 'negative' | 'neutral' | string | undefined;
@@ -29,8 +31,10 @@ export default function SentimentBadge({ sentiment, score }: Props) {
     const textColor = sentiment === 'positive' ? 'white' : sentiment === 'negative' ? 'white' : '#374151';
 
     return (
-      <div className={`${base} ${sentimentClasses}`} style={{ backgroundColor: inlineColor, color: textColor, height: '22px', borderRadius: '6px' }} aria-label={`情感: ${text}`} title={text}>
-        {text}
-      </div>
+      <HelpTooltip {...helpTips.newsSentiment} content={`当前新闻情绪为${text}。${helpTips.newsSentiment.content}`}>
+        <div className={`${base} ${sentimentClasses}`} style={{ backgroundColor: inlineColor, color: textColor, height: '22px', borderRadius: '6px' }} aria-label={`情感: ${text}`}>
+          {text}
+        </div>
+      </HelpTooltip>
     );
 }

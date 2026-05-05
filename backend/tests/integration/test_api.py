@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 
 class APITester:
-    def __init__(self, base_url="http://localhost:8080"):
+    def __init__(self, base_url="http://localhost:8081"):
         self.base_url = base_url
         self.test_symbols = ["002594.SZ", "002649.SZ"]
     
@@ -141,8 +141,8 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='API集成测试')
-    parser.add_argument('--url', default='http://localhost:8080', 
-                       help='API服务器URL (默认: http://localhost:8080)')
+    parser.add_argument('--url', default='http://localhost:8081', 
+                       help='API服务器URL (默认: http://localhost:8081)')
     args = parser.parse_args()
     
     tester = APITester(args.url)
